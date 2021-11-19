@@ -16,3 +16,14 @@ Ray Camera::generateCameraRay(int x, int y){
 	glm::dvec3 dir = llCorner + u*horizontal + v*vertical - position;
 	return Ray(position, dir);
 }
+
+void Camera::setPosition(glm::dvec3 pos) {
+	this->position = pos;
+	this->updateVectors();
+}
+
+void Camera::updateVectors(){
+	horizontal = glm::dvec3(viewportWidth, 0, 0);
+	vertical = glm::dvec3(0, viewportHeight, 0);
+	this->llCorner = this->position - this->horizontal/2.0 - this->vertical/2.0 - glm::dvec3(0, 0, this->focalLength);
+}

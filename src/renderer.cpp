@@ -1,6 +1,7 @@
 #include "camera.hpp"
 #include "glad/glad.h"
 #include "hittables/sphere.hpp"
+#include "hittables/plane.hpp"
 #include "renderer.hpp"
 #include <iostream>
 
@@ -98,11 +99,16 @@ bool Renderer::init(){
 
 bool Renderer::start() {
 	glClearColor(0,0,0,0);
-	Camera camera(glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 0.0, 0.0}, 1.0);
+	Camera camera(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, 2.0);
+
+	const double fpsLimit = 1.0 / 120.0;
+	double lastUpdateTime = 0;  // number of seconds since the last loop
+	double lastFrameTime = 0;   // number of seconds since the last frame
 
 	while(!glfwWindowShouldClose(this->window)){
+		double now = glfwGetTime();
+		double deltaTime = now - lastUpdateTime;
 		glfwPollEvents();
-		glClear(GL_COLOR_BUFFER_BIT);
 
 		for (int row = W_HEIGHT - 1; row >= 0; --row) {
 			for (int col = 0; col < W_WIDTH; ++col) {
@@ -112,12 +118,19 @@ bool Renderer::start() {
 			}
 		}
 
-		glBindTexture(GL_TEXTURE_2D, this->texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, W_WIDTH, W_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->frameBuffer);
-		glBindVertexArray(this->VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		if ((now - lastFrameTime) >= fpsLimit)
+		{
+			glBindTexture(GL_TEXTURE_2D, this->texture);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, W_WIDTH, W_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->frameBuffer);
+			glClear(GL_COLOR_BUFFER_BIT);
+			glBindVertexArray(this->VAO);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glfwSwapBuffers(this->window);
 
-		glfwSwapBuffers(this->window);
+			lastFrameTime = now;
+		}
+		// set lastUpdateTime every iteration
+		lastUpdateTime = now;
 	}
 
 	glDeleteShader(this->shader);
@@ -128,10 +141,11 @@ bool Renderer::start() {
 
 Color Renderer::trace(Ray &ray){
 	Sphere sphere({0.0, 0.0, -1.0}, 0.5);
+	Plane plane({0.0, -0.5, 0.0}, {0.0, -1.0, 0.0});
 	HitRecord hr;
 	if(sphere.hit(ray, 0.0, INF, hr)){
 		if(hr.t > 0)
-			return Color(1.0, 0.0, 0.0);
+			return 0.5 * (hr.normal + 1.0);
 	}
 	double t = 0.5*(ray.getDirection().y + 1.0);
 	return (1.0-t)*Color(1.0, 1.0, 1.0) + t*Color(0.5, 0.7, 1.0);

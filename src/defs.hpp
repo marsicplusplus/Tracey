@@ -2,6 +2,7 @@
 #define __DEFS_HPP__
 
 #include "glm/vec3.hpp"
+#include "ray.hpp"
 #include <cmath>
 #include <limits>
 
@@ -22,6 +23,11 @@ struct HitRecord {
 	glm::dvec3 normal;
 	double t;
 	bool frontFace;
+
+	inline void setFaceNormal(const Ray& r, const glm::dvec3& outNormal) {
+		frontFace = dot(r.getDirection(), outNormal) < 0;
+		normal = frontFace ? outNormal : -outNormal;
+	}
 };
 
 #endif

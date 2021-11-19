@@ -24,8 +24,8 @@ class Sphere : public Hittable {
 				if(t < tMin || t > tMax) return false;
 				rec.t = t;
 				rec.p = ray.at(t);
-				//glm::vec3 normal = glm::normalize(rec.p - center);
-				//rec.setFaceNormal(ray, glm::normalize(normal));
+				glm::vec3 normal = glm::normalize(rec.p - center);
+				rec.setFaceNormal(ray, glm::normalize(normal));
 				return true;
 			}
 		}

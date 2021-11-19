@@ -9,7 +9,11 @@ class Camera{
 		Camera(glm::dvec3 origin, glm::dvec3 dir, double fov);
 		Ray generateCameraRay(int u, int v);
 
+		void setPosition(glm::dvec3 pos);
+		inline glm::dvec3 getPosition() const {return position;}
 	private:
+		void updateVectors();
+
 		glm::dvec3 position;
 		glm::dvec3 front;
 		glm::dvec3 horizontal;
