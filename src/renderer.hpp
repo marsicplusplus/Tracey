@@ -3,6 +3,7 @@
 
 #include "ray.hpp"
 #include "defs.hpp"
+#include "scene.hpp"
 #include "GLFW/glfw3.h"
 #include <string>
 
@@ -15,10 +16,11 @@ class Renderer{
 
 		bool init();
 		bool start();
+		void setScene(ScenePtr scene);
 
 	private:
 		void putPixel(int row, int col, Color &color);
-		Color trace(Ray &ray);
+		Color trace(Ray &ray, int bounces);
 
 		GLFWwindow *window;
 		std::string title;
@@ -26,6 +28,7 @@ class Renderer{
 		unsigned int VBO, VAO, EBO;
 		unsigned int shader;
 		unsigned int texture;
+		ScenePtr scene;
 };
 
 #endif

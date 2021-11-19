@@ -1,8 +1,11 @@
 #include "camera.hpp"
 #include "glad/glad.h"
+#include "glm/gtc/random.hpp"
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
+#include "options_manager.hpp"
 #include "renderer.hpp"
+#include <algorithm>
 #include <iostream>
 
 namespace{
@@ -100,8 +103,10 @@ bool Renderer::init(){
 bool Renderer::start() {
 	glClearColor(0,0,0,0);
 	Camera camera(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, 2.0);
+	const int maxBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
+	const int samples = OptionsMap::Instance()->getOption(Options::SAMPLES);
 
-	const double fpsLimit = 1.0 / 120.0;
+	const double fpsLimit = 1.0 / static_cast<double>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
 	double lastUpdateTime = 0;  // number of seconds since the last loop
 	double lastFrameTime = 0;   // number of seconds since the last frame
 
@@ -112,9 +117,13 @@ bool Renderer::start() {
 
 		for (int row = W_HEIGHT - 1; row >= 0; --row) {
 			for (int col = 0; col < W_WIDTH; ++col) {
-				Ray ray = camera.generateCameraRay(col, row);
-				Color color = trace(ray);
-				putPixel(row, col, color);
+				Color pxColor(0,0,0);
+				for(int s = 0; s < samples; ++s){
+					Ray ray = camera.generateCameraRay(col, row);
+					pxColor += trace(ray, maxBounces);
+				}
+				pxColor = pxColor / static_cast<double>(samples);
+				putPixel(row, col, pxColor);
 			}
 		}
 
@@ -126,7 +135,7 @@ bool Renderer::start() {
 			glBindVertexArray(this->VAO);
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 			glfwSwapBuffers(this->window);
-
+			std::cout << "Last frame in: " << (now - lastFrameTime) <<std::endl;
 			lastFrameTime = now;
 		}
 		// set lastUpdateTime every iteration
@@ -139,13 +148,14 @@ bool Renderer::start() {
 	return true;
 }
 
-Color Renderer::trace(Ray &ray){
-	Sphere sphere({0.0, 0.0, -1.0}, 0.5);
-	Plane plane({0.0, -0.5, 0.0}, {0.0, -1.0, 0.0});
+Color Renderer::trace(Ray &ray, int bounces){
 	HitRecord hr;
-	if(sphere.hit(ray, 0.0, INF, hr)){
-		if(hr.t > 0)
-			return 0.5 * (hr.normal + 1.0);
+	if(!scene || bounces <= 0)
+		return Color{0,0,0};
+	if(scene->traverse(ray, 0, INF, hr)){
+		glm::dvec3 target = hr.p + hr.normal + glm::ballRand<double>(1);
+		Ray newRay{hr.p, target - hr.p};
+		return 0.5 * trace(newRay, bounces - 1);
 	}
 	double t = 0.5*(ray.getDirection().y + 1.0);
 	return (1.0-t)*Color(1.0, 1.0, 1.0) + t*Color(0.5, 0.7, 1.0);
@@ -153,8 +163,12 @@ Color Renderer::trace(Ray &ray){
 
 void Renderer::putPixel(int row, int col, Color& color){
 	int idx = W_WIDTH * row + col;
-	unsigned char r = static_cast<unsigned char>(color.r * 255.999);
-	unsigned char g = static_cast<unsigned char>(color.g * 255.999);
-	unsigned char b = static_cast<unsigned char>(color.b * 255.999);
+	unsigned char r = static_cast<unsigned char>(std::clamp(color.r, 0.0, 0.999) * 255.999);
+	unsigned char g = static_cast<unsigned char>(std::clamp(color.g, 0.0, 0.999) * 255.999);
+	unsigned char b = static_cast<unsigned char>(std::clamp(color.b, 0.0, 0.999) * 255.999);
 	this->frameBuffer[idx] = r << 16 | g << 8 | b << 0;
+}
+
+void Renderer::setScene(ScenePtr scene){
+	this->scene = scene;
 }

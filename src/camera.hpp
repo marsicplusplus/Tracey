@@ -15,7 +15,6 @@ class Camera{
 		void updateVectors();
 
 		glm::dvec3 position;
-		glm::dvec3 front;
 		glm::dvec3 horizontal;
 		glm::dvec3 vertical;
 		glm::dvec3 llCorner;

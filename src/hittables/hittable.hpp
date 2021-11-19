@@ -3,9 +3,13 @@
 
 #include "defs.hpp"
 #include "ray.hpp"
+#include <memory>
 
 class Hittable {
-	virtual bool hit(const Ray &ray, double tMin, double tMax, HitRecord &rec) const = 0;
+	public:
+		virtual bool hit(const Ray &ray, double tMin, double tMax, HitRecord &rec) const = 0;
 };
+
+typedef std::shared_ptr<Hittable> HittablePtr;
 
 #endif

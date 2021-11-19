@@ -2,6 +2,7 @@ cmake_minimum_required( VERSION 3.1 )
 
 project( Tracey )
 
+
 set( GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW lib only" FORCE)
 set( GLFW_BUILD_EXAMPLES OFF CACHE BOOL "GLFW lib only" FORCE)
 set( GLFW_BUILD_TESTS OFF CACHE BOOL "GLFW lib only" FORCE)
@@ -28,6 +29,8 @@ set( SRC
 	 src/tracey.cpp
 	 src/renderer.cpp
 	 src/camera.cpp
+	 src/scene.cpp
+	 src/options_manager.cpp
 )
 
 if (UNIX)

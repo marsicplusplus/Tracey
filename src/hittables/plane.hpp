@@ -14,8 +14,8 @@ class Plane : public Hittable {
 			if (denom > 1e-6) { 
 				glm::dvec3 p0l0 = position - ray.getOrigin(); 
 				rec.t = glm::dot(p0l0, this->normal) / denom; 
-				rec.normal = this->normal;
 				rec.p = ray.at(rec.t);
+				rec.setFaceNormal(ray, this->normal);
 				return (rec.t >= 0); 
 			} 
 			return false;
