@@ -6,6 +6,7 @@
 
 class Ray{
 	public:
+		Ray() {};
 		Ray(glm::dvec3 _origin, glm::dvec3 _direction) : origin{_origin}, direction{glm::normalize(_direction)} {};
 		inline glm::dvec3 getOrigin() const {return origin; }
 		inline glm::dvec3 getDirection() const {return direction; }

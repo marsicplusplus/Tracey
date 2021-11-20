@@ -2,6 +2,7 @@
 #define __OPTIONS_MANAGER_HPP__
 
 #include <unordered_map>
+#include <iostream>
 
 namespace Options{
 	enum Options {
@@ -31,6 +32,13 @@ class OptionsMap{
 		inline int getOption(Options::Options opt){
 			return opts[opt];
 		}
+
+		inline void printOptions(){
+			std::cout << "MAX_BOUNCES: \t" << opts[Options::MAX_BOUNCES] << std::endl;
+			std::cout << "SAMPLES: \t" << opts[Options::MAX_BOUNCES] << std::endl;
+			std::cout << "FPS_LIMIT: \t" << opts[Options::FPS_LIMIT] << std::endl;
+		}
+
 
 	private:
 		std::unordered_map<Options::Options, int> opts;

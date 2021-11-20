@@ -152,10 +152,12 @@ Color Renderer::trace(Ray &ray, int bounces){
 	HitRecord hr;
 	if(!scene || bounces <= 0)
 		return Color{0,0,0};
-	if(scene->traverse(ray, 0, INF, hr)){
-		glm::dvec3 target = hr.p + hr.normal + glm::ballRand<double>(1);
-		Ray newRay{hr.p, target - hr.p};
-		return 0.5 * trace(newRay, bounces - 1);
+	if(scene->traverse(ray, 0.001, INF, hr)){
+		Ray scattered;
+		Color attenuation;
+		if(hr.material->scatter(ray, hr, attenuation, scattered))
+			return attenuation * trace(scattered, bounces - 1);
+		return Color{0,0,0};
 	}
 	double t = 0.5*(ray.getDirection().y + 1.0);
 	return (1.0-t)*Color(1.0, 1.0, 1.0) + t*Color(0.5, 0.7, 1.0);
