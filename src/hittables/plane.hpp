@@ -17,7 +17,7 @@ class Plane : public Hittable {
 				rec.p = ray.at(rec.t);
 				rec.setFaceNormal(ray, this->normal);
 				rec.material = mat;
-				return (rec.t >= 0); 
+				return (rec.t >= 0 && rec.t < tMax && rec.t > tMin); 
 			} 
 			return false;
 		}
