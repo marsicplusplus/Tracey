@@ -102,7 +102,7 @@ bool Renderer::init(){
 
 bool Renderer::start() {
 	glClearColor(0,0,0,0);
-	Camera camera(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, 2.0);
+	Camera camera(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 90);
 	const int maxBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
 	const int samples = OptionsMap::Instance()->getOption(Options::SAMPLES);
 
@@ -110,6 +110,8 @@ bool Renderer::start() {
 	double lastUpdateTime = 0;  // number of seconds since the last loop
 	double lastFrameTime = 0;   // number of seconds since the last frame
 
+	int currMaxBounces = 5;
+	int currSamples = 2;
 	while(!glfwWindowShouldClose(this->window)){
 		double now = glfwGetTime();
 		double deltaTime = now - lastUpdateTime;
@@ -118,11 +120,11 @@ bool Renderer::start() {
 		for (int row = W_HEIGHT - 1; row >= 0; --row) {
 			for (int col = 0; col < W_WIDTH; ++col) {
 				Color pxColor(0,0,0);
-				for(int s = 0; s < samples; ++s){
+				for(int s = 0; s < currSamples; ++s){
 					Ray ray = camera.generateCameraRay(col, row);
-					pxColor += trace(ray, maxBounces);
+					pxColor += trace(ray, currMaxBounces);
 				}
-				pxColor = pxColor / static_cast<double>(samples);
+				pxColor = pxColor / static_cast<double>(currSamples);
 				putPixel(row, col, pxColor);
 			}
 		}
@@ -140,6 +142,8 @@ bool Renderer::start() {
 		}
 		// set lastUpdateTime every iteration
 		lastUpdateTime = now;
+		currSamples = samples;
+		currMaxBounces = maxBounces;
 	}
 
 	glDeleteShader(this->shader);

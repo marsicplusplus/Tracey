@@ -6,7 +6,7 @@
 
 class Camera{
 	public:
-		Camera(glm::dvec3 origin, glm::dvec3 dir, double fov);
+		Camera(glm::dvec3 origin, glm::dvec3 dir, glm::dvec3 up, double fov);
 		Ray generateCameraRay(int u, int v);
 
 		void setPosition(glm::dvec3 pos);
@@ -14,12 +14,14 @@ class Camera{
 	private:
 		void updateVectors();
 
+		glm::dvec3 up;
 		glm::dvec3 position;
+		glm::dvec3 direction;
 		glm::dvec3 horizontal;
 		glm::dvec3 vertical;
 		glm::dvec3 llCorner;
 
-		double focalLength;
+		double fov;
 		double aspectRatio;
 		double viewportWidth;
 		double viewportHeight;

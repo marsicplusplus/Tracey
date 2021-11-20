@@ -1,6 +1,7 @@
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
 #include "materials/lambertian.hpp"
+#include "materials/checkered.hpp"
 #include "renderer.hpp"
 #include "options_manager.hpp"
 #include <cstring>
@@ -31,7 +32,7 @@ int main(int argc, char *args[]){
 	ScenePtr scene = std::make_shared<Scene>();
 	//scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, 0.7, -1.0}, 0.2));
 	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, 0.0, -1.0}, 0.4, std::make_shared<Lambertian>(Color(1.0, 0.0, 0.0))));
-	scene->addHittable(std::make_shared<Plane>(glm::dvec3{0.0, -0.5, -0.0}, glm::dvec3{0.0, -1.0, 0.0}, std::make_shared<Lambertian>(Color(1.0, 0.0, 1.0))));
+	scene->addHittable(std::make_shared<Plane>(glm::dvec3{0.0, -0.5, -0.0}, glm::dvec3{0.0, -1.0, 0.0}, std::make_shared<Checkered>(Color(1.0, 0.0, 1.0), Color(0.0, 1.0, 0.0))));
 	//scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, -100.5, -1.0}, 100.0, std::make_shared<Lambertian>(Color(0.2, 0.8, 0.0))));
 	renderer.setScene(scene);
 	
