@@ -11,7 +11,7 @@ class Scene {
 		Scene();
 		~Scene();
 
-		bool traverse(const Ray &ray, double tMin, double tMax, HitRecord &rec);
+		bool traverse(const Ray &ray, double tMin, double tMax, HitRecord &rec) const;
 		void addHittable(HittablePtr hittable);
 		//void addLight(LightObject light);
 

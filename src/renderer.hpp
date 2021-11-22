@@ -15,7 +15,7 @@ struct JobReturn {
 
 class Renderer{
 	public:
-		Renderer(const std::string &_title) : title{_title}, pool{4} {};
+		Renderer(const std::string &_title) : title{_title}, pool{1} {};
 		inline ~Renderer() {
 			glfwDestroyWindow(window);
 		}
@@ -25,8 +25,7 @@ class Renderer{
 		void setScene(ScenePtr scene);
 
 	private:
-		void putPixel(int idx, Color &color);
-		void putPixel(int row, int col, Color &color);
+		static void putPixel(uint32_t fb[], int idx, Color &color);
 		static Color trace(Ray &ray, int bounces, ScenePtr scene);
 
 		GLFWwindow *window;

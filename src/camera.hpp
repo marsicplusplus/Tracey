@@ -7,7 +7,7 @@
 class Camera{
 	public:
 		Camera(glm::dvec3 origin, glm::dvec3 dir, glm::dvec3 up, double fov);
-		Ray generateCameraRay(int u, int v);
+		Ray generateCameraRay(double u, double v);
 
 		void setPosition(glm::dvec3 pos);
 		inline glm::dvec3 getPosition() const {return position;}

@@ -10,7 +10,7 @@ void Scene::addHittable(HittablePtr hittable){
 	hittables.push_back(hittable);
 }
 
-bool Scene::traverse(const Ray &ray, double tMin, double tMax, HitRecord &rec){
+bool Scene::traverse(const Ray &ray, double tMin, double tMax, HitRecord &rec) const {
 	HitRecord tmp;
 	bool hasHit = false;
 	double closest = tMax;

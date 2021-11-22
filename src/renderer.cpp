@@ -102,7 +102,7 @@ bool Renderer::init(){
 
 bool Renderer::start() {
 	glClearColor(0,0,0,0);
-	Camera camera(glm::dvec3{0.5, 0.0, 1.5}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 45);
+	Camera camera(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 45);
 	const int maxBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
 	const int samples = OptionsMap::Instance()->getOption(Options::SAMPLES);
 
@@ -117,35 +117,33 @@ bool Renderer::start() {
 		double now = glfwGetTime();
 		glfwPollEvents();
 
-		std::vector<std::future<std::vector<JobReturn>>> futures;
+		std::vector<std::future<void>> futures;
 		for(int tileRow = 0; tileRow < V_TILES; ++tileRow){
 			for(int tileCol = 0; tileCol < H_TILES; ++tileCol){
 				/* Launch thread */
 				futures.push_back(pool.enqueue([&, tileRow, tileCol]{
-					std::vector<JobReturn> pixels;
-					for (int row = tileHeight - 1; row >= 0; --row) {
+					for (int row = 0; row < tileHeight; ++row) {
 						for (int col = 0; col < tileWidth; ++col) {
 							Color pxColor(0,0,0);
+							int x = col + tileWidth * tileCol;
+							int y = row + tileHeight * tileRow;
 							for(int s = 0; s < currSamples; ++s){
-								Ray ray = camera.generateCameraRay(tileCol * (tileWidth) + col, tileRow * (tileHeight) + row);
+								double u = static_cast<double>(x + (std::rand() / (double)(RAND_MAX + 1.0))) / static_cast<double>(W_WIDTH - 1);
+								double v = static_cast<double>(y + (std::rand() / (double)(RAND_MAX + 1.0))) / static_cast<double>(W_HEIGHT - 1);
+
+								Ray ray = camera.generateCameraRay(u, v);
 								pxColor += trace(ray, currMaxBounces, scene);
 							}
 							pxColor = pxColor / static_cast<double>(currSamples);
-							JobReturn jr;
-							jr.col = pxColor;
-							jr.idx = W_WIDTH * (tileRow * (tileHeight) + row) + (tileCol * (tileHeight) + col);
-							pixels.push_back(jr);
+							putPixel(frameBuffer, W_WIDTH * (y) + (x), pxColor);
 						}
 					}
-					return pixels;
 				}));
 			}
 		}
 
 		for(auto &f : futures){
-			std::vector<JobReturn> tilePixels = f.get();
-			for (auto &px : tilePixels)
-				putPixel(px.idx, px.col);
+			f.get();
 		}
 
 		glBindTexture(GL_TEXTURE_2D, this->texture);
@@ -182,15 +180,12 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 	double t = 0.5*(ray.getDirection().y + 1.0);
 	return (1.0-t)*Color(1.0, 1.0, 1.0) + t*Color(0.5, 0.7, 1.0);
 }
-void Renderer::putPixel(int row, int col, Color& color){
-	int idx = W_WIDTH * row + col;
-	putPixel(idx, color);
-}
-void Renderer::putPixel(int idx, Color& color){
+
+void Renderer::putPixel(uint32_t fb[], int idx, Color& color){
 	unsigned char r = static_cast<unsigned char>(std::clamp(color.r, 0.0, 0.999) * 255.999);
 	unsigned char g = static_cast<unsigned char>(std::clamp(color.g, 0.0, 0.999) * 255.999);
 	unsigned char b = static_cast<unsigned char>(std::clamp(color.b, 0.0, 0.999) * 255.999);
-	this->frameBuffer[idx] = r << 16 | g << 8 | b << 0;
+	fb[idx] = r << 16 | g << 8 | b << 0;
 }
 
 void Renderer::setScene(ScenePtr scene){
