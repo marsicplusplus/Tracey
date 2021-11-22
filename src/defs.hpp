@@ -7,8 +7,8 @@
 #include <cmath>
 #include <limits>
 
-#define W_WIDTH 1280
-#define W_HEIGHT 720
+#define W_WIDTH 640
+#define W_HEIGHT 480
 
 const double INF = std::numeric_limits<double>::infinity();
 
@@ -25,6 +25,8 @@ struct HitRecord {
 	double t;
 	bool frontFace;
 	MaterialPtr material;
+	double u;
+	double v;
 
 	inline void setFaceNormal(const Ray& r, const glm::dvec3& outNormal) {
 		frontFace = dot(r.getDirection(), outNormal) < 0;

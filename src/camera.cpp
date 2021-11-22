@@ -10,8 +10,6 @@ Ray Camera::generateCameraRay(int x, int y){
 	double v = static_cast<double>(y) / static_cast<double>(W_HEIGHT - 1);
 	glm::dvec3 dir = llCorner + u*horizontal + v*vertical - position;
 	Ray ray(position, dir);
-	ray.u = u;
-	ray.v = v;
 	return ray;
 }
 

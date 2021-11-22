@@ -14,7 +14,6 @@ class Ray{
 			return this->origin + t * this->direction;
 		};
 
-		double u,v;
 	private:
 		glm::dvec3 origin;
 		glm::dvec3 direction;
