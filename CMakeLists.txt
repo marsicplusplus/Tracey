@@ -2,7 +2,6 @@ cmake_minimum_required( VERSION 3.1 )
 
 project( Tracey )
 
-
 set( GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW lib only" FORCE)
 set( GLFW_BUILD_EXAMPLES OFF CACHE BOOL "GLFW lib only" FORCE)
 set( GLFW_BUILD_TESTS OFF CACHE BOOL "GLFW lib only" FORCE)
@@ -52,20 +51,6 @@ add_executable( Tracey WIN32 ${SRC} src/tracey.cpp)
 target_link_libraries( Tracey ${LIBS})
 target_compile_options( Tracey PRIVATE ${CXX_OPTIONS})
 set_property(TARGET Tracey PROPERTY CXX_STANDARD 17)
-
-if( WIN32 )
-    add_custom_command (
-        TARGET Tracey
-        PRE_BUILD
-        COMMAND ${CMAKE_SOURCE_DIR}/get_sources.bat
-    )
-else()
-    add_custom_command (
-        TARGET Tracey
-        PRE_BUILD
-        COMMAND ${CMAKE_SOURCE_DIR}/get_sources.sh
-    )
-endif()
 
 if( MSVC )
     if(${CMAKE_VERSION} VERSION_LESS "3.6.0")
