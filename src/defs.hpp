@@ -7,8 +7,11 @@
 #include <cmath>
 #include <limits>
 
-#define W_WIDTH 640
+#define W_WIDTH 480
 #define W_HEIGHT 480
+
+#define V_TILES 20
+#define H_TILES 20
 
 const double INF = std::numeric_limits<double>::infinity();
 

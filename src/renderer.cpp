@@ -102,46 +102,62 @@ bool Renderer::init(){
 
 bool Renderer::start() {
 	glClearColor(0,0,0,0);
-	Camera camera(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 45);
+	Camera camera(glm::dvec3{0.5, 0.0, 1.5}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 45);
 	const int maxBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
 	const int samples = OptionsMap::Instance()->getOption(Options::SAMPLES);
 
 	const double fpsLimit = 1.0 / static_cast<double>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
 	double lastUpdateTime = 0;  // number of seconds since the last loop
-	double lastFrameTime = 0;   // number of seconds since the last frame
 
 	int currMaxBounces = 5;
 	int currSamples = 2;
+	const int tileWidth = W_WIDTH / V_TILES;
+	const int tileHeight = W_HEIGHT / H_TILES;
 	while(!glfwWindowShouldClose(this->window)){
 		double now = glfwGetTime();
-		double deltaTime = now - lastUpdateTime;
 		glfwPollEvents();
 
-		for (int row = W_HEIGHT - 1; row >= 0; --row) {
-			for (int col = 0; col < W_WIDTH; ++col) {
-				Color pxColor(0,0,0);
-				for(int s = 0; s < currSamples; ++s){
-					Ray ray = camera.generateCameraRay(col, row);
-					pxColor += trace(ray, currMaxBounces);
-				}
-				pxColor = pxColor / static_cast<double>(currSamples);
-				putPixel(row, col, pxColor);
+		std::vector<std::future<std::vector<JobReturn>>> futures;
+		for(int tileRow = 0; tileRow < V_TILES; ++tileRow){
+			for(int tileCol = 0; tileCol < H_TILES; ++tileCol){
+				/* Launch thread */
+				futures.push_back(pool.enqueue([&, tileRow, tileCol]{
+					std::vector<JobReturn> pixels;
+					for (int row = tileHeight - 1; row >= 0; --row) {
+						for (int col = 0; col < tileWidth; ++col) {
+							Color pxColor(0,0,0);
+							for(int s = 0; s < currSamples; ++s){
+								Ray ray = camera.generateCameraRay(tileCol * (tileWidth) + col, tileRow * (tileHeight) + row);
+								pxColor += trace(ray, currMaxBounces, scene);
+							}
+							pxColor = pxColor / static_cast<double>(currSamples);
+							JobReturn jr;
+							jr.col = pxColor;
+							jr.idx = W_WIDTH * (tileRow * (tileHeight) + row) + (tileCol * (tileHeight) + col);
+							pixels.push_back(jr);
+						}
+					}
+					return pixels;
+				}));
 			}
 		}
 
-		if ((now - lastFrameTime) >= fpsLimit)
-		{
-			glBindTexture(GL_TEXTURE_2D, this->texture);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, W_WIDTH, W_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->frameBuffer);
-			glClear(GL_COLOR_BUFFER_BIT);
-			glBindVertexArray(this->VAO);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-			glfwSwapBuffers(this->window);
-			std::cout << "Last frame in: " << (now - lastFrameTime) <<std::endl;
-			lastFrameTime = now;
+		for(auto &f : futures){
+			std::vector<JobReturn> tilePixels = f.get();
+			for (auto &px : tilePixels)
+				putPixel(px.idx, px.col);
 		}
-		// set lastUpdateTime every iteration
-		lastUpdateTime = now;
+
+		glBindTexture(GL_TEXTURE_2D, this->texture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, W_WIDTH, W_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->frameBuffer);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glBindVertexArray(this->VAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glfwSwapBuffers(this->window);
+
+		lastUpdateTime = glfwGetTime() - now;
+		std::cout << "Last frame in: " << lastUpdateTime << std::endl;
+
 		currSamples = samples;
 		currMaxBounces = maxBounces;
 	}
@@ -152,7 +168,7 @@ bool Renderer::start() {
 	return true;
 }
 
-Color Renderer::trace(Ray &ray, int bounces){
+Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 	HitRecord hr;
 	if(!scene || bounces <= 0)
 		return Color{0,0,0};
@@ -160,15 +176,17 @@ Color Renderer::trace(Ray &ray, int bounces){
 		Ray scattered;
 		Color attenuation;
 		if(hr.material->scatter(ray, hr, attenuation, scattered))
-			return attenuation * trace(scattered, bounces - 1);
+			return attenuation * trace(scattered, bounces - 1, scene);
 		return Color{0,0,0};
 	}
 	double t = 0.5*(ray.getDirection().y + 1.0);
 	return (1.0-t)*Color(1.0, 1.0, 1.0) + t*Color(0.5, 0.7, 1.0);
 }
-
 void Renderer::putPixel(int row, int col, Color& color){
 	int idx = W_WIDTH * row + col;
+	putPixel(idx, color);
+}
+void Renderer::putPixel(int idx, Color& color){
 	unsigned char r = static_cast<unsigned char>(std::clamp(color.r, 0.0, 0.999) * 255.999);
 	unsigned char g = static_cast<unsigned char>(std::clamp(color.g, 0.0, 0.999) * 255.999);
 	unsigned char b = static_cast<unsigned char>(std::clamp(color.b, 0.0, 0.999) * 255.999);
