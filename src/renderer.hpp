@@ -5,17 +5,13 @@
 #include "defs.hpp"
 #include "scene.hpp"
 #include "GLFW/glfw3.h"
-#include "thread_pool.h"
+#include "thread_pool.hpp"
 #include <string>
-
-struct JobReturn {
-	Color col;
-	size_t idx;
-};
+#include <random>
 
 class Renderer{
 	public:
-		Renderer(const std::string &_title) : title{_title}, pool{1} {};
+		Renderer(const std::string &_title) : title{_title}, pool{8} {};
 		inline ~Renderer() {
 			glfwDestroyWindow(window);
 		}
@@ -26,7 +22,7 @@ class Renderer{
 
 	private:
 		static void putPixel(uint32_t fb[], int idx, Color &color);
-		static Color trace(Ray &ray, int bounces, ScenePtr scene);
+		static Color trace(Ray &ray, int bounces, ScenePtr scene, std::mt19937 &gen);
 
 		GLFWwindow *window;
 		std::string title;

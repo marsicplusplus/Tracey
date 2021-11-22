@@ -5,13 +5,14 @@
 #include "ray.hpp"
 
 #include <memory>
+#include <random>
 
 typedef glm::dvec3 Color;
 struct HitRecord;
 
 class Material {
 	public:
-		virtual bool scatter(const Ray& in, const HitRecord &r, Color& attenuation, Ray &scattered) const = 0;
+		virtual bool scatter(const Ray& in, const HitRecord &r, Color& attenuation, Ray &scattered, std::mt19937 &gen) const = 0;
 };
 
 typedef std::shared_ptr<Material> MaterialPtr;

@@ -121,18 +121,18 @@ bool Renderer::start() {
 		for(int tileRow = 0; tileRow < V_TILES; ++tileRow){
 			for(int tileCol = 0; tileCol < H_TILES; ++tileCol){
 				/* Launch thread */
-				futures.push_back(pool.enqueue([&, tileRow, tileCol]{
+				futures.push_back(pool.queue([&, tileRow, tileCol](std::mt19937& gen){
 					for (int row = 0; row < tileHeight; ++row) {
 						for (int col = 0; col < tileWidth; ++col) {
 							Color pxColor(0,0,0);
 							int x = col + tileWidth * tileCol;
 							int y = row + tileHeight * tileRow;
 							for(int s = 0; s < currSamples; ++s){
-								double u = static_cast<double>(x + (std::rand() / (double)(RAND_MAX + 1.0))) / static_cast<double>(W_WIDTH - 1);
-								double v = static_cast<double>(y + (std::rand() / (double)(RAND_MAX + 1.0))) / static_cast<double>(W_HEIGHT - 1);
+								double u = static_cast<double>(x + randomDouble(gen, 0.0,1.0)) / static_cast<double>(W_WIDTH - 1);
+								double v = static_cast<double>(y + randomDouble(gen, 0.0,1.0)) / static_cast<double>(W_HEIGHT - 1);
 
 								Ray ray = camera.generateCameraRay(u, v);
-								pxColor += trace(ray, currMaxBounces, scene);
+								pxColor += trace(ray, currMaxBounces, scene, gen);
 							}
 							pxColor = pxColor / static_cast<double>(currSamples);
 							putPixel(frameBuffer, W_WIDTH * (y) + (x), pxColor);
@@ -145,7 +145,6 @@ bool Renderer::start() {
 		for(auto &f : futures){
 			f.get();
 		}
-
 		glBindTexture(GL_TEXTURE_2D, this->texture);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, W_WIDTH, W_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->frameBuffer);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -166,15 +165,15 @@ bool Renderer::start() {
 	return true;
 }
 
-Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
+Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene, std::mt19937 &gen){
 	HitRecord hr;
 	if(!scene || bounces <= 0)
 		return Color{0,0,0};
 	if(scene->traverse(ray, 0.001, INF, hr)){
 		Ray scattered;
 		Color attenuation;
-		if(hr.material->scatter(ray, hr, attenuation, scattered))
-			return attenuation * trace(scattered, bounces - 1, scene);
+		if(hr.material->scatter(ray, hr, attenuation, scattered, gen))
+			return attenuation * trace(scattered, bounces - 1, scene, gen);
 		return Color{0,0,0};
 	}
 	double t = 0.5*(ray.getDirection().y + 1.0);

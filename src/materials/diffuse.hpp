@@ -9,8 +9,8 @@ class Diffuse : public Material {
 	public:
 		Diffuse(const Color& a) : albedo(std::make_shared<SolidColor>(a)) {}
 		Diffuse(std::shared_ptr<Texture> a) : albedo(a) {}
-		virtual bool scatter(const Ray& in, const HitRecord& rec, Color& attenuation, Ray& scattered) const override {
-			auto scatterDir = rec.normal + glm::normalize(glm::ballRand<double>(1));
+		virtual bool scatter(const Ray& in, const HitRecord& rec, Color& attenuation, Ray& scattered, std::mt19937 &gen) const override {
+			auto scatterDir = rec.normal + randomUnitVector(gen);
 			if(fabs(scatterDir.x) < 1e-8 && fabs(scatterDir.y) < 1e-8 && fabs(scatterDir.z) < 1e-8)
 				scatterDir = rec.normal;
 			scattered = Ray(rec.p, scatterDir);
