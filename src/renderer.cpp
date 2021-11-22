@@ -114,14 +114,16 @@ bool Renderer::start() {
 	int currSamples = 2;
 	while(!glfwWindowShouldClose(this->window)){
 		double now = glfwGetTime();
-		double deltaTime = now - lastUpdateTime;
+
 		glfwPollEvents();
 
 		for (int row = W_HEIGHT - 1; row >= 0; --row) {
 			for (int col = 0; col < W_WIDTH; ++col) {
 				Color pxColor(0,0,0);
 				for(int s = 0; s < currSamples; ++s){
-					Ray ray = camera.generateCameraRay(col, row);
+					double u = static_cast<double>(col + (std::rand() / RAND_MAX + 1)) / static_cast<double>(W_WIDTH - 1);
+					double v = static_cast<double>(row + (std::rand() / RAND_MAX + 1)) / static_cast<double>(W_HEIGHT - 1);
+					Ray ray = camera.generateCameraRay(u, v);
 					pxColor += trace(ray, currMaxBounces);
 				}
 				pxColor = pxColor / static_cast<double>(currSamples);
@@ -129,19 +131,14 @@ bool Renderer::start() {
 			}
 		}
 
-		if ((now - lastFrameTime) >= fpsLimit)
-		{
-			glBindTexture(GL_TEXTURE_2D, this->texture);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, W_WIDTH, W_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->frameBuffer);
-			glClear(GL_COLOR_BUFFER_BIT);
-			glBindVertexArray(this->VAO);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-			glfwSwapBuffers(this->window);
-			std::cout << "Last frame in: " << (now - lastFrameTime) <<std::endl;
-			lastFrameTime = now;
-		}
-		// set lastUpdateTime every iteration
-		lastUpdateTime = now;
+		glBindTexture(GL_TEXTURE_2D, this->texture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, W_WIDTH, W_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->frameBuffer);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glBindVertexArray(this->VAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glfwSwapBuffers(this->window);
+		std::cout << "Last frame in: " << (glfwGetTime() - lastFrameTime) <<std::endl;
+
 		currSamples = samples;
 		currMaxBounces = maxBounces;
 	}

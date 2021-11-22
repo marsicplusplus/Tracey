@@ -5,9 +5,7 @@ Camera::Camera(glm::dvec3 origin, glm::dvec3 dir, glm::dvec3 up, double fov) : p
 	updateVectors();
 }
 
-Ray Camera::generateCameraRay(int x, int y){
-	double u = static_cast<double>(x) / static_cast<double>(W_WIDTH - 1);
-	double v = static_cast<double>(y) / static_cast<double>(W_HEIGHT - 1);
+Ray Camera::generateCameraRay(double u, double v){
 	glm::dvec3 dir = llCorner + u*horizontal + v*vertical - position;
 	Ray ray(position, dir);
 	return ray;
