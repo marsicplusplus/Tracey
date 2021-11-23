@@ -29,14 +29,19 @@ int main(int argc, char *args[]){
 	}
 
 	OptionsMap::Instance()->printOptions();
+	std::shared_ptr<Texture> checkered = std::make_shared<Checkered>();
+	MaterialPtr checkeredMat = std::make_shared<Diffuse>(checkered);
 
 	Renderer renderer("TraceyGL");
 
 	ScenePtr scene = std::make_shared<Scene>();
 	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.6, 0.0, -1.5}, 0.4, std::make_shared<Metal>(Color(1.0, 1.0, 0.6), 0.2)));
 	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, 0.0, -1.0}, 0.5, std::make_shared<Diffuse>(Color(1.0, 0.0, 0.0))));
-	scene->addHittable(std::make_shared<ZXPlane>(-0.5, glm::dvec4(-10.0, 10.0, -10.0, 10.0), std::make_shared<Diffuse>(std::make_shared<Checkered>())));
-	scene->setCamera(std::make_shared<Camera>(glm::dvec3{0.7, 0.4, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 90));
+
+	scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, -0.55, 0.0), glm::dvec3(0.0, 1.0, 0.0), checkeredMat));
+	scene->addHittable(std::make_shared<Plane>(glm::dvec3(1.0, 0.0, 0.0), glm::dvec3(-1.0, 0.0, 0.0), checkeredMat));
+
+	scene->setCamera(std::make_shared<Camera>(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 60));
 
 	renderer.setScene(scene);
 	renderer.init();
