@@ -11,7 +11,7 @@
 
 class Renderer{
 	public:
-		Renderer(const std::string &_title) : title{_title}, pool{4} {};
+		Renderer(const std::string &_title) : title{_title}, pool{std::thread::hardware_concurrency()}, isBufferInvalid(true){};
 		inline ~Renderer() {
 			glfwDestroyWindow(window);
 		}
@@ -23,6 +23,7 @@ class Renderer{
 	private:
 		static void putPixel(uint32_t fb[], int idx, Color &color);
 		static Color trace(Ray &ray, int bounces, ScenePtr scene, std::mt19937 &gen);
+		void handleInput();
 
 		GLFWwindow *window;
 		std::string title;
@@ -32,6 +33,7 @@ class Renderer{
 		unsigned int texture;
 		ScenePtr scene;
 		ThreadPool pool;
+		bool isBufferInvalid;
 };
 
 #endif

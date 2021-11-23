@@ -33,14 +33,14 @@ class ThreadPool {
 inline std::future<void> ThreadPool::queue(std::function<void(std::mt19937&)>&& f) {
 	std::packaged_task<void(std::mt19937&)> p(f);
 
-	auto r=p.get_future(); // get the return value before we hand off the task
+	auto r=p.get_future(); 
 	{
 		std::unique_lock<std::mutex> l(mutex);
-		tasks.emplace_back(std::move(p)); // store the task<R()> as a task<void()>
+		tasks.emplace_back(std::move(p)); 
 	}
-	cond.notify_one(); // wake a thread to work on the task
+	cond.notify_one();
 
-	return r; // return the future result of the task
+	return r;
 }
 
 inline ThreadPool::ThreadPool(std::size_t n) : stop(false){

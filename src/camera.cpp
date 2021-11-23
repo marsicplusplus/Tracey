@@ -1,7 +1,10 @@
 #include "camera.hpp"
+#include "GLFW/glfw3.h"
+#include "input_manager.hpp"
 #include "defs.hpp"
 
 Camera::Camera(glm::dvec3 origin, glm::dvec3 dir, glm::dvec3 up, double fov) : position{origin}, direction{dir}, up{up}, fov{glm::radians(fov)} {
+	this->aspectRatio = static_cast<double>(W_WIDTH)/static_cast<double>(W_HEIGHT);
 	updateVectors();
 }
 
@@ -17,7 +20,6 @@ void Camera::setPosition(glm::dvec3 pos) {
 }
 
 void Camera::updateVectors(){
-	this->aspectRatio = static_cast<double>(W_WIDTH)/static_cast<double>(W_HEIGHT);
 	double h = tan(fov/2.0);
 	this->viewportHeight = 2.0 * h;
 	this->viewportWidth = this->aspectRatio * this->viewportHeight;
@@ -27,4 +29,10 @@ void Camera::updateVectors(){
 	horizontal = viewportWidth * u;
 	vertical = viewportHeight * v;
 	this->llCorner = this->position - this->horizontal/2.0 - this->vertical/2.0 - w;
+}
+
+bool Camera::update(double dt){
+	const double speed = 0.8;
+	bool ret = false;
+	return ret;
 }

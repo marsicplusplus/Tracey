@@ -3,10 +3,12 @@
 #include "glm/gtc/random.hpp"
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
+#include "input_manager.hpp"
 #include "options_manager.hpp"
 #include "renderer.hpp"
 #include <algorithm>
 #include <iostream>
+#include <stdexcept>
 
 namespace{
 	const char *vertexShaderSource = "#version 450 core\n"
@@ -38,6 +40,7 @@ bool Renderer::init(){
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 	CHECK_ERROR(this->window = glfwCreateWindow(W_WIDTH, W_HEIGHT, title.c_str(), NULL, NULL), "ERROR::Renderer::initSystems > could not create GLFW3 window\n", false)
 
@@ -101,62 +104,83 @@ bool Renderer::init(){
 }
 
 bool Renderer::start() {
+	const int tWidth = OptionsMap::Instance()->getOption(Options::TILE_WIDTH);
+	const int tHeight = OptionsMap::Instance()->getOption(Options::TILE_HEIGHT);
+	if(W_WIDTH % tWidth != 0 || W_HEIGHT % tHeight != 0){
+		throw new std::invalid_argument("Window width and height must be multiples of tiles size!");
+	}
+
 	glClearColor(0,0,0,0);
-	Camera camera(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 45);
+
 	const int maxBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
 	const int samples = OptionsMap::Instance()->getOption(Options::SAMPLES);
-
 	const double fpsLimit = 1.0 / static_cast<double>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
 	double lastUpdateTime = 0;  // number of seconds since the last loop
 
 	int currMaxBounces = 5;
 	int currSamples = 2;
-	const int tileWidth = W_WIDTH / V_TILES;
-	const int tileHeight = W_HEIGHT / H_TILES;
+	const int horizontalTiles = W_WIDTH / tWidth;
+	const int verticalTiles = W_HEIGHT / tHeight;
+
 	while(!glfwWindowShouldClose(this->window)){
 		double now = glfwGetTime();
 		glfwPollEvents();
+		handleInput();
 
-		std::vector<std::future<void>> futures;
-		for(int tileRow = 0; tileRow < V_TILES; ++tileRow){
-			for(int tileCol = 0; tileCol < H_TILES; ++tileCol){
-				/* Launch thread */
-				futures.push_back(pool.queue([&, tileRow, tileCol](std::mt19937& gen){
-					for (int row = 0; row < tileHeight; ++row) {
-						for (int col = 0; col < tileWidth; ++col) {
-							Color pxColor(0,0,0);
-							int x = col + tileWidth * tileCol;
-							int y = row + tileHeight * tileRow;
-							for(int s = 0; s < currSamples; ++s){
-								double u = static_cast<double>(x + randomDouble(gen, 0.0,1.0)) / static_cast<double>(W_WIDTH - 1);
-								double v = static_cast<double>(y + randomDouble(gen, 0.0,1.0)) / static_cast<double>(W_HEIGHT - 1);
+		if(scene->update(lastUpdateTime)){
+			isBufferInvalid = true;
+			currMaxBounces = 5;
+			currSamples = 2;
+		}
 
-								Ray ray = camera.generateCameraRay(u, v);
-								pxColor += trace(ray, currMaxBounces, scene, gen);
-							}
-							pxColor = pxColor / static_cast<double>(currSamples);
-							putPixel(frameBuffer, W_WIDTH * (y) + (x), pxColor);
-						}
-					}
-				}));
+		if(isBufferInvalid){
+			std::vector<std::future<void>> futures;
+			for(int tileRow = 0; tileRow < verticalTiles; ++tileRow){
+				for(int tileCol = 0; tileCol < horizontalTiles; ++tileCol){
+					/* Launch thread */
+					futures.push_back(pool.queue([&, tileRow, tileCol](std::mt19937& gen){
+										for (int row = 0; row < tHeight; ++row) {
+											for (int col = 0; col < tWidth; ++col) {
+												Color pxColor(0,0,0);
+												int x = col + tWidth * tileCol;
+												int y = row + tHeight * tileRow;
+												for(int s = 0; s < currSamples; ++s){
+												double u = static_cast<double>(x + randomDouble(gen, 0.0,1.0)) / static_cast<double>(W_WIDTH - 1);
+												double v = static_cast<double>(y + randomDouble(gen, 0.0,1.0)) / static_cast<double>(W_HEIGHT - 1);
+
+												CameraPtr cam = scene->getCamera();
+												if(cam){
+													Ray ray = cam->generateCameraRay(u, v);
+													pxColor += trace(ray, currMaxBounces, scene, gen);
+												}
+											}
+										pxColor = pxColor / static_cast<double>(currSamples);
+										putPixel(frameBuffer, W_WIDTH * (y) + (x), pxColor);
+									}
+								}
+							}));
+				}
 			}
+
+			for(auto &f : futures){
+				f.get();
+			}
+			if(currSamples == samples && currMaxBounces == maxBounces){
+				isBufferInvalid = false;
+			}
+			lastUpdateTime = glfwGetTime() - now;
+			std::cout << "Last frame in: " << lastUpdateTime << std::endl;
+
+			currSamples = std::clamp(currSamples + 5, 1, samples);
+			currMaxBounces = std::clamp(maxBounces + 5, 2, maxBounces);
 		}
 
-		for(auto &f : futures){
-			f.get();
-		}
 		glBindTexture(GL_TEXTURE_2D, this->texture);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, W_WIDTH, W_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->frameBuffer);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glBindVertexArray(this->VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glfwSwapBuffers(this->window);
-
-		lastUpdateTime = glfwGetTime() - now;
-		std::cout << "Last frame in: " << lastUpdateTime << std::endl;
-
-		currSamples = samples;
-		currMaxBounces = maxBounces;
 	}
 
 	glDeleteShader(this->shader);
@@ -189,4 +213,13 @@ void Renderer::putPixel(uint32_t fb[], int idx, Color& color){
 
 void Renderer::setScene(ScenePtr scene){
 	this->scene = scene;
+}
+
+void Renderer::handleInput(){
+	InputManager::Instance()->setKeyValue(GLFW_KEY_D, glfwGetKey(this->window, GLFW_KEY_D) == GLFW_PRESS);
+	InputManager::Instance()->setKeyValue(GLFW_KEY_A, glfwGetKey(this->window, GLFW_KEY_A) == GLFW_PRESS);
+	InputManager::Instance()->setKeyValue(GLFW_KEY_W, glfwGetKey(this->window, GLFW_KEY_W) == GLFW_PRESS);
+	InputManager::Instance()->setKeyValue(GLFW_KEY_S, glfwGetKey(this->window, GLFW_KEY_S) == GLFW_PRESS);
+	InputManager::Instance()->setKeyValue(GLFW_KEY_Q, glfwGetKey(this->window, GLFW_KEY_Q) == GLFW_PRESS);
+	InputManager::Instance()->setKeyValue(GLFW_KEY_E, glfwGetKey(this->window, GLFW_KEY_E) == GLFW_PRESS);
 }

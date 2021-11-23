@@ -1,5 +1,8 @@
 #include "scene.hpp"
 
+#include "GLFW/glfw3.h"
+#include "input_manager.hpp"
+
 Scene::Scene(){}
 Scene::Scene(std::string sceneFile){
 	// TODO: Parse file
@@ -23,4 +26,16 @@ bool Scene::traverse(const Ray &ray, double tMin, double tMax, HitRecord &rec) c
 		}
 	}
 	return hasHit;
+}
+
+void Scene::setCamera(CameraPtr camera){
+	currentCamera = camera;
+}
+
+CameraPtr Scene::getCamera() const {
+	return currentCamera;
+}
+
+bool Scene::update(double dt){
+	return currentCamera->update(dt);
 }

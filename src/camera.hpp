@@ -4,6 +4,8 @@
 #include "glm/vec3.hpp"
 #include "ray.hpp"
 
+#include <memory>
+
 class Camera{
 	public:
 		Camera(glm::dvec3 origin, glm::dvec3 dir, glm::dvec3 up, double fov);
@@ -11,6 +13,8 @@ class Camera{
 
 		void setPosition(glm::dvec3 pos);
 		inline glm::dvec3 getPosition() const {return position;}
+		bool update(double dt);
+
 	private:
 		void updateVectors();
 
@@ -26,5 +30,7 @@ class Camera{
 		double viewportWidth;
 		double viewportHeight;
 };
+
+typedef std::shared_ptr<Camera> CameraPtr;
 
 #endif
