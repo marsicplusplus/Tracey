@@ -1,9 +1,6 @@
 #ifndef __SPHERE_HPP__
 #define __SPHERE_HPP__
 
-#define _USE_MATH_DEFINES
-#include "math.h"
-
 #include "defs.hpp"
 #include "glm/vec3.hpp"
 #include "hittables/hittable.hpp"
@@ -52,9 +49,9 @@ class Sphere : public Hittable {
 
 		inline void getUV(const Ray &ray, HitRecord &rec) const override {
 			double theta = std::acos(-rec.p.y);
-			double phi = std::atan2(-rec.p.z, rec.p.x) + M_PI;
-			rec.u = static_cast<double>(phi)/static_cast<double>(2*M_PI);
-			rec.v = static_cast<double>(theta)/static_cast<double>(M_PI);
+			double phi = std::atan2(-rec.p.z, rec.p.x) + PI;
+			rec.u = static_cast<double>(phi)/static_cast<double>(2*PI);
+			rec.v = static_cast<double>(theta)/static_cast<double>(PI);
 		}
 	private:
 		glm::dvec3 center;

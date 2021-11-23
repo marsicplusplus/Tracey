@@ -165,12 +165,12 @@ bool Renderer::start() {
 			for(auto &f : futures){
 				f.get();
 			}
-			if(currSamples == samples && currMaxBounces == maxBounces){
-				isBufferInvalid = false;
-			}
+			if(currSamples == samples && currMaxBounces == maxBounces) isBufferInvalid = false;
 			lastUpdateTime = glfwGetTime() - now;
-			std::cout << "Last frame in: " << lastUpdateTime << std::endl;
-
+			std::cout << std::endl << "Last frame info:" <<std::endl;
+			std::cout << lastUpdateTime << "ms" << std::endl;
+			std::cout << currSamples << " samples per pixel" << std::endl;
+			std::cout << currMaxBounces << " maximum number of ray bounces" << std::endl;
 			currSamples = std::clamp(currSamples + 5, 1, samples);
 			currMaxBounces = std::clamp(maxBounces + 5, 2, maxBounces);
 		}
