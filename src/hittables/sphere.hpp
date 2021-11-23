@@ -1,6 +1,9 @@
 #ifndef __SPHERE_HPP__
 #define __SPHERE_HPP__
 
+#define _USE_MATH_DEFINES
+#include "math.h"
+
 #include "defs.hpp"
 #include "glm/vec3.hpp"
 #include "hittables/hittable.hpp"
