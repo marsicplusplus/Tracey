@@ -11,7 +11,7 @@
 
 class Renderer{
 	public:
-		Renderer(const std::string &_title) : title{_title}, pool{8} {};
+		Renderer(const std::string &_title) : title{_title}, pool{4} {};
 		inline ~Renderer() {
 			glfwDestroyWindow(window);
 		}
