@@ -19,8 +19,9 @@ class Sphere : public Hittable {
 				rec.t = t;
 				rec.p = ray.at(t);
 				rec.material = mat;
-				glm::vec3 normal = glm::normalize(rec.p - center) / radius;
+				glm::vec3 normal = (rec.p - center) / radius;
 				rec.setFaceNormal(ray, normal);
+				getUV(rec);
 				return true;
 			}
 			return false;
@@ -47,12 +48,13 @@ class Sphere : public Hittable {
 			*/
 		}
 
-		inline void getUV(const Ray &ray, HitRecord &rec) const override {
-			double theta = std::acos(-rec.p.y);
-			double phi = std::atan2(-rec.p.z, rec.p.x) + PI;
+		inline void getUV(HitRecord &rec) const {
+			double theta = std::acos(-rec.normal.y);
+			double phi = std::atan2(-rec.normal.z, rec.normal.x) + PI;
 			rec.u = static_cast<double>(phi)/static_cast<double>(2*PI);
 			rec.v = static_cast<double>(theta)/static_cast<double>(PI);
 		}
+
 	private:
 		glm::dvec3 center;
 		double radius;

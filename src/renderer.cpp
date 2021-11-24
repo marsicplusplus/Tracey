@@ -168,7 +168,7 @@ bool Renderer::start() {
 			if(currSamples == samples && currMaxBounces == maxBounces) isBufferInvalid = false;
 			lastUpdateTime = glfwGetTime() - now;
 			std::cout << std::endl << "Last frame info:" <<std::endl;
-			std::cout << lastUpdateTime << "ms" << std::endl;
+			std::cout << lastUpdateTime << "s" << std::endl;
 			std::cout << currSamples << " samples per pixel" << std::endl;
 			std::cout << currMaxBounces << " maximum number of ray bounces" << std::endl;
 			currSamples = std::clamp(currSamples + 5, 1, samples);

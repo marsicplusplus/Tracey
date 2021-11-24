@@ -20,14 +20,14 @@ class Plane : public Hittable {
 					rec.setFaceNormal(ray, norm);
 					rec.material = mat;
 					rec.p = ray.at(t);
-					getUV(ray, rec);
+					getUV(rec);
 					return true;
 				}
 			}
 			return false;
 		}
 
-		inline void getUV(const Ray &ray, HitRecord &rec) const override {
+		inline void getUV(HitRecord &rec) const {
 			glm::dvec3 uAxis = glm::dvec3(1,0,0);
 			glm::dvec3 vAxis = glm::dvec3(0,0,-1);
 
@@ -54,16 +54,13 @@ class ZXRect : public Hittable {
 			rec.setFaceNormal(ray, glm::dvec3(0.0, 1.0, 0.0));
 			rec.material = mat;
 			rec.p = ray.at(t);
-			getUV(ray,rec);
+			getUV(rec);
 			return true;
 		}
 
-		inline void getUV(const Ray &ray, HitRecord &rec) const override {
-			double x = ray.getOrigin().x + rec.t * ray.getDirection().x;
-			double z = ray.getOrigin().z + rec.t * ray.getDirection().z;
-
-			rec.u = (x - size.x)/static_cast<double>(size.y - size.x);
-			rec.v = (z - size.z)/static_cast<double>(size.z - size.w);
+		inline void getUV(HitRecord &rec) const {
+			rec.u = (rec.p.x - size.x)/static_cast<double>(size.y - size.x);
+			rec.v = (rec.p.z - size.z)/static_cast<double>(size.z - size.w);
 		}
 
 	private:

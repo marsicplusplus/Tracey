@@ -8,7 +8,6 @@
 class Hittable {
 	public:
 		virtual bool hit(const Ray &ray, double tMin, double tMax, HitRecord &rec) const = 0;
-		virtual void getUV(const Ray &ray, HitRecord &rec) const = 0;
 };
 
 typedef std::shared_ptr<Hittable> HittablePtr;
