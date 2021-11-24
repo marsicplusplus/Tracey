@@ -13,6 +13,10 @@ void Scene::addHittable(HittablePtr hittable){
 	hittables.push_back(hittable);
 }
 
+void Scene::addLight(LightObjectPtr light){
+	lights.push_back(light);
+}
+
 bool Scene::traverse(const Ray &ray, double tMin, double tMax, HitRecord &rec) const {
 	HitRecord tmp;
 	bool hasHit = false;
@@ -38,4 +42,17 @@ CameraPtr Scene::getCamera() const {
 
 bool Scene::update(double dt){
 	return currentCamera->update(dt);
+}
+
+Color Scene::traceLights(HitRecord &rec) const {
+	Color i(0.0);
+	for(auto &light : lights){
+		double tMax;
+		Ray ray = light->getRay(rec, tMax);
+		HitRecord shadow;
+		if(!traverse(ray, 0.0001, INF, shadow)){
+			i+=light->getLight(rec, ray); 
+		}
+	}
+	return i;
 }

@@ -12,9 +12,7 @@
 class Renderer{
 	public:
 		Renderer(const std::string &_title) : title{_title}, pool{std::thread::hardware_concurrency()}, isBufferInvalid(true){};
-		inline ~Renderer() {
-			glfwDestroyWindow(window);
-		}
+		~Renderer();
 
 		bool init();
 		bool start();

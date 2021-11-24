@@ -1,12 +1,13 @@
 #ifndef __DEFS_HPP__
 #define __DEFS_HPP__
 
+#include "material.hpp"
 #include "glm/vec3.hpp"
 #include "ray.hpp"
-#include "materials/material.hpp"
 #include <random>
 #include <cmath>
 #include <limits>
+#include <memory>
 
 #define W_WIDTH 640
 #define W_HEIGHT 384
@@ -20,13 +21,14 @@ const double INF = std::numeric_limits<double>::infinity();
 }
 
 typedef glm::dvec3 Color;
+class Material;
 
 struct HitRecord {
 	glm::dvec3 p;
 	glm::dvec3 normal;
 	double t;
 	bool frontFace;
-	MaterialPtr material;
+	std::shared_ptr<Material> material;
 	double u;
 	double v;
 

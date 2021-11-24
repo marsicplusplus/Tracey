@@ -1,9 +1,9 @@
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
-#include "materials/diffuse.hpp"
-#include "materials/metal.hpp"
+#include "material.hpp"
 #include "textures/checkered.hpp"
 #include "textures/image_texture.hpp"
+#include "light_object.hpp"
 #include "renderer.hpp"
 #include "options_manager.hpp"
 #include <cstring>
@@ -30,25 +30,27 @@ int main(int argc, char *args[]){
 	}
 
 	OptionsMap::Instance()->printOptions();
-	MaterialPtr woodMat = std::make_shared<Diffuse>(std::make_shared<ImageTexture>("../Textures/parque.png"));
-	MaterialPtr earthMat = std::make_shared<Diffuse>(std::make_shared<ImageTexture>("../Textures/earthmap.jpg"));
-	MaterialPtr checkeredMat = std::make_shared<Diffuse>(std::make_shared<Checkered>());
-	MaterialPtr redDiffuse = std::make_shared<Diffuse>(Color(1.0,0.0,0.0));
-	MaterialPtr greenMetal = std::make_shared<Metal>(Color(0.0,1.0,0.0),0.4);
+	MaterialPtr woodMat = std::make_shared<Material>(Materials::Diffuse, std::make_shared<ImageTexture>("../Textures/parque.png"));
+	MaterialPtr earthMat = std::make_shared<Material>(Materials::Diffuse, std::make_shared<ImageTexture>("../Textures/earthmap.jpg"));
+	MaterialPtr checkeredMat = std::make_shared<Material>(Materials::Diffuse, std::make_shared<Checkered>());
+	MaterialPtr redDiffuse = std::make_shared<Material>(Materials::Diffuse, Color(1.0,0.0,0.0));
+	MaterialPtr greenDiffuse = std::make_shared<Material>(Materials::Diffuse, Color(0.0,1.0,0.0));
+	MaterialPtr whiteMirror = std::make_shared<Material>(Materials::Mirror, Color(1.0));
 
 	Renderer renderer("TraceyGL");
 
 	ScenePtr scene = std::make_shared<Scene>();
-	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.6, 0.0, -1.5}, 0.4, greenMetal));
+	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.6, 0.0, -1.5}, 0.4, greenDiffuse));
 	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, 0.0, -1.0}, 0.5, earthMat));
-	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{-1.0, 0.0, -1.0}, 0.4, redDiffuse));
-	scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, -0.55, 0.0), glm::dvec3(0.0, 1.0, 0.0), woodMat));
-	scene->addHittable(std::make_shared<Plane>(glm::dvec3(1.0, 0.0, 0.0), glm::normalize(glm::dvec3(-1.0, 0.0, 0.0)), checkeredMat));
+	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{-1.0, 0.0, -1.0}, 0.4, whiteMirror));
+	scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, -0.5, 0.0), glm::normalize(glm::dvec3(0.0, 1.0, 0.0)), checkeredMat));
+
+	scene->addLight(std::make_shared<PointLight>(glm::dvec3(3.0, 1.0, -2.0), 15.0, glm::dvec3(0.8,0.8,0.6)));
+	scene->addLight(std::make_shared<PointLight>(glm::dvec3(-3.0, 1.0, -2.0), 25.0, glm::dvec3(1,1,1)));
+	scene->addLight(std::make_shared<DirectionalLight>(glm::dvec3(0.0, 0.4, 1.0), 25.0, glm::dvec3(0.8,0.8,0.6)));
+
 	scene->setCamera(std::make_shared<Camera>(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 60));
 
-	//scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, 0.0, 0.0}, 2, earthMat));
-	//scene->setCamera(std::make_shared<Camera>(glm::dvec3{13.0, 2.0, 3.0}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 20));
-	
 	renderer.setScene(scene);
 	renderer.init();
 	renderer.start();

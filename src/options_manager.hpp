@@ -5,15 +5,13 @@
 #include <unordered_map>
 #include <iostream>
 
-namespace Options{
-	enum Options {
-		MAX_BOUNCES,
-		SAMPLES,
-		FPS_LIMIT,
-		TILE_WIDTH,
-		TILE_HEIGHT,
-	};
-}
+enum class Options {
+	MAX_BOUNCES,
+	SAMPLES,
+	FPS_LIMIT,
+	TILE_WIDTH,
+	TILE_HEIGHT,
+};
 
 class OptionsMap{
 	public:
@@ -28,11 +26,11 @@ class OptionsMap{
 			delete instance;
 		}
 
-		inline void setOption(Options::Options opt, int v){
+		inline void setOption(Options opt, int v){
 			opts[opt] = v;
 		}
 
-		inline int getOption(Options::Options opt){
+		inline int getOption(Options opt){
 			return opts[opt];
 		}
 
@@ -46,7 +44,7 @@ class OptionsMap{
 
 
 	private:
-		std::unordered_map<Options::Options, int> opts;
+		std::unordered_map<Options, int> opts;
 
 		OptionsMap(){
 			opts[Options::MAX_BOUNCES] = 10;

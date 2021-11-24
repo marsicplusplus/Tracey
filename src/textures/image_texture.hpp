@@ -33,7 +33,6 @@ inline ImageTexture::ImageTexture(std::string fp){
 
 inline ImageTexture::~ImageTexture(){
 	stbi_image_free(img);
-	delete img;
 }
 
 inline Color ImageTexture::color(double u, double v, const glm::dvec3 &p) const{

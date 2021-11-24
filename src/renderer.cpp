@@ -117,8 +117,6 @@ bool Renderer::start() {
 	const double fpsLimit = 1.0 / static_cast<double>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
 	double lastUpdateTime = 0;  // number of seconds since the last loop
 
-	int currMaxBounces = 5;
-	int currSamples = 2;
 	const int horizontalTiles = W_WIDTH / tWidth;
 	const int verticalTiles = W_HEIGHT / tHeight;
 
@@ -129,8 +127,6 @@ bool Renderer::start() {
 
 		if(scene->update(lastUpdateTime)){
 			isBufferInvalid = true;
-			currMaxBounces = 5;
-			currSamples = 2;
 		}
 
 		if(isBufferInvalid){
@@ -144,17 +140,17 @@ bool Renderer::start() {
 												Color pxColor(0,0,0);
 												int x = col + tWidth * tileCol;
 												int y = row + tHeight * tileRow;
-												for(int s = 0; s < currSamples; ++s){
+												for(int s = 0; s < samples; ++s){
 												double u = static_cast<double>(x + randomDouble(gen, 0.0,1.0)) / static_cast<double>(W_WIDTH - 1);
 												double v = static_cast<double>(y + randomDouble(gen, 0.0,1.0)) / static_cast<double>(W_HEIGHT - 1);
 
 												CameraPtr cam = scene->getCamera();
 												if(cam){
 													Ray ray = cam->generateCameraRay(u, v);
-													pxColor += trace(ray, currMaxBounces, scene, gen);
+													pxColor += trace(ray, maxBounces, scene, gen);
 												}
 											}
-										pxColor = pxColor / static_cast<double>(currSamples);
+										pxColor = pxColor / static_cast<double>(samples);
 										putPixel(frameBuffer, W_WIDTH * (y) + (x), pxColor);
 									}
 								}
@@ -165,14 +161,12 @@ bool Renderer::start() {
 			for(auto &f : futures){
 				f.get();
 			}
-			if(currSamples == samples && currMaxBounces == maxBounces) isBufferInvalid = false;
 			lastUpdateTime = glfwGetTime() - now;
 			std::cout << std::endl << "Last frame info:" <<std::endl;
 			std::cout << lastUpdateTime << "s" << std::endl;
-			std::cout << currSamples << " samples per pixel" << std::endl;
-			std::cout << currMaxBounces << " maximum number of ray bounces" << std::endl;
-			currSamples = std::clamp(currSamples + 5, 1, samples);
-			currMaxBounces = std::clamp(maxBounces + 5, 2, maxBounces);
+			std::cout << samples << " samples per pixel" << std::endl;
+			std::cout << maxBounces << " maximum number of ray bounces" << std::endl;
+			isBufferInvalid = false;
 		}
 
 		glBindTexture(GL_TEXTURE_2D, this->texture);
@@ -183,9 +177,6 @@ bool Renderer::start() {
 		glfwSwapBuffers(this->window);
 	}
 
-	glDeleteShader(this->shader);
-	glDeleteBuffers(1, &this->VBO);
-	glDeleteVertexArrays(1, &this->VAO);
 	return true;
 }
 
@@ -196,12 +187,17 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene, std::mt19937 
 	if(scene->traverse(ray, 0.001, INF, hr)){
 		Ray scattered;
 		Color attenuation;
-		if(hr.material->scatter(ray, hr, attenuation, scattered, gen))
-			return attenuation * trace(scattered, bounces - 1, scene, gen);
+		if(hr.material->getType() == Materials::Diffuse)
+			return hr.material->getAlbedo(hr) * scene->traceLights(hr);
+		if(hr.material->getType() == Materials::Mirror){
+			Ray reflected(hr.p, ray.getDirection() - 2*glm::dot(ray.getDirection(), hr.normal)*hr.normal);
+			return hr.material->getAlbedo(hr) * trace(reflected, bounces - 1, scene, gen);
+		}
 		return Color{0,0,0};
 	}
 	double t = 0.5*(ray.getDirection().y + 1.0);
-	return (1.0-t)*Color(1.0, 1.0, 1.0) + t*Color(0.5, 0.7, 1.0);
+	//return (1.0-t)*Color(1.0, 1.0, 1.0) + t*Color(0.5, 0.7, 1.0);
+	return Color(0,0,0);
 }
 
 void Renderer::putPixel(uint32_t fb[], int idx, Color& color){
@@ -223,3 +219,13 @@ void Renderer::handleInput(){
 	InputManager::Instance()->setKeyValue(GLFW_KEY_Q, glfwGetKey(this->window, GLFW_KEY_Q) == GLFW_PRESS);
 	InputManager::Instance()->setKeyValue(GLFW_KEY_E, glfwGetKey(this->window, GLFW_KEY_E) == GLFW_PRESS);
 }
+
+Renderer::~Renderer() {
+	glfwDestroyWindow(window);
+	pool.cancel_pending();
+	glDeleteShader(this->shader);
+	glDeleteBuffers(1, &this->VBO);
+	glDeleteVertexArrays(1, &this->VAO);
+}
+
+

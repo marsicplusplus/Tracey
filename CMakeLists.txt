@@ -30,6 +30,7 @@ set( SRC
 	 src/camera.cpp
 	 src/scene.cpp
 	 src/options_manager.cpp
+	 src/material.cpp
 	 src/input_manager.cpp
 )
 
