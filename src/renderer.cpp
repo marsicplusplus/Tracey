@@ -201,9 +201,9 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene, std::mt19937 
 }
 
 void Renderer::putPixel(uint32_t fb[], int idx, Color& color){
-	unsigned char r = static_cast<unsigned char>(std::clamp(color.r, 0.0, 0.999) * 255.999);
-	unsigned char g = static_cast<unsigned char>(std::clamp(color.g, 0.0, 0.999) * 255.999);
-	unsigned char b = static_cast<unsigned char>(std::clamp(color.b, 0.0, 0.999) * 255.999);
+	unsigned char r = static_cast<unsigned char>(std::clamp(sqrt(color.r), 0.0, 0.999) * 255.999);
+	unsigned char g = static_cast<unsigned char>(std::clamp(sqrt(color.g), 0.0, 0.999) * 255.999);
+	unsigned char b = static_cast<unsigned char>(std::clamp(sqrt(color.b), 0.0, 0.999) * 255.999);
 	fb[idx] = r << 16 | g << 8 | b << 0;
 }
 

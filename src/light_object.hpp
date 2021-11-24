@@ -45,6 +45,18 @@ class DirectionalLight : public LightObject {
 		glm::dvec3 direction;
 };
 
+class AmbientLight : public LightObject {
+	public:
+		AmbientLight(double i, Color c) : LightObject(i,c) {}
+		virtual Ray getRay(const HitRecord &rec, double &tMax) const override {
+			Ray ray;
+			return ray;
+		}
+		virtual inline Color getLight(const HitRecord &rec, Ray& ray) const override {
+			return intensity * color;
+		}
+};
+
 typedef std::shared_ptr<LightObject> LightObjectPtr;
 
 #endif

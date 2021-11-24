@@ -44,10 +44,12 @@ int main(int argc, char *args[]){
 	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, 0.0, -1.0}, 0.5, earthMat));
 	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{-1.0, 0.0, -1.0}, 0.4, whiteMirror));
 	scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, -0.5, 0.0), glm::normalize(glm::dvec3(0.0, 1.0, 0.0)), checkeredMat));
+	scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, 0.0, -2.0), glm::normalize(glm::dvec3(0.0, 0.0, 1.0)), woodMat));
 
-	scene->addLight(std::make_shared<PointLight>(glm::dvec3(3.0, 1.0, -2.0), 15.0, glm::dvec3(0.8,0.8,0.6)));
-	scene->addLight(std::make_shared<PointLight>(glm::dvec3(-3.0, 1.0, -2.0), 25.0, glm::dvec3(1,1,1)));
-	scene->addLight(std::make_shared<DirectionalLight>(glm::dvec3(0.0, 0.4, 1.0), 25.0, glm::dvec3(0.8,0.8,0.6)));
+	scene->addLight(std::make_shared<PointLight>(glm::dvec3(3.0, 1.0, -2.0), 10.0, glm::dvec3(0.8,0.8,0.6)));
+	scene->addLight(std::make_shared<PointLight>(glm::dvec3(-3.0, 1.0, -2.0), 20.0, glm::dvec3(1,1,1)));
+	scene->addLight(std::make_shared<DirectionalLight>(glm::dvec3(0.0, 0.4, 1.0), 20.0, glm::dvec3(0.8,0.8,0.6)));
+	scene->addLight(std::make_shared<AmbientLight>(2.0, glm::dvec3(0.2,0.2,0.6)));
 
 	scene->setCamera(std::make_shared<Camera>(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 60));
 
