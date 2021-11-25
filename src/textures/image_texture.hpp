@@ -2,7 +2,6 @@
 #define __IMAGE_TEXTURE_HPP__
 
 #include "textures/texture.hpp"
-#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include <algorithm>
