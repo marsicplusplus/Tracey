@@ -47,12 +47,12 @@ int main(int argc, char *args[]){
 	scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, -0.5, 0.0), glm::normalize(glm::dvec3(0.0, 1.0, 0.0)), checkeredMat));
 
 	/* Lights */
-	scene->addLight(std::make_shared<PointLight>(glm::dvec3(-0.0, 0.0, -2.0), 10.2, glm::dvec3(1,1,1)));
+	scene->addLight(std::make_shared<PointLight>(glm::dvec3(3.0, 1.0, -2.0), 10.2, glm::dvec3(1,1,1)));
 	scene->addLight(std::make_shared<PointLight>(glm::dvec3(-3.0, 1.0, -2.0), 10.2, glm::dvec3(1,1,1)));
 	scene->addLight(std::make_shared<DirectionalLight>(glm::dvec3(0.0, -1.0, 0.0), 15.0, glm::dvec3(0.8,0.8,0.6)));
 
 	/* Camera */
-	scene->setCamera(std::make_shared<Camera>(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 60));
+	scene->setCamera(std::make_shared<Camera>(glm::dvec3{0.3, 0.5, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 90));
 
 	Renderer renderer("TraceyGL");
 	renderer.setScene(scene);

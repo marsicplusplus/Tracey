@@ -195,7 +195,7 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene, std::mt19937 
 		}
 		return Color{0,0,0};
 	}
-	return Color(0,0,0);
+	return Color(0.3,0.8,0.2);
 }
 
 void Renderer::putPixel(uint32_t fb[], int idx, Color& color){
