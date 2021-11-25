@@ -13,17 +13,18 @@ class LightObject {
 		virtual inline Color getLight(const HitRecord &rec, Ray& ray, glm::dvec3 cameraPos) const {
 			Color i(0.0);
 			double nd = glm::dot(rec.normal,ray.getDirection());
-			if( nd>0 )
+			if( nd>0 ){
 				i += color * intensity * nd/static_cast<double>(rec.normal.length() * ray.getDirection().length());
+			}
 			if(rec.material->getSpecular() > 0){
 				glm::dvec3 R = 2.0 * rec.normal * glm::dot(rec.normal, ray.getDirection()) - ray.getDirection();
 					double rv = glm::dot(R, cameraPos);
 					if (rv > 0) {
-						i += intensity * pow(rv/(glm::length(R) * glm::length(cameraPos)), rec.material->getSpecular());
+						i += intensity * pow(rv/static_cast<double>(glm::length(R) * glm::length(cameraPos)), rec.material->getSpecular());
 					}
-
 			}
-			return i;
+			
+			return i*1.0/static_cast<double>(rec.t * rec.t);
 		};
 	protected:
 		double intensity;
