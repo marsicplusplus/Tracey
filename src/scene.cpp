@@ -51,7 +51,7 @@ Color Scene::traceLights(HitRecord &rec) const {
 		Ray ray = light->getRay(rec, tMax);
 		HitRecord shadow;
 		if(!traverse(ray, 0.0001, INF, shadow)){
-			i+=light->getLight(rec, ray); 
+			i+=light->getLight(rec, ray, currentCamera->getPosition()); 
 		}
 	}
 	return i;

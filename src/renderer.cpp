@@ -187,16 +187,14 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene, std::mt19937 
 	if(scene->traverse(ray, 0.001, INF, hr)){
 		Ray scattered;
 		Color attenuation;
-		if(hr.material->getType() == Materials::Diffuse)
+		if(hr.material->getReflective() == 0.0)
 			return hr.material->getAlbedo(hr) * scene->traceLights(hr);
-		if(hr.material->getType() == Materials::Mirror){
+		if(hr.material->getReflective() == 1.0){
 			Ray reflected(hr.p, ray.getDirection() - 2*glm::dot(ray.getDirection(), hr.normal)*hr.normal);
 			return hr.material->getAlbedo(hr) * trace(reflected, bounces - 1, scene, gen);
 		}
 		return Color{0,0,0};
 	}
-	double t = 0.5*(ray.getDirection().y + 1.0);
-	//return (1.0-t)*Color(1.0, 1.0, 1.0) + t*Color(0.5, 0.7, 1.0);
 	return Color(0,0,0);
 }
 

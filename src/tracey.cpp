@@ -30,29 +30,31 @@ int main(int argc, char *args[]){
 	}
 
 	OptionsMap::Instance()->printOptions();
-	MaterialPtr woodMat = std::make_shared<Material>(Materials::Diffuse, std::make_shared<ImageTexture>("../Textures/parque.png"));
-	MaterialPtr earthMat = std::make_shared<Material>(Materials::Diffuse, std::make_shared<ImageTexture>("../Textures/earthmap.jpg"));
-	MaterialPtr checkeredMat = std::make_shared<Material>(Materials::Diffuse, std::make_shared<Checkered>());
-	MaterialPtr redDiffuse = std::make_shared<Material>(Materials::Diffuse, Color(1.0,0.0,0.0));
-	MaterialPtr greenDiffuse = std::make_shared<Material>(Materials::Diffuse, Color(0.0,1.0,0.0));
-	MaterialPtr whiteMirror = std::make_shared<Material>(Materials::Mirror, Color(1.0));
 
-	Renderer renderer("TraceyGL");
+	/* Materials */
+	MaterialPtr woodMat = std::make_shared<Material>(std::make_shared<ImageTexture>("../Textures/parque.png"));
+	MaterialPtr earthMat = std::make_shared<Material>(std::make_shared<ImageTexture>("../Textures/earthmap.jpg"));
+	MaterialPtr checkeredMat = std::make_shared<Material>(std::make_shared<Checkered>());
+	MaterialPtr redDiffuse = std::make_shared<Material>(Color(1.0,0.0,0.0));
+	MaterialPtr greenMirror = std::make_shared<Material>(Color(0.0,1.0,0.0), /* reflective */ 1.0);
+	MaterialPtr whiteMirror = std::make_shared<Material>(Color(1.0), /* reflective */ 1.0);
 
 	ScenePtr scene = std::make_shared<Scene>();
-	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.6, 0.0, -1.5}, 0.4, greenDiffuse));
+	/* Hittables */
+	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.8, 0.0, -0.6}, 0.4, greenMirror));
 	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, 0.0, -1.0}, 0.5, earthMat));
 	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{-1.0, 0.0, -1.0}, 0.4, whiteMirror));
 	scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, -0.5, 0.0), glm::normalize(glm::dvec3(0.0, 1.0, 0.0)), checkeredMat));
-	scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, 0.0, -2.0), glm::normalize(glm::dvec3(0.0, 0.0, 1.0)), woodMat));
 
-	scene->addLight(std::make_shared<PointLight>(glm::dvec3(3.0, 1.0, -2.0), 10.0, glm::dvec3(0.8,0.8,0.6)));
-	scene->addLight(std::make_shared<PointLight>(glm::dvec3(-3.0, 1.0, -2.0), 20.0, glm::dvec3(1,1,1)));
-	scene->addLight(std::make_shared<DirectionalLight>(glm::dvec3(0.0, 0.4, 1.0), 20.0, glm::dvec3(0.8,0.8,0.6)));
-	scene->addLight(std::make_shared<AmbientLight>(2.0, glm::dvec3(0.2,0.2,0.6)));
+	/* Lights */
+	scene->addLight(std::make_shared<PointLight>(glm::dvec3(-0.0, 0.0, -2.0), 10.2, glm::dvec3(1,1,1)));
+	scene->addLight(std::make_shared<PointLight>(glm::dvec3(-3.0, 1.0, -2.0), 10.2, glm::dvec3(1,1,1)));
+	scene->addLight(std::make_shared<DirectionalLight>(glm::dvec3(0.0, -1.0, 0.0), 15.0, glm::dvec3(0.8,0.8,0.6)));
 
+	/* Camera */
 	scene->setCamera(std::make_shared<Camera>(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 60));
 
+	Renderer renderer("TraceyGL");
 	renderer.setScene(scene);
 	renderer.init();
 	renderer.start();

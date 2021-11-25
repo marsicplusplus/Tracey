@@ -6,7 +6,12 @@
 Color Material::getAlbedo(HitRecord &rec) const {
 	return albedo->color(rec.u, rec.v, rec.p);
 }
-inline Materials Material::getType() const {
-	return materialType;
+double Material::getSpecular() const {
+	return specular;
 }
-
+double Material::getReflective() const {
+	return reflect;
+}
+double Material::getRefractionIndex() const {
+	return refraction;
+}
