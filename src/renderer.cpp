@@ -40,11 +40,13 @@ bool Renderer::init(){
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 	CHECK_ERROR(this->window = glfwCreateWindow(W_WIDTH, W_HEIGHT, title.c_str(), NULL, NULL), "ERROR::Renderer::initSystems > could not create GLFW3 window\n", false)
 
-	glfwMakeContextCurrent(window);
+	glfwMakeContextCurrent(this->window);
+	glfwSetMouseButtonCallback(this->window, mouseCallback);
+	glfwSetScrollCallback(this->window, scrollCallback);
 
 	CHECK_ERROR(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "Failed to initialize GLAD", false);
 
@@ -104,6 +106,8 @@ bool Renderer::init(){
 }
 
 bool Renderer::start() {
+
+	auto frameBuffer = new uint32_t[W_HEIGHT * W_WIDTH];
 	const int tWidth = OptionsMap::Instance()->getOption(Options::TILE_WIDTH);
 	const int tHeight = OptionsMap::Instance()->getOption(Options::TILE_HEIGHT);
 	if(W_WIDTH % tWidth != 0 || W_HEIGHT % tHeight != 0){
@@ -126,41 +130,53 @@ bool Renderer::start() {
 		handleInput();
 
 		if(scene->update(lastUpdateTime)){
-			isBufferInvalid = true;
+			this->isBufferInvalid = true;
 		}
 
-		if(isBufferInvalid){
+		bool useMultithreading = true;
+
+		if(this->isBufferInvalid) {
 			std::vector<std::future<void>> futures;
 			for(int tileRow = 0; tileRow < verticalTiles; ++tileRow){
 				for(int tileCol = 0; tileCol < horizontalTiles; ++tileCol){
 					/* Launch thread */
-					futures.push_back(pool.queue([&, tileRow, tileCol](std::mt19937& gen){
-										for (int row = 0; row < tHeight; ++row) {
-											for (int col = 0; col < tWidth; ++col) {
-												Color pxColor(0,0,0);
-												int x = col + tWidth * tileCol;
-												int y = row + tHeight * tileRow;
-												for(int s = 0; s < samples; ++s){
-												double u = static_cast<double>(x + randomDouble(gen, 0.0,1.0)) / static_cast<double>(W_WIDTH - 1);
-												double v = static_cast<double>(y + randomDouble(gen, 0.0,1.0)) / static_cast<double>(W_HEIGHT - 1);
+					auto putFunc = [&, tileRow, tileCol](std::mt19937& gen){
+						for (int row = 0; row < tHeight; ++row) {
+							for (int col = 0; col < tWidth; ++col) {
+								Color pxColor(0, 0, 0);
+								int x = col + tWidth * tileCol;
+								int y = row + tHeight * tileRow;
+								for (int s = 0; s < samples; ++s) {
+									double u = static_cast<double>(x + randomDouble(gen, 0.0, 1.0)) / static_cast<double>(W_WIDTH - 1);
+									double v = static_cast<double>(y + randomDouble(gen, 0.0, 1.0)) / static_cast<double>(W_HEIGHT - 1);
 
-												CameraPtr cam = scene->getCamera();
-												if(cam){
-													Ray ray = cam->generateCameraRay(u, v);
-													pxColor += trace(ray, maxBounces, scene, gen);
-												}
-											}
-										pxColor = pxColor / static_cast<double>(samples);
-										putPixel(frameBuffer, W_WIDTH * (y) + (x), pxColor);
+									CameraPtr cam = this->scene->getCamera();
+									if (cam) {
+										Ray ray = cam->generateCameraRay(u, v);
+										pxColor += trace(ray, maxBounces, scene, gen);
 									}
 								}
-							}));
+								pxColor = pxColor / static_cast<double>(samples);
+								putPixel(frameBuffer, W_WIDTH * (y)+(x), pxColor);
+							}
+						}
+					};
+
+					if (useMultithreading){
+						futures.push_back(pool.queue(putFunc));
+					} else {
+						std::mt19937 gen32;
+						putFunc(gen32);
+					}
 				}
 			}
 
-			for(auto &f : futures){
-				f.get();
+			if (useMultithreading) {
+				for (auto& f : futures) {
+					f.get();
+				}
 			}
+
 			lastUpdateTime = glfwGetTime() - now;
 			std::cout << std::endl << "Last frame info:" <<std::endl;
 			std::cout << lastUpdateTime << "s" << std::endl;
@@ -170,13 +186,14 @@ bool Renderer::start() {
 		}
 
 		glBindTexture(GL_TEXTURE_2D, this->texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, W_WIDTH, W_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->frameBuffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, W_WIDTH, W_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE, frameBuffer);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glBindVertexArray(this->VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glfwSwapBuffers(this->window);
 	}
 
+	delete[] frameBuffer;
 	return true;
 }
 
@@ -210,6 +227,9 @@ void Renderer::setScene(ScenePtr scene){
 }
 
 void Renderer::handleInput(){
+	double xpos, ypos;
+	glfwGetCursorPos(this->window, &xpos, &ypos);
+	InputManager::Instance()->setMouseState(xpos, ypos);
 	InputManager::Instance()->setKeyValue(GLFW_KEY_D, glfwGetKey(this->window, GLFW_KEY_D) == GLFW_PRESS);
 	InputManager::Instance()->setKeyValue(GLFW_KEY_A, glfwGetKey(this->window, GLFW_KEY_A) == GLFW_PRESS);
 	InputManager::Instance()->setKeyValue(GLFW_KEY_W, glfwGetKey(this->window, GLFW_KEY_W) == GLFW_PRESS);
@@ -218,8 +238,21 @@ void Renderer::handleInput(){
 	InputManager::Instance()->setKeyValue(GLFW_KEY_E, glfwGetKey(this->window, GLFW_KEY_E) == GLFW_PRESS);
 }
 
+void Renderer::mouseCallback(GLFWwindow* window, int button, int action, int mods) {
+	if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+		InputManager::Instance()->setKeyValue(GLFW_MOUSE_BUTTON_RIGHT, (action == GLFW_PRESS) ? true : false);
+	}
+	if (button == GLFW_MOUSE_BUTTON_LEFT) {
+		InputManager::Instance()->setKeyValue(GLFW_MOUSE_BUTTON_LEFT, (action == GLFW_PRESS) ? true : false);
+	}
+}
+
+void Renderer::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+	InputManager::Instance()->scrollState(yoffset);
+}
+
 Renderer::~Renderer() {
-	glfwDestroyWindow(window);
+	glfwDestroyWindow(this->window);
 	pool.cancel_pending();
 	glDeleteShader(this->shader);
 	glDeleteBuffers(1, &this->VBO);

@@ -32,8 +32,8 @@ int main(int argc, char *args[]){
 	OptionsMap::Instance()->printOptions();
 
 	/* Materials */
-	MaterialPtr woodMat = std::make_shared<Material>(std::make_shared<ImageTexture>("../Textures/parque.png"));
-	MaterialPtr earthMat = std::make_shared<Material>(std::make_shared<ImageTexture>("../Textures/earthmap.jpg"));
+	MaterialPtr woodMat = std::make_shared<Material>(std::make_shared<ImageTexture>("Textures/parque.png"));
+	MaterialPtr earthMat = std::make_shared<Material>(std::make_shared<ImageTexture>("Textures/earthmap.jpg"));
 	MaterialPtr checkeredMat = std::make_shared<Material>(std::make_shared<Checkered>());
 	MaterialPtr redDiffuse = std::make_shared<Material>(Color(1.0,0.0,0.0));
 	MaterialPtr greenDiffuse = std::make_shared<Material>(Color(0.0,1.0,0.0));
@@ -57,7 +57,7 @@ int main(int argc, char *args[]){
 	scene->addLight(std::make_shared<DirectionalLight>(glm::dvec3(0.0, -1.0, 0.0), 35.0, glm::dvec3(0.8,0.8,0.6)));
 
 	/* Camera */
-	scene->setCamera(std::make_shared<Camera>(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, 0.0}, glm::dvec3{0.0, 1.0, 0.0}, 60));
+	scene->setCamera(std::make_shared<Camera>(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, -1.0}, glm::dvec3{0.0, 1.0, 0.0}, 60));
 
 	Renderer renderer("TraceyGL");
 	renderer.setScene(scene);

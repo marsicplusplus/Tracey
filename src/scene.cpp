@@ -10,11 +10,11 @@ Scene::Scene(std::string sceneFile){
 Scene::~Scene(){}
 
 void Scene::addHittable(HittablePtr hittable){
-	hittables.push_back(hittable);
+	this->hittables.push_back(hittable);
 }
 
 void Scene::addLight(LightObjectPtr light){
-	lights.push_back(light);
+	this->lights.push_back(light);
 }
 
 bool Scene::traverse(const Ray &ray, double tMin, double tMax, HitRecord &rec) const {
@@ -22,7 +22,7 @@ bool Scene::traverse(const Ray &ray, double tMin, double tMax, HitRecord &rec) c
 	bool hasHit = false;
 	double closest = tMax;
 
-	for (const auto& object : hittables) {
+	for (const auto& object : this->hittables) {
 		if (object->hit(ray, tMin, closest, tmp)) {
 			hasHit = true;
 			closest = tmp.t;
@@ -33,15 +33,15 @@ bool Scene::traverse(const Ray &ray, double tMin, double tMax, HitRecord &rec) c
 }
 
 void Scene::setCamera(CameraPtr camera){
-	currentCamera = camera;
+	this->currentCamera = camera;
 }
 
 CameraPtr Scene::getCamera() const {
-	return currentCamera;
+	return this->currentCamera;
 }
 
 bool Scene::update(double dt){
-	return currentCamera->update(dt);
+	return this->currentCamera->update(dt);
 }
 
 Color Scene::traceLights(HitRecord &rec) const {
@@ -51,7 +51,7 @@ Color Scene::traceLights(HitRecord &rec) const {
 		Ray ray = light->getRay(rec, tMax);
 		HitRecord shadow;
 		if(!traverse(ray, 0.0001, tMax, shadow)){
-			i+=light->getLight(rec, ray, currentCamera->getPosition()); 
+			i+=light->getLight(rec, ray, this->currentCamera->getPosition());
 		}
 	}
 	return i;

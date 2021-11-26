@@ -23,9 +23,11 @@ class Renderer{
 		static Color trace(Ray &ray, int bounces, ScenePtr scene, std::mt19937 &gen);
 		void handleInput();
 
+		static void mouseCallback(GLFWwindow* window, int button, int action, int mods);
+		static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
 		GLFWwindow *window;
 		std::string title;
-		uint32_t frameBuffer[W_WIDTH * W_HEIGHT];
 		unsigned int VBO, VAO, EBO;
 		unsigned int shader;
 		unsigned int texture;
