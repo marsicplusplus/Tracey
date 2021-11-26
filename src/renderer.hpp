@@ -5,13 +5,15 @@
 #include "defs.hpp"
 #include "scene.hpp"
 #include "GLFW/glfw3.h"
+#include "options_manager.hpp"
 #include "thread_pool.hpp"
 #include <string>
-#include <random>
 
 class Renderer{
 	public:
-		Renderer(const std::string &_title) : title{_title}, pool{std::thread::hardware_concurrency()}, isBufferInvalid(true){};
+		inline Renderer(const std::string &_title, size_t pool = 1) : title{_title}, pool{pool}, isBufferInvalid(true){
+			this->frameBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
+		};
 		~Renderer();
 
 		bool init();
@@ -20,7 +22,7 @@ class Renderer{
 
 	private:
 		static void putPixel(uint32_t fb[], int idx, Color &color);
-		static Color trace(Ray &ray, int bounces, ScenePtr scene, std::mt19937 &gen);
+		static Color trace(Ray &ray, int bounces, ScenePtr scene);
 		void handleInput();
 
 		static void mouseCallback(GLFWwindow* window, int button, int action, int mods);
@@ -28,6 +30,7 @@ class Renderer{
 
 		GLFWwindow *window;
 		std::string title;
+		uint32_t *frameBuffer;
 		unsigned int VBO, VAO, EBO;
 		unsigned int shader;
 		unsigned int texture;

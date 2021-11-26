@@ -1,11 +1,12 @@
 #include "camera.hpp"
+#include "options_manager.hpp"
 #include "GLFW/glfw3.h"
 #include "input_manager.hpp"
 #include "defs.hpp"
 #include <glm/gtx/transform.hpp>
 
 Camera::Camera(glm::dvec3 origin, glm::dvec3 dir, glm::dvec3 up, double fov) : position{origin}, direction{dir}, up{up}, fov{glm::radians(fov)} {
-	this->aspectRatio = static_cast<double>(W_WIDTH)/static_cast<double>(W_HEIGHT);
+	this->aspectRatio = static_cast<double>(OptionsMap::Instance()->getOption(Options::W_WIDTH))/static_cast<double>(OptionsMap::Instance()->getOption(Options::W_HEIGHT));
 	this->sensitivity = 0.25;
 	updateVectors();
 }
@@ -38,7 +39,8 @@ bool Camera::update(double dt) {
 	auto inputManager = InputManager::Instance();
 	float scroll = inputManager->getScrollState();
 	if (scroll != 0) {
-		this->position += this->direction * ((scroll > 0) ? dt : -dt);
+		this->fov -= 0.5 * ((scroll > 0) ? dt : -dt);
+		std::clamp(this->fov, 25.0, 120.0);
 		InputManager::Instance()->scrollState(0.0);
 		updated = true;
 	}

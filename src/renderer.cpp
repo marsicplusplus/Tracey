@@ -40,9 +40,9 @@ bool Renderer::init(){
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	CHECK_ERROR(this->window = glfwCreateWindow(W_WIDTH, W_HEIGHT, title.c_str(), NULL, NULL), "ERROR::Renderer::initSystems > could not create GLFW3 window\n", false)
+	CHECK_ERROR(this->window = glfwCreateWindow(OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), title.c_str(), NULL, NULL), "ERROR::Renderer::initSystems > could not create GLFW3 window\n", false)
 
 	glfwMakeContextCurrent(this->window);
 	glfwSetMouseButtonCallback(this->window, mouseCallback);
@@ -101,16 +101,16 @@ bool Renderer::init(){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, W_WIDTH, W_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 	return true;
 }
 
 bool Renderer::start() {
-
-	auto frameBuffer = new uint32_t[W_HEIGHT * W_WIDTH];
 	const int tWidth = OptionsMap::Instance()->getOption(Options::TILE_WIDTH);
 	const int tHeight = OptionsMap::Instance()->getOption(Options::TILE_HEIGHT);
-	if(W_WIDTH % tWidth != 0 || W_HEIGHT % tHeight != 0){
+	const int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
+	const int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
+	if(wWidth % tWidth != 0 || wHeight % tHeight != 0){
 		throw new std::invalid_argument("Window width and height must be multiples of tiles size!");
 	}
 
@@ -121,8 +121,8 @@ bool Renderer::start() {
 	const double fpsLimit = 1.0 / static_cast<double>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
 	double lastUpdateTime = 0;  // number of seconds since the last loop
 
-	const int horizontalTiles = W_WIDTH / tWidth;
-	const int verticalTiles = W_HEIGHT / tHeight;
+	const int horizontalTiles = wWidth / tWidth;
+	const int verticalTiles = wHeight / tHeight;
 
 	while(!glfwWindowShouldClose(this->window)){
 		double now = glfwGetTime();
@@ -133,49 +133,37 @@ bool Renderer::start() {
 			this->isBufferInvalid = true;
 		}
 
-		bool useMultithreading = true;
 
 		if(this->isBufferInvalid) {
 			std::vector<std::future<void>> futures;
 			for(int tileRow = 0; tileRow < verticalTiles; ++tileRow){
 				for(int tileCol = 0; tileCol < horizontalTiles; ++tileCol){
 					/* Launch thread */
-					auto putFunc = [&, tileRow, tileCol](std::mt19937& gen){
-						for (int row = 0; row < tHeight; ++row) {
-							for (int col = 0; col < tWidth; ++col) {
-								Color pxColor(0, 0, 0);
-								int x = col + tWidth * tileCol;
-								int y = row + tHeight * tileRow;
-								for (int s = 0; s < samples; ++s) {
-									double u = static_cast<double>(x + randomDouble(gen, 0.0, 1.0)) / static_cast<double>(W_WIDTH - 1);
-									double v = static_cast<double>(y + randomDouble(gen, 0.0, 1.0)) / static_cast<double>(W_HEIGHT - 1);
-
-									CameraPtr cam = this->scene->getCamera();
-									if (cam) {
-										Ray ray = cam->generateCameraRay(u, v);
-										pxColor += trace(ray, maxBounces, scene, gen);
+					futures.push_back(pool.queue([&, tileRow, tileCol](std::mt19937& gen){
+									for (int row = 0; row < tHeight; ++row) {
+										for (int col = 0; col < tWidth; ++col) {
+											Color pxColor(0,0,0);
+											int x = col + tWidth * tileCol;
+											int y = row + tHeight * tileRow;
+											for(int s = 0; s < samples; ++s){
+												double u = static_cast<double>(x + randomDouble(gen, 0.0,1.0)) / static_cast<double>(wWidth - 1);
+												double v = static_cast<double>(y + randomDouble(gen, 0.0,1.0)) / static_cast<double>(wHeight - 1);
+												CameraPtr cam = scene->getCamera();
+												if(cam){
+													Ray ray = cam->generateCameraRay(u, v);
+													pxColor += trace(ray, maxBounces, scene);
+												}
+											}
+											pxColor = pxColor / static_cast<double>(samples);
+											putPixel(frameBuffer, wWidth * (y) + (x), pxColor);
+										}
 									}
-								}
-								pxColor = pxColor / static_cast<double>(samples);
-								putPixel(frameBuffer, W_WIDTH * (y)+(x), pxColor);
-							}
-						}
-					};
-
-					if (useMultithreading){
-						futures.push_back(pool.queue(putFunc));
-					} else {
-						std::mt19937 gen32;
-						putFunc(gen32);
-					}
+								}));
 				}
 			}
 
-			if (useMultithreading) {
-				for (auto& f : futures) {
-					f.get();
-				}
-			}
+			for (auto& f : futures) 
+				f.get();
 
 			lastUpdateTime = glfwGetTime() - now;
 			std::cout << std::endl << "Last frame info:" <<std::endl;
@@ -186,18 +174,17 @@ bool Renderer::start() {
 		}
 
 		glBindTexture(GL_TEXTURE_2D, this->texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, W_WIDTH, W_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE, frameBuffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wWidth, wHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, frameBuffer);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glBindVertexArray(this->VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glfwSwapBuffers(this->window);
 	}
 
-	delete[] frameBuffer;
 	return true;
 }
 
-Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene, std::mt19937 &gen){
+Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 	HitRecord hr;
 	if(!scene || bounces <= 0)
 		return Color{0,0,0};
@@ -208,7 +195,7 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene, std::mt19937 
 			return hr.material->getAlbedo(hr) * scene->traceLights(hr);
 		if(hr.material->getReflective() == 1.0){
 			Ray reflected(hr.p, ray.getDirection() - 2*glm::dot(ray.getDirection(), hr.normal)*hr.normal);
-			return hr.material->getAlbedo(hr) * trace(reflected, bounces - 1, scene, gen);
+			return hr.material->getAlbedo(hr) * trace(reflected, bounces - 1, scene);
 		}
 		return Color{0,0,0};
 	}
@@ -252,6 +239,7 @@ void Renderer::scrollCallback(GLFWwindow* window, double xoffset, double yoffset
 }
 
 Renderer::~Renderer() {
+	delete(this->frameBuffer);
 	glfwDestroyWindow(this->window);
 	pool.cancel_pending();
 	glDeleteShader(this->shader);

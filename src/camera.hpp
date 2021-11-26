@@ -30,7 +30,7 @@ class Camera{
 		double viewportWidth;
 		double viewportHeight;
 		double sensitivity;
-		const double speed = 0.8;
+		const double speed = 0.3;
 		const double angleToRads = 0.01745329251994329576923690768489;
 };
 

@@ -6,6 +6,7 @@
 #include "light_object.hpp"
 #include "renderer.hpp"
 #include "options_manager.hpp"
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <memory>
@@ -21,6 +22,13 @@ void parseOptions(char *path){
 		if(key == "SAMPLES") OptionsMap::Instance()->setOption(Options::SAMPLES, std::stoi(line));
 		if(key == "TILE_WIDTH") OptionsMap::Instance()->setOption(Options::TILE_WIDTH, std::stoi(line));
 		if(key == "TILE_HEIGHT") OptionsMap::Instance()->setOption(Options::TILE_HEIGHT, std::stoi(line));
+		if(key == "W_HEIGHT") OptionsMap::Instance()->setOption(Options::W_HEIGHT, std::stoi(line));
+		if(key == "W_WIDTH") OptionsMap::Instance()->setOption(Options::W_WIDTH, std::stoi(line));
+		if(key == "THREADS"){
+			int nThreads = std::stoi(line);
+			nThreads = (nThreads == -1) ? std::thread::hardware_concurrency() : std::max((int)std::thread::hardware_concurrency(), nThreads);
+			OptionsMap::Instance()->setOption(Options::THREADS, nThreads);
+		}
 	}
 }
 
@@ -59,7 +67,7 @@ int main(int argc, char *args[]){
 	/* Camera */
 	scene->setCamera(std::make_shared<Camera>(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, -1.0}, glm::dvec3{0.0, 1.0, 0.0}, 60));
 
-	Renderer renderer("TraceyGL");
+	Renderer renderer("TraceyGL", OptionsMap::Instance()->getOption(Options::THREADS));
 	renderer.setScene(scene);
 	renderer.init();
 	renderer.start();

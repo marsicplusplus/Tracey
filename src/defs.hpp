@@ -9,8 +9,6 @@
 #include <limits>
 #include <memory>
 
-#define W_WIDTH 640		
-#define W_HEIGHT 384
 #define PI 3.1415926535897932385
 
 const double INF = std::numeric_limits<double>::infinity();
