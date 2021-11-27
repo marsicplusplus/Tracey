@@ -26,7 +26,7 @@ void parseOptions(char *path){
 		if(key == "W_WIDTH") OptionsMap::Instance()->setOption(Options::W_WIDTH, std::stoi(line));
 		if(key == "THREADS"){
 			int nThreads = std::stoi(line);
-			nThreads = (nThreads == -1) ? std::thread::hardware_concurrency() : std::max((int)std::thread::hardware_concurrency(), nThreads);
+			nThreads = (nThreads < 1) ? std::thread::hardware_concurrency() : std::min((int)std::thread::hardware_concurrency(), nThreads);
 			OptionsMap::Instance()->setOption(Options::THREADS, nThreads);
 		}
 	}
