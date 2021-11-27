@@ -12,8 +12,13 @@ class Camera{
 		Ray generateCameraRay(double u, double v);
 
 		void setPosition(glm::dvec3 pos);
-		inline glm::dvec3 getPosition() const {return position;}
-		bool update(double dt);
+		void setDirection(glm::dvec3 dir, bool update = true);
+		void setFOV(double fov);
+
+		inline double getFOV() const { return this->fov; };
+		inline glm::dvec3 getPosition() const { return position; }
+		inline glm::dvec3 getDirection() const { return direction; }
+		bool update(double dt, bool forceUpdate = false);
 
 	private:
 		void updateVectors();

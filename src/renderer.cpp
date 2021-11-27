@@ -5,6 +5,8 @@
 #include "hittables/plane.hpp"
 #include "input_manager.hpp"
 #include "options_manager.hpp"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
 #include "renderer.hpp"
 #include <algorithm>
 #include <iostream>
@@ -49,6 +51,15 @@ bool Renderer::init(){
 	glfwSetScrollCallback(this->window, scrollCallback);
 
 	CHECK_ERROR(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "Failed to initialize GLAD", false);
+
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui::StyleColorsDark();
+	// Setup Platform/Renderer bindings
+	ImGui_ImplGlfw_InitForOpenGL(this->window, true);
+	ImGui_ImplOpenGL3_Init("#version 450");
 
 	/* Shader */
 	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -124,10 +135,18 @@ bool Renderer::start() {
 	const int horizontalTiles = wWidth / tWidth;
 	const int verticalTiles = wHeight / tHeight;
 
+
 	while(!glfwWindowShouldClose(this->window)){
 		double now = glfwGetTime();
 		glfwPollEvents();
 		handleInput();
+
+		if (InputManager::Instance()->isKeyDown(GLFW_KEY_T)) {
+			this->showGui = true;
+		}
+		if (InputManager::Instance()->isKeyDown(GLFW_KEY_N)) {
+			this->showGui = false;
+		}
 
 		if(scene->update(lastUpdateTime)){
 			this->isBufferInvalid = true;
@@ -140,25 +159,25 @@ bool Renderer::start() {
 				for(int tileCol = 0; tileCol < horizontalTiles; ++tileCol){
 					/* Launch thread */
 					futures.push_back(pool.queue([&, tileRow, tileCol](std::mt19937& gen){
-									for (int row = 0; row < tHeight; ++row) {
-										for (int col = 0; col < tWidth; ++col) {
-											Color pxColor(0,0,0);
-											int x = col + tWidth * tileCol;
-											int y = row + tHeight * tileRow;
-											for(int s = 0; s < samples; ++s){
-												double u = static_cast<double>(x + randomDouble(gen, 0.0,1.0)) / static_cast<double>(wWidth - 1);
-												double v = static_cast<double>(y + randomDouble(gen, 0.0,1.0)) / static_cast<double>(wHeight - 1);
-												CameraPtr cam = scene->getCamera();
-												if(cam){
-													Ray ray = cam->generateCameraRay(u, v);
-													pxColor += trace(ray, maxBounces, scene);
-												}
-											}
-											pxColor = pxColor / static_cast<double>(samples);
-											putPixel(frameBuffer, wWidth * (y) + (x), pxColor);
-										}
+						for (int row = 0; row < tHeight; ++row) {
+							for (int col = 0; col < tWidth; ++col) {
+								Color pxColor(0,0,0);
+								int x = col + tWidth * tileCol;
+								int y = row + tHeight * tileRow;
+								for(int s = 0; s < samples; ++s){
+									double u = static_cast<double>(x + randomDouble(gen, 0.0,1.0)) / static_cast<double>(wWidth - 1);
+									double v = static_cast<double>(y + randomDouble(gen, 0.0,1.0)) / static_cast<double>(wHeight - 1);
+									CameraPtr cam = scene->getCamera();
+									if(cam){
+										Ray ray = cam->generateCameraRay(u, v);
+										pxColor += trace(ray, maxBounces, scene);
 									}
-								}));
+								}
+								pxColor = pxColor / static_cast<double>(samples);
+								putPixel(frameBuffer, wWidth * (y) + (x), pxColor);
+							}
+						}
+					}));
 				}
 			}
 
@@ -173,11 +192,14 @@ bool Renderer::start() {
 			isBufferInvalid = false;
 		}
 
+
 		glBindTexture(GL_TEXTURE_2D, this->texture);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wWidth, wHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, frameBuffer);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glBindVertexArray(this->VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		if (this->showGui)
+			renderGUI();
 		glfwSwapBuffers(this->window);
 	}
 
@@ -223,6 +245,8 @@ void Renderer::handleInput(){
 	InputManager::Instance()->setKeyValue(GLFW_KEY_S, glfwGetKey(this->window, GLFW_KEY_S) == GLFW_PRESS);
 	InputManager::Instance()->setKeyValue(GLFW_KEY_Q, glfwGetKey(this->window, GLFW_KEY_Q) == GLFW_PRESS);
 	InputManager::Instance()->setKeyValue(GLFW_KEY_E, glfwGetKey(this->window, GLFW_KEY_E) == GLFW_PRESS);
+	InputManager::Instance()->setKeyValue(GLFW_KEY_T, glfwGetKey(this->window, GLFW_KEY_T) == GLFW_PRESS);
+	InputManager::Instance()->setKeyValue(GLFW_KEY_N, glfwGetKey(this->window, GLFW_KEY_N) == GLFW_PRESS);
 }
 
 void Renderer::mouseCallback(GLFWwindow* window, int button, int action, int mods) {
@@ -238,8 +262,47 @@ void Renderer::scrollCallback(GLFWwindow* window, double xoffset, double yoffset
 	InputManager::Instance()->scrollState(yoffset);
 }
 
+void Renderer::renderGUI() {
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+	ImGui::SetNextWindowPos(ImVec2(.0f, .0f));
+	ImGui::SetNextWindowSize(ImVec2(OptionsMap::Instance()->getOption(Options::W_WIDTH) / 3, OptionsMap::Instance()->getOption(Options::W_HEIGHT)));
+	{
+		ImGui::Begin("Menu", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+		// render your GUI
+		guiFOV = glm::degrees(this->scene->getCamera()->getFOV());
+		if (ImGui::SliderInt("FOV", &guiFOV, 20, 120)) {
+			this->scene->getCamera()->setFOV(guiFOV);
+		}
+
+		if (ImGui::Button("Render")) {
+			this->scene->getCamera()->update(0, true);
+			this->isBufferInvalid = true;
+		}
+
+		ImGui::Text("Camera");
+		guiCamPos = this->scene->getCamera()->getPosition();
+		if (ImGui::InputFloat3("Position", &guiCamPos[0], "%.2f")) {
+			this->scene->getCamera()->setPosition(guiCamPos);
+		}
+
+		guiCamDir = this->scene->getCamera()->getDirection();
+		if (ImGui::InputFloat3("Direction", &guiCamDir[0], "%.2f")) {
+			this->scene->getCamera()->setDirection(guiCamDir, false);
+		}
+
+		ImGui::End();
+	}
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
 Renderer::~Renderer() {
 	delete(this->frameBuffer);
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 	glfwDestroyWindow(this->window);
 	pool.cancel_pending();
 	glDeleteShader(this->shader);

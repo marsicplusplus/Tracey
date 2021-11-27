@@ -15,6 +15,8 @@ include_directories(
     external/glfw/include
     external/glm
     external/glad/include
+    external/imgui
+    external/imgui/backends
     src/
     )
 
@@ -24,6 +26,12 @@ if( MSVC )
 endif()
 
 set( SRC
+     external/imgui/imgui.cpp
+     external/imgui/imgui_draw.cpp
+     external/imgui/imgui_tables.cpp
+     external/imgui/imgui_widgets.cpp
+     external/imgui/backends/imgui_impl_glfw.cpp
+     external/imgui/backends/imgui_impl_opengl3.cpp
      external/glad/src/glad.c
 	 src/tracey.cpp
 	 src/renderer.cpp

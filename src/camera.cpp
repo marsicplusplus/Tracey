@@ -22,11 +22,28 @@ void Camera::setPosition(glm::dvec3 pos) {
 	this->updateVectors();
 }
 
+void Camera::setDirection(glm::dvec3 dir, bool update) {
+	if (dir != glm::dvec3(0, 0, 0))
+		this->direction = dir;
+	else
+		this->direction = glm::dvec3(0, 0, -1);
+
+	if (update) {
+		this->updateVectors();
+	}
+}
+
+void Camera::setFOV(double fov) {
+	this->fov = glm::radians(fov);
+	this->updateVectors();
+};
+
 void Camera::updateVectors(){
 	double h = tan(this->fov/2.0);
 	this->viewportHeight = 2.0 * h;
 	this->viewportWidth = this->aspectRatio * this->viewportHeight;
-	auto w = glm::normalize(this->direction);
+	this->direction = glm::normalize(this->direction);
+	auto w = this->direction;
 	auto u = glm::normalize(glm::cross(w, this->up));
 	auto v = glm::cross(u, w);
 	this->horizontal = this->viewportWidth * u;
@@ -34,13 +51,13 @@ void Camera::updateVectors(){
 	this->llCorner = this->position - this->horizontal/2.0 - this->vertical/2.0 + w;
 }
 
-bool Camera::update(double dt) {
-	bool updated = false;
+bool Camera::update(double dt, bool forceUpdate) {
+	bool updated = forceUpdate;
 	auto inputManager = InputManager::Instance();
 	float scroll = inputManager->getScrollState();
 	if (scroll != 0) {
 		this->fov -= 0.5 * ((scroll > 0) ? dt : -dt);
-		std::clamp(this->fov, 25.0, 120.0);
+		this->fov = std::clamp(this->fov, glm::radians(25.0), glm::radians(120.0));
 		InputManager::Instance()->scrollState(0.0);
 		updated = true;
 	}

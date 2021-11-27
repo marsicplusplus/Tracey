@@ -11,7 +11,7 @@
 
 class Renderer{
 	public:
-		inline Renderer(const std::string &_title, size_t pool = 1) : title{_title}, pool{pool}, isBufferInvalid(true){
+		inline Renderer(const std::string& _title, size_t pool = 1) : title{ _title }, pool{ pool }, isBufferInvalid(true), showGui(false){
 			this->frameBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 		};
 		~Renderer();
@@ -27,6 +27,7 @@ class Renderer{
 
 		static void mouseCallback(GLFWwindow* window, int button, int action, int mods);
 		static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+		void renderGUI();
 
 		GLFWwindow *window;
 		std::string title;
@@ -37,6 +38,12 @@ class Renderer{
 		ScenePtr scene;
 		ThreadPool pool;
 		bool isBufferInvalid;
+
+		bool showGui;
+		int guiFOV;
+		int guiThreads;
+		glm::vec3 guiCamPos;
+		glm::vec3 guiCamDir;
 };
 
 #endif
