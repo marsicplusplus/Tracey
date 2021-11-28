@@ -218,6 +218,11 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 		if(hr.material->getReflective() == 1.0){
 			Ray reflected(hr.p, ray.getDirection() - 2*glm::dot(ray.getDirection(), hr.normal)*hr.normal);
 			return hr.material->getAlbedo(hr) * trace(reflected, bounces - 1, scene);
+		} else {
+			double s = hr.material->getReflective();
+			double d = 1-s;
+			Ray reflected(hr.p, ray.getDirection() - 2*glm::dot(ray.getDirection(), hr.normal)*hr.normal);
+			return hr.material->getAlbedo(hr) * (s * trace(reflected, bounces - 1, scene) + d * scene->traceLights(hr));
 		}
 		return Color{0,0,0};
 	}

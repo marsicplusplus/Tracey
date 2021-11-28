@@ -26,7 +26,7 @@ void parseOptions(char *path){
 		if(key == "W_WIDTH") OptionsMap::Instance()->setOption(Options::W_WIDTH, std::stoi(line));
 		if(key == "THREADS"){
 			int nThreads = std::stoi(line);
-			//  std::thread::hardware_concurrency() can return 0 on failure 
+			// std::thread::hardware_concurrency() can return 0 on failure 
 			int hardwareConcurrency = std::thread::hardware_concurrency();
 			if(hardwareConcurrency != 0){
 				nThreads = (nThreads < 1) ? hardwareConcurrency : std::min(hardwareConcurrency, nThreads);
@@ -44,21 +44,22 @@ int main(int argc, char *args[]){
 	}
 
 	OptionsMap::Instance()->printOptions();
-
+	auto wood = std::make_shared<ImageTexture>("Textures/parque.png");
 	/* Materials */
-	MaterialPtr woodMat = std::make_shared<Material>(std::make_shared<ImageTexture>("Textures/parque.png"));
+	MaterialPtr woodMat = std::make_shared<Material>(wood);
 	MaterialPtr earthMat = std::make_shared<Material>(std::make_shared<ImageTexture>("Textures/earthmap.jpg"));
-	MaterialPtr checkeredMat = std::make_shared<Material>(std::make_shared<Checkered>());
+	MaterialPtr checkeredMat = std::make_shared<Material>(std::make_shared<Checkered>(), 0.6);
 	MaterialPtr redDiffuse = std::make_shared<Material>(Color(1.0,0.0,0.0));
 	MaterialPtr greenDiffuse = std::make_shared<Material>(Color(0.0,1.0,0.0));
 	MaterialPtr blueDiffuse = std::make_shared<Material>(Color(0.0,0.0,1.0));
 	MaterialPtr greenMirror = std::make_shared<Material>(Color(0.0,1.0,0.0), /* reflective */ 1.0);
 	MaterialPtr whiteMirror = std::make_shared<Material>(Color(1.0), /* reflective */ 1.0);
+	MaterialPtr woodMirror = std::make_shared<Material>(wood, /* reflective */ 0.0);
 
 	ScenePtr scene = std::make_shared<Scene>();
 	/* Hittables */
 	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.8, 0.0, -0.6}, 0.4, whiteMirror));
-	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, -0.3, -0.5}, 0.2, earthMat));
+	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, 0.0, -1.5}, 0.3, woodMirror));
 	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{-1.0, 0.0, -0.6}, 0.4, whiteMirror));
 	scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, -0.5, 0.0), glm::normalize(glm::dvec3(0.0, 1.0, 0.0)), checkeredMat));
 	scene->addHittable(std::make_shared<Plane>(glm::dvec3(2.0, 0.0, 0.0), glm::normalize(glm::dvec3(-1.0, 0.0, 0.0)), redDiffuse));
@@ -68,7 +69,7 @@ int main(int argc, char *args[]){
 	/* Lights */
 	scene->addLight(std::make_shared<PointLight>(glm::dvec3(1.5, 2.0, -1.5), 20.2, glm::dvec3(1,0.5,1)));
 	scene->addLight(std::make_shared<PointLight>(glm::dvec3(-1.5, 2.0, -1.5), 20.2, glm::dvec3(1,1,1)));
-	scene->addLight(std::make_shared<DirectionalLight>(glm::dvec3(0.0, -1.0, 0.0), 35.0, glm::dvec3(0.8,0.8,0.6)));
+	scene->addLight(std::make_shared<DirectionalLight>(glm::dvec3(0.0, -1.0, 0.0), 30.0, glm::dvec3(0.8,0.8,0.6)));
 
 	/* Camera */
 	scene->setCamera(std::make_shared<Camera>(glm::dvec3{0.0, 0.0, 1.0}, glm::dvec3{0.0, 0.0, -1.0}, glm::dvec3{0.0, 1.0, 0.0}, 60));
