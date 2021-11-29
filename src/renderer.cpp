@@ -52,14 +52,7 @@ bool Renderer::init(){
 
 	CHECK_ERROR(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "Failed to initialize GLAD", false);
 
-	// Setup Dear ImGui context
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	ImGui::StyleColorsDark();
-	// Setup Platform/Renderer bindings
-	ImGui_ImplGlfw_InitForOpenGL(this->window, true);
-	ImGui_ImplOpenGL3_Init("#version 450");
+	initGui();
 
 	/* Shader */
 	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -116,6 +109,28 @@ bool Renderer::init(){
 	return true;
 }
 
+void Renderer::initGui() {
+
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui::StyleColorsDark();
+	// Setup Platform/Renderer bindings
+	ImGui_ImplGlfw_InitForOpenGL(this->window, true);
+	ImGui_ImplOpenGL3_Init("#version 450");
+
+	showGui = false;
+	guiK1 = 1;
+	guiK2 = 1;
+	guiBarrel = false;
+	guiFisheye = false;
+	guiFisheyeAngle = glm::radians(90.0f);
+	guiContinuousRender = false;
+	guiCamPos = glm::dvec3(0, 0, 1);
+	guiCamDir = glm::dvec3(0, 0, -1);
+}
+
 bool Renderer::start() {
 	const int tWidth = OptionsMap::Instance()->getOption(Options::TILE_WIDTH);
 	const int tHeight = OptionsMap::Instance()->getOption(Options::TILE_HEIGHT);
@@ -159,18 +174,22 @@ bool Renderer::start() {
 				for(int tileCol = 0; tileCol < horizontalTiles; ++tileCol){
 					/* Launch thread */
 					futures.push_back(pool.queue([&, tileRow, tileCol](std::mt19937& gen){
+						CameraPtr cam = scene->getCamera();
 						for (int row = 0; row < tHeight; ++row) {
 							for (int col = 0; col < tWidth; ++col) {
 								Color pxColor(0,0,0);
 								int x = col + tWidth * tileCol;
 								int y = row + tHeight * tileRow;
-								for(int s = 0; s < samples; ++s){
-									double u = static_cast<double>(x + randomDouble(gen, 0.0,1.0)) / static_cast<double>(wWidth - 1);
-									double v = static_cast<double>(y + randomDouble(gen, 0.0,1.0)) / static_cast<double>(wHeight - 1);
-									CameraPtr cam = scene->getCamera();
-									if(cam){
+								if (cam) {
+									for(int s = 0; s < samples; ++s){
+										double u = static_cast<double>(x + randomDouble(gen, 0.0,1.0)) / static_cast<double>(wWidth - 1);
+										double v = static_cast<double>(y + randomDouble(gen, 0.0,1.0)) / static_cast<double>(wHeight - 1);
 										Ray ray = cam->generateCameraRay(u, v);
-										pxColor += trace(ray, maxBounces, scene);
+										if (ray.getDirection() == glm::dvec3(0, 0, 0)) {
+											pxColor += Color(0, 0, 0);
+										} else{
+											pxColor += trace(ray, maxBounces, scene);
+										}
 									}
 								}
 								pxColor = pxColor / static_cast<double>(samples);
@@ -276,26 +295,108 @@ void Renderer::renderGUI() {
 	ImGui::SetNextWindowSize(ImVec2(OptionsMap::Instance()->getOption(Options::W_WIDTH) / 3, OptionsMap::Instance()->getOption(Options::W_HEIGHT)));
 	{
 		ImGui::Begin("Menu", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
-		// render your GUI
-		guiFOV = glm::degrees(this->scene->getCamera()->getFOV());
-		if (ImGui::SliderInt("FOV", &guiFOV, 20, 120)) {
-			this->scene->getCamera()->setFOV(guiFOV);
+
+		if (ImGui::CollapsingHeader("Camera Settings")) {
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+
+			guiSensitivity = this->scene->getCamera()->getSensitivity();
+			ImGui::TextWrapped("Camera Sensitivity");
+			if (ImGui::SliderFloat("##CameraSensitivity", &guiSensitivity, 1, 20)) {
+				this->scene->getCamera()->setSensitivity(guiSensitivity);
+			}
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			guiFOV = glm::degrees(this->scene->getCamera()->getFOV());
+			ImGui::TextWrapped("FOV");
+			if (ImGui::SliderInt("##FOV", &guiFOV, 20, 120)) {
+				this->scene->getCamera()->setFOV(guiFOV);
+			}
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			guiCamPos = this->scene->getCamera()->getPosition();
+			ImGui::Text("Position");
+			if (ImGui::InputFloat3("##Position", &guiCamPos[0], "%.2f")) {
+				this->scene->getCamera()->setPosition(guiCamPos);
+			}
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			guiCamDir = this->scene->getCamera()->getDirection();
+			ImGui::Text("Direction");
+			if (ImGui::InputFloat3("##Direction", &guiCamDir[0], "%.2f")) {
+				this->scene->getCamera()->setDirection(guiCamDir, false);
+			}
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			if (ImGui::Checkbox("Barrel Distorion", &guiBarrel)) {
+				this->scene->getCamera()->setCameraType(CameraType::barrel);
+				if (guiBarrel && guiFisheye) {
+					guiFisheye = false;
+				}
+				else if (!guiBarrel && !guiFisheye) {
+					this->scene->getCamera()->setCameraType(CameraType::normal);
+				}
+			}
+
+			if (guiBarrel) {
+				ImGui::TextWrapped("r'=r*(1 + k1*r^2 + k2*r^4)");
+				if (ImGui::SliderFloat("K1", &guiK1, -10.0f, 10.0f, "%.2f")) {
+					this->scene->getCamera()->setDistortionCoefficients(guiK1, guiK2);
+				}
+				if (ImGui::SliderFloat("K2", &guiK2, -10.0f, 10.0f, "%.2f")) {
+					this->scene->getCamera()->setDistortionCoefficients(guiK1, guiK2);
+				}
+			}
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			if (ImGui::Checkbox("Fisheye Lens", &guiFisheye)) {
+				this->scene->getCamera()->setCameraType(CameraType::fisheye);
+				if (guiBarrel && guiFisheye) {
+					guiBarrel = false;
+				}
+				else if (!guiBarrel && !guiFisheye) {
+					this->scene->getCamera()->setCameraType(CameraType::normal);
+				}
+			}
+
+			if (guiFisheye) {
+				if (ImGui::SliderAngle("Fisheye Angle", &guiFisheyeAngle, 0, 180, "%.2f deg")) {
+					this->scene->getCamera()->setFisheyeAngle(guiFisheyeAngle);
+				}
+			}
+
+			ImGui::Spacing();
+			ImGui::Spacing();
 		}
 
-		if (ImGui::Button("Render")) {
-			this->scene->getCamera()->update(0, true);
+
+		if (ImGui::CollapsingHeader("Rendering Settings")) {
+			ImGui::Spacing();
+			ImGui::Spacing();
+
+			if (ImGui::Checkbox("Render Continuously", &guiContinuousRender)) {
+				if (guiContinuousRender) {
+					this->scene->getCamera()->update(0, true);
+				}
+			}
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			if (ImGui::Button("Render New Frame")) {
+				this->scene->getCamera()->update(0, true);
+				this->isBufferInvalid = true;
+			}
+		}
+
+
+		if (guiContinuousRender) {
 			this->isBufferInvalid = true;
-		}
-
-		ImGui::Text("Camera");
-		guiCamPos = this->scene->getCamera()->getPosition();
-		if (ImGui::InputFloat3("Position", &guiCamPos[0], "%.2f")) {
-			this->scene->getCamera()->setPosition(guiCamPos);
-		}
-
-		guiCamDir = this->scene->getCamera()->getDirection();
-		if (ImGui::InputFloat3("Direction", &guiCamDir[0], "%.2f")) {
-			this->scene->getCamera()->setDirection(guiCamDir, false);
 		}
 
 		ImGui::End();

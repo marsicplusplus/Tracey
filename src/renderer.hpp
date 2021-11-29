@@ -10,13 +10,14 @@
 #include <string>
 
 class Renderer{
-	public:
-		inline Renderer(const std::string& _title, size_t pool = 1) : title{ _title }, pool{ pool }, isBufferInvalid(true), showGui(false){
+public:
+	inline Renderer(const std::string& _title, size_t pool = 1) : title{ _title }, pool{ pool }, isBufferInvalid(true){
 			this->frameBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 		};
 		~Renderer();
 
 		bool init();
+		void initGui();
 		bool start();
 		void setScene(ScenePtr scene);
 
@@ -41,9 +42,15 @@ class Renderer{
 
 		bool showGui;
 		int guiFOV;
-		int guiThreads;
+		float guiSensitivity;
 		glm::vec3 guiCamPos;
 		glm::vec3 guiCamDir;
+		float guiK1;
+		float guiK2;
+		bool guiBarrel;
+		bool guiFisheye;
+		bool guiContinuousRender;
+		float guiFisheyeAngle;
 };
 
 #endif
