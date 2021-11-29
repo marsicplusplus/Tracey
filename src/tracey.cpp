@@ -1,6 +1,8 @@
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
-#include "material.hpp"
+#include "materials/material_diffuse.hpp"
+#include "materials/material_dielectric.hpp"
+#include "materials/material_mirror.hpp"
 #include "textures/checkered.hpp"
 #include "textures/image_texture.hpp"
 #include "light_object.hpp"
@@ -46,25 +48,30 @@ int main(int argc, char *args[]){
 	OptionsMap::Instance()->printOptions();
 	auto wood = std::make_shared<ImageTexture>("Textures/parque.png");
 	/* Materials */
-	MaterialPtr woodMat = std::make_shared<Material>(wood);
-	MaterialPtr earthMat = std::make_shared<Material>(std::make_shared<ImageTexture>("Textures/earthmap.jpg"));
-	MaterialPtr checkeredMat = std::make_shared<Material>(std::make_shared<Checkered>(), 0.6);
-	MaterialPtr redDiffuse = std::make_shared<Material>(Color(1.0,0.0,0.0));
-	MaterialPtr greenDiffuse = std::make_shared<Material>(Color(0.0,1.0,0.0));
-	MaterialPtr blueDiffuse = std::make_shared<Material>(Color(0.0,0.0,1.0));
-	MaterialPtr greenMirror = std::make_shared<Material>(Color(0.0,1.0,0.0), /* reflective */ 1.0);
-	MaterialPtr whiteMirror = std::make_shared<Material>(Color(1.0), /* reflective */ 1.0);
-	MaterialPtr woodMirror = std::make_shared<Material>(wood, /* reflective */ 0.0);
+	MaterialPtr woodMat = std::make_shared<DiffuseMaterial>(wood);
+	MaterialPtr earthMat = std::make_shared<DiffuseMaterial>(std::make_shared<ImageTexture>("Textures/earthmap.jpg"));
+	MaterialPtr checkeredMat = std::make_shared<DiffuseMaterial>(std::make_shared<Checkered>());
+	MaterialPtr redDiffuse = std::make_shared<DiffuseMaterial>(Color(1.0,0.0,0.0));
+	MaterialPtr greenDiffuse = std::make_shared<DiffuseMaterial>(Color(0.0,1.0,0.0));
+	MaterialPtr blueDiffuse = std::make_shared<DiffuseMaterial>(Color(0.0,0.0,1.0));
+	MaterialPtr greenMirror = std::make_shared<MirrorMaterial>(Color(0.0,1.0,0.0), /* reflective */ 1.0);
+	MaterialPtr whiteMirror = std::make_shared<MirrorMaterial>(Color(1.0), /* reflective */ 1.0);
+	MaterialPtr whiteDielectric = std::make_shared<DielectricMaterial>(Color(1.0), /* ref_idx */ 1.4);
+	MaterialPtr blueDielectric = std::make_shared<DielectricMaterial>(Color(0.0,0.0,1.0), /* ref_idx */ 0.5);
+	MaterialPtr woodMirror = std::make_shared<MirrorMaterial>(wood, /* reflective */ 0.2);
 
 	ScenePtr scene = std::make_shared<Scene>();
 	/* Hittables */
-	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.8, 0.0, -0.6}, 0.4, whiteMirror));
-	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, 0.0, -1.5}, 0.3, woodMirror));
-	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{-1.0, 0.0, -0.6}, 0.4, whiteMirror));
+	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.8, 0.0, -0.6}, 0.4, earthMat));
+	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, -0.2, -1.5}, 0.3, whiteDielectric));
+	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{-1.0, 0.0, -0.6}, 0.4, whiteDielectric));
+	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{-1.0, 0.0, -0.6}, 0.1, blueDielectric));
+	//scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, -0.5, 0.0), glm::normalize(glm::dvec3(0.0, 1.0, 0.0)), woodMat));
 	scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, -0.5, 0.0), glm::normalize(glm::dvec3(0.0, 1.0, 0.0)), checkeredMat));
-	scene->addHittable(std::make_shared<Plane>(glm::dvec3(2.0, 0.0, 0.0), glm::normalize(glm::dvec3(-1.0, 0.0, 0.0)), redDiffuse));
-	scene->addHittable(std::make_shared<Plane>(glm::dvec3(-2.0, 0.0, 0.0), glm::normalize(glm::dvec3(1.0, 0.0, 0.0)), blueDiffuse));
-	scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, 0.0, -2.5), glm::normalize(glm::dvec3(0.0, 0.0, 1.0)), greenDiffuse));
+
+	//scene->addHittable(std::make_shared<Plane>(glm::dvec3(4.0, 0.0, 0.0), glm::normalize(glm::dvec3(-1.0, 0.0, 0.0)), checkeredMat));
+	//scene->addHittable(std::make_shared<Plane>(glm::dvec3(-4.0, 0.0, 0.0), glm::normalize(glm::dvec3(1.0, 0.0, 0.0)), blueDiffuse));
+	//scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, 0.0, -2.5), glm::normalize(glm::dvec3(0.0, 0.0, 1.0)), greenDiffuse));
 
 	/* Lights */
 	scene->addLight(std::make_shared<PointLight>(glm::dvec3(1.5, 2.0, -1.5), 20.2, glm::dvec3(1,0.5,1)));

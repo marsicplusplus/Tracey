@@ -1,7 +1,7 @@
 #ifndef __DEFS_HPP__
 #define __DEFS_HPP__
 
-#include "material.hpp"
+#include "materials/material.hpp"
 #include "glm/vec3.hpp"
 #include "ray.hpp"
 #include <random>

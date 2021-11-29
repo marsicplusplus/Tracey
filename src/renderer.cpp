@@ -213,20 +213,21 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 	if(scene->traverse(ray, 0.001, INF, hr)){
 		Ray scattered;
 		Color attenuation;
-		if(hr.material->getReflective() == 0.0)
-			return hr.material->getAlbedo(hr) * scene->traceLights(hr);
-		if(hr.material->getReflective() == 1.0){
-			Ray reflected(hr.p, ray.getDirection() - 2*glm::dot(ray.getDirection(), hr.normal)*hr.normal);
-			return hr.material->getAlbedo(hr) * trace(reflected, bounces - 1, scene);
+		double reflectionIdx = 1;
+		double refractionIdx = ray.getCurrentRefraction();
+		if(!hr.material->reflect(ray, hr, attenuation, scattered, reflectionIdx)){
+			return attenuation * scene->traceLights(hr);
 		} else {
-			double s = hr.material->getReflective();
-			double d = 1-s;
-			Ray reflected(hr.p, ray.getDirection() - 2*glm::dot(ray.getDirection(), hr.normal)*hr.normal);
-			return hr.material->getAlbedo(hr) * (s * trace(reflected, bounces - 1, scene) + d * scene->traceLights(hr));
+			//if(!hr.material->refract()){
+				if(reflectionIdx == 1.0)
+					return attenuation * (trace(scattered, bounces - 1, scene));
+				else
+					return attenuation * (reflectionIdx * trace(scattered, bounces - 1, scene) + (1.0-reflectionIdx) * scene->traceLights(hr));
+			//}
 		}
 		return Color{0,0,0};
 	}
-	return Color(0.3,0.8,0.2);
+	return Color(0.8,0.5,0.8);
 }
 
 void Renderer::putPixel(uint32_t fb[], int idx, Color& color){

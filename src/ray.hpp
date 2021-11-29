@@ -7,12 +7,19 @@
 class Ray{
 	public:
 		Ray() {};
-		Ray(glm::dvec3 _origin, glm::dvec3 _direction) : origin{_origin}, direction{glm::normalize(_direction)}, currentRefraction{1.0} {};
+		Ray(glm::dvec3 _origin, glm::dvec3 _direction, double idx = 1.0) : origin{_origin}, direction{glm::normalize(_direction)}, currentRefraction{idx} {};
 		inline glm::dvec3 getOrigin() const {return origin; }
 		inline glm::dvec3 getDirection() const {return direction; }
 		inline glm::dvec3 at(double t) const {
 			return this->origin + t * this->direction;
 		};
+		inline double getCurrentRefraction() const {
+			return this->currentRefraction;
+		}
+		inline void setCurrentRefraction(const double idx) {
+			this->currentRefraction = idx;
+		}
+
 
 	private:
 		glm::dvec3 origin;
