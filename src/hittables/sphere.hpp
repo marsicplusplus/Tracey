@@ -39,8 +39,9 @@ class Sphere : public Hittable {
 				auto c = glm::dot(oc, oc) - radius*radius;
 				auto discriminant = b*b - 4*a*c;
 				if(discriminant >= 0){
-					double t0 = (-b - sqrt(discriminant) ) / (2.0*a);
-					double t1 = (-b + sqrt(discriminant) ) / (2.0*a);
+					double sq = sqrt(discriminant);
+					double t0 = (-b - sq ) / (2.0*a);
+					double t1 = (-b + sq ) / (2.0*a);
 					double cT;
 					if(t0 < t1 && t0 > 0) cT = t0;
 					else if(t1 > 0) cT = t1;

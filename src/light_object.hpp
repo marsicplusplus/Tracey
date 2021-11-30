@@ -10,20 +10,15 @@ class LightObject {
 	public:
 		LightObject(double i, Color c) : intensity{i}, color{c} {}
 		virtual Ray getRay(const HitRecord &rec, double &tMax) const = 0;
-		virtual inline Color getLight(const HitRecord &rec, Ray& ray, glm::dvec3 cameraPos) const {
+		virtual inline Color getLight(const HitRecord &rec, Ray& ray) const {
 			Color i(0.0);
 			double nd = glm::dot(rec.normal,ray.getDirection());
-			if( nd>0 ){
-				i += color * intensity * nd/static_cast<double>(rec.normal.length() * ray.getDirection().length());
+			if(nd > 0){
+				i += color * intensity * nd;
 			}
-			//if(rec.material->getSpecular() > 0){
-				//glm::dvec3 R = 2.0 * rec.normal * glm::dot(rec.normal, ray.getDirection()) - ray.getDirection();
-					//double rv = glm::dot(R, cameraPos);
-					//if (rv > 0) {
-						//i += intensity * pow(rv/static_cast<double>(glm::length(R) * glm::length(cameraPos)), rec.material->getSpecular());
-					//}
-			//}
-			
+			// TODO: this is wrong. rec.t is not the distance between the light and the object.
+			// How do I handle this in the general case (i.e. DirectionalLight and ambient light, since it doesn't have a "distance")? This class need to be written anew.
+			// P.S.: even by removing the attenuation factor, I still gets artifacts, so probably not the culprit, but obviously not right.
 			return i*1.0/static_cast<double>(rec.t * rec.t);
 		};
 	protected:
@@ -62,7 +57,7 @@ class AmbientLight : public LightObject {
 			Ray ray;
 			return ray;
 		}
-		virtual inline Color getLight(const HitRecord &rec, Ray& ray, glm::dvec3 camPos) const override {
+		virtual inline Color getLight(const HitRecord &rec, Ray& ray) const override {
 			return intensity * color;
 		}
 };
