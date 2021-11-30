@@ -8,7 +8,10 @@
 #include "textures/image_texture.hpp"
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
-#include "material.hpp"
+#include "materials/material.hpp"
+#include "materials/material_dielectric.hpp"
+#include "materials/material_mirror.hpp"
+#include "materials/material_diffuse.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -40,11 +43,19 @@ Scene::Scene(std::string sceneFile){
 			textures[t["name"].get<std::string>()] = text;
 		}
 		for(auto m : j["materials"]){
-			MaterialPtr mat = std::make_shared<Material>(
-					textures[m["texture"].get<std::string>()], 
-					m["reflect"].get<double>(),
-					m["specular"].get<double>(),
-					m["refractionIdx"].get<double>());
+			std::string type = m["type"].get<std::string>();
+			std::string textname = m["texture"].get<std::string>();
+			auto texture = textures.find(textname);
+			if(texture == textures.end()) std::cout << "ERROR WITH TEXTURE " << textname << std::endl;
+			std::shared_ptr<Material> mat;
+			if(type == "DIFFUSE"){
+				mat = std::make_shared<DiffuseMaterial>(texture->second);
+			} else if(type == "MIRROR") {
+				double ref = m["reflect"].get<double>();
+				mat = std::make_shared<MirrorMaterial>(texture->second, ref);
+			} else if (type == "DIELECTRIC"){
+
+			}
 			materials[m["name"].get<std::string>()] = mat;
 		}
 		for(auto p : j["primitives"]){

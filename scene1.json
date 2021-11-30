@@ -28,7 +28,7 @@
 		{
 			"name": "EarthTexture",
 			"type": "IMAGE",
-			"path": "../Textures/earthmap.jpg"
+			"path": "/home/lorenzo/University/AdvancedGraphic/Textures/earthmap.jpg"
 		},
 		{
 			"name": "SolidWhite",
@@ -38,46 +38,35 @@
 	],
 	"materials": [
 		{
+			"type": "DIFFUSE",
 			"name": "DiffuseBlue",
-			"texture": "SolidBlue",
-			"specular": 0.0,
-			"reflect": 0.0,
-			"refractionIdx": 1.0
+			"texture": "SolidBlue"
 		},
 		{
+			"type": "DIFFUSE",
 			"name": "DiffuseRed",
-			"texture": "SolidRed",
-			"specular": 0.0,
-			"reflect": 0.0,
-			"refractionIdx": 1.0
+			"texture": "SolidRed"
 		},
 		{
+			"type": "DIFFUSE",
 			"name": "DiffuseGreen",
-			"texture": "SolidGreen",
-			"specular": 0.0,
-			"reflect": 0.0,
-			"refractionIdx": 1.0
+			"texture": "SolidGreen"
 		},
 		{
+			"type": "DIFFUSE",
 			"name": "Checkerboard",
-			"texture": "BWCheckered",
-			"specular": 0.0,
-			"reflect": 0.0,
-			"refractionIdx": 1.0
+			"texture": "BWCheckered"
 		},
 		{
+			"type": "DIFFUSE",
 			"name": "EarthSurface",
-			"texture": "EarthTexture",
-			"specular": 0.0,
-			"reflect": 0.0,
-			"refractionIdx": 1.0
+			"texture": "EarthTexture"
 		},
 		{
+			"type": "MIRROR",
 			"name": "WhiteMirror",
 			"texture": "SolidWhite",
-			"specular": 0.0,
-			"reflect": 1.0,
-			"refractionIdx": 1.0
+			"reflect": 1.0
 		}
 	],
 	"primitives": [

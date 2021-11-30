@@ -1,6 +1,6 @@
+#define STB_IMAGE_IMPLEMENTATION
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
-#include "material.hpp"
 #include "textures/checkered.hpp"
 #include "textures/image_texture.hpp"
 #include "light_object.hpp"
