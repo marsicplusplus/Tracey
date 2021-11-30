@@ -22,25 +22,28 @@ Ray Camera::generateCameraRay(double u, double v) {
 	glm::dvec3 rayDir;
 
 	switch (this->cameraType) {
-	case CameraType::fisheye:
-		auto xyz = Fisheye(u, v);
-		if (xyz == glm::dvec3(0, 0, 0)) {
-			rayDir = xyz;
-		} else {
-			// Transform directional vector from x, y, z axes to axes of our camera
-			rayDir = this->cameraMatrix * xyz;
+		case CameraType::fisheye: {
+			auto xyz = Fisheye(u, v);
+			if (xyz == glm::dvec3(0, 0, 0)) {
+				rayDir = xyz;
+			} else {
+				// Transform directional vector from x, y, z axes to axes of our camera
+				rayDir = this->cameraMatrix * xyz;
+			}
+			break;
 		}
-		break;
-	case CameraType::barrel:
-		auto uv = Distort(u, v);
-		u = uv.x;
-		v = uv.y;
-	case CameraType::normal:
-	default:
-		rayDir = this->llCorner + u * this->horizontal + v * this->vertical - this->position;
-		break;
+		case CameraType::barrel: {
+			auto uv = Distort(u, v);
+			u = uv.x;
+			v = uv.y;
+		}
+		case CameraType::normal:
+		default: {
+			rayDir = this->llCorner + u * this->horizontal + v * this->vertical - this->position;
+			break;
+		}
 	}
-	
+
 	Ray ray(this->position, rayDir);
 	return ray;
 }
