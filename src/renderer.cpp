@@ -111,9 +111,6 @@ bool Renderer::init(){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
-
-	nSamples = OptionsMap::Instance()->getOption(Options::SAMPLES);
-	nBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
 	return true;
 }
 
@@ -150,6 +147,8 @@ bool Renderer::start() {
 
 	glClearColor(0,0,0,0);
 
+	const int maxBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
+	const int samples = OptionsMap::Instance()->getOption(Options::SAMPLES);
 	const double fpsLimit = 1.0 / static_cast<double>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
 	double lastUpdateTime = 0;  // number of seconds since the last loop
 
@@ -429,9 +428,8 @@ void Renderer::renderGUI() {
 				bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 0);
 				i++;
 			}
-			stbi_write_png(buffer, wWidth, wHeight, 3, bitmap, 3* wWidth);
-			delete[] bitmap;
 		}
+
 
 		if (guiContinuousRender) {
 			this->isBufferInvalid = true;
