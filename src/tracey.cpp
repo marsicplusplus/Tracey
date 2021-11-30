@@ -56,25 +56,20 @@ int main(int argc, char *args[]){
 	MaterialPtr blueDiffuse = std::make_shared<DiffuseMaterial>(Color(0.0,0.0,1.0));
 	MaterialPtr greenMirror = std::make_shared<MirrorMaterial>(Color(0.0,1.0,0.0), /* reflective */ 1.0);
 	MaterialPtr whiteMirror = std::make_shared<MirrorMaterial>(Color(1.0), /* reflective */ 1.0);
-	MaterialPtr glass = std::make_shared<DielectricMaterial>(Color(1.0), /* ref_idx */ 1.5);
-	MaterialPtr water = std::make_shared<DielectricMaterial>(Color(0.0,0.2,0.8), /* ref_idx */ 1.3);
 
 	ScenePtr scene = std::make_shared<Scene>();
 	/* Hittables */
 
-	scene->addHittable(std::make_shared<ZXRect>(-0.5, glm::dvec4(-1.0, 1.0, -1.0, 1.0), woodMat));
-	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, 0.0, 0.0}, 0.5, glass));
-
 	 //Spheres
-	//scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.8, 0.0, -4.6}, 0.4, earthMat));
-	//scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, -0.2, -1.5}, 0.3, water));
-	//scene->addHittable(std::make_shared<Sphere>(glm::dvec3{-1.0, 0.0, -0.6}, 0.4, glass));
+	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.8, 0.0, -4.6}, 0.4, earthMat));
+	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{0.0, -0.2, -1.5}, 0.3, woodMat));
+	scene->addHittable(std::make_shared<Sphere>(glm::dvec3{-1.0, 0.0, -0.6}, 0.4, greenMirror));
 
 	// Planes
-	//scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, -0.5, 0.0), glm::normalize(glm::dvec3(0.0, 1.0, 0.0)), woodMat));
-	//scene->addHittable(std::make_shared<Plane>(glm::dvec3(4.0, 0.0, 0.0), glm::normalize(glm::dvec3(-1.0, 0.0, 0.0)), checkeredMat));
-	//scene->addHittable(std::make_shared<Plane>(glm::dvec3(-2.0, 0.0, 0.0), glm::normalize(glm::dvec3(1.0, 0.0, 0.0)), checkeredMat));
-	//scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, 0.0, -2.5), glm::normalize(glm::dvec3(0.0, 0.0, 1.0)), water));
+	scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, -0.5, 0.0), glm::normalize(glm::dvec3(0.0, 1.0, 0.0)), woodMat));
+	scene->addHittable(std::make_shared<Plane>(glm::dvec3(4.0, 0.0, 0.0), glm::normalize(glm::dvec3(-1.0, 0.0, 0.0)), checkeredMat));
+	scene->addHittable(std::make_shared<Plane>(glm::dvec3(-2.0, 0.0, 0.0), glm::normalize(glm::dvec3(1.0, 0.0, 0.0)), checkeredMat));
+	scene->addHittable(std::make_shared<Plane>(glm::dvec3(0.0, 0.0, -2.5), glm::normalize(glm::dvec3(0.0, 0.0, 1.0)), whiteMirror));
 
 	/* Lights */
 	scene->addLight(std::make_shared<PointLight>(glm::dvec3(1.5, 2.0, -1.5), 20.2, glm::dvec3(1,0.5,1)));

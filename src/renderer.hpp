@@ -51,6 +51,8 @@ public:
 		bool guiFisheye;
 		bool guiContinuousRender;
 		float guiFisheyeAngle;
+		int nSamples;
+		int nBounces;
 };
 
 #endif

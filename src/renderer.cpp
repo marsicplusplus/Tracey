@@ -106,6 +106,9 @@ bool Renderer::init(){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+
+	nSamples = OptionsMap::Instance()->getOption(Options::SAMPLES);
+	nBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
 	return true;
 }
 
@@ -142,8 +145,6 @@ bool Renderer::start() {
 
 	glClearColor(0,0,0,0);
 
-	const int maxBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
-	const int samples = OptionsMap::Instance()->getOption(Options::SAMPLES);
 	const double fpsLimit = 1.0 / static_cast<double>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
 	double lastUpdateTime = 0;  // number of seconds since the last loop
 
@@ -173,7 +174,9 @@ bool Renderer::start() {
 			for(int tileRow = 0; tileRow < verticalTiles; ++tileRow){
 				for(int tileCol = 0; tileCol < horizontalTiles; ++tileCol){
 					/* Launch thread */
-					futures.push_back(pool.queue([&, tileRow, tileCol](std::mt19937& gen){
+					int samples = this->nSamples;
+					int bounces = this->nBounces;
+					futures.push_back(pool.queue([&, tileRow, tileCol, samples, bounces](std::mt19937& gen){
 						CameraPtr cam = scene->getCamera();
 						for (int row = 0; row < tHeight; ++row) {
 							for (int col = 0; col < tWidth; ++col) {
@@ -188,7 +191,7 @@ bool Renderer::start() {
 										if (ray.getDirection() == glm::dvec3(0, 0, 0)) {
 											pxColor += Color(0, 0, 0);
 										} else{
-											pxColor += trace(ray, maxBounces, scene);
+											pxColor += trace(ray, bounces, scene);
 										}
 									}
 								}
@@ -206,8 +209,8 @@ bool Renderer::start() {
 			lastUpdateTime = glfwGetTime() - now;
 			std::cout << std::endl << "Last frame info:" <<std::endl;
 			std::cout << lastUpdateTime << "s" << std::endl;
-			std::cout << samples << " samples per pixel" << std::endl;
-			std::cout << maxBounces << " maximum number of ray bounces" << std::endl;
+			std::cout << nSamples << " samples per pixel" << std::endl;
+			std::cout << nBounces << " maximum number of ray bounces" << std::endl;
 			isBufferInvalid = false;
 		}
 
@@ -386,14 +389,18 @@ void Renderer::renderGUI() {
 				}
 			}
 
-			ImGui::Spacing();
-			ImGui::Spacing();
-			if (ImGui::Button("Render New Frame")) {
-				this->scene->getCamera()->update(0, true);
-				this->isBufferInvalid = true;
-			}
+			ImGui::TextWrapped("Samples");
+			ImGui::SliderInt("##SAMPLES", &nSamples, 1, 100);
+			ImGui::TextWrapped("Bounces");
+			ImGui::SliderInt("##BOUNCES", &nBounces, 2, 100);
 		}
 
+		ImGui::Spacing();
+		ImGui::Spacing();
+		if (ImGui::Button("Render New Frame")) {
+			this->scene->getCamera()->update(0, true);
+			this->isBufferInvalid = true;
+		}
 
 		if (guiContinuousRender) {
 			this->isBufferInvalid = true;
