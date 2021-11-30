@@ -8,9 +8,12 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "renderer.hpp"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
+#include <sstream>
 
 namespace{
 	const char *vertexShaderSource = "#version 450 core\n"
@@ -53,6 +56,8 @@ bool Renderer::init(){
 	CHECK_ERROR(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "Failed to initialize GLAD", false);
 
 	initGui();
+
+	stbi_flip_vertically_on_write(true);
 
 	/* Shader */
 	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -400,6 +405,32 @@ void Renderer::renderGUI() {
 		if (ImGui::Button("Render New Frame")) {
 			this->scene->getCamera()->update(0, true);
 			this->isBufferInvalid = true;
+		}
+		ImGui::Spacing();
+		if (ImGui::Button("Save current Frame")) {
+			time_t rawtime;
+			struct tm * timeinfo;
+			char buffer[80];
+
+			time (&rawtime);
+			timeinfo = localtime(&rawtime);
+
+			strftime(buffer,80,"%d-%m-%Y-%H-%M-%S.png",timeinfo);
+			std::string str(buffer);
+
+			int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
+			int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
+			uint8_t *bitmap = new uint8_t[3*wWidth * wHeight];
+			int i = 0;
+			int k = 0;
+			while(i < wWidth * wHeight){
+				bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 16);
+				bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 8);
+				bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 0);
+				i++;
+			}
+			stbi_write_png(buffer, wWidth, wHeight, 3, bitmap, 3* wWidth);
+			delete[] bitmap;
 		}
 
 		if (guiContinuousRender) {
