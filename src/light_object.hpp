@@ -6,20 +6,26 @@
 
 // light.intensity * dot(n,l)/(length(N) * length(L))
 
+enum class Lights {
+	NILL,
+	DIRECTIONAL,
+	POINT,
+	AMBIENT
+};
+
 class LightObject {
 	public:
 		LightObject(double i, Color c) : intensity{i}, color{c} {}
+		virtual inline Lights getType() {return Lights::NILL; }
 		virtual Ray getRay(const HitRecord &rec, double &tMax) const = 0;
+		virtual void attenuate(Color &color, const glm::dvec3 &p) {};
 		virtual inline Color getLight(const HitRecord &rec, Ray& ray) const {
 			Color i(0.0);
 			double nd = glm::dot(rec.normal,ray.getDirection());
 			if(nd > 0){
 				i += color * intensity * nd;
 			}
-			// TODO: this is wrong. rec.t is not the distance between the light and the object.
-			// How do I handle this in the general case (i.e. DirectionalLight and ambient light, since it doesn't have a "distance")? This class need to be written anew.
-			// P.S.: even by removing the attenuation factor, I still gets artifacts, so probably not the culprit, but obviously not right.
-			return i*1.0/static_cast<double>(rec.t * rec.t);
+			return i;
 		};
 	protected:
 		double intensity;
@@ -29,9 +35,13 @@ class LightObject {
 class PointLight : public LightObject {
 	public:
 		PointLight(glm::dvec3 pos, double i, Color c) : LightObject(i, c), position{pos}{}
+		virtual inline Lights getType() override {return Lights::POINT; }
 		inline Ray getRay(const HitRecord &rec, double &tMax) const override {
 			tMax = 1;
 			return Ray(rec.p, position - rec.p);
+		}
+		inline void attenuate(Color &color, const glm::dvec3 &p) override {
+			color = color * 1.0/glm::distance(position, p);
 		}
 
 	private:
@@ -41,6 +51,7 @@ class PointLight : public LightObject {
 class DirectionalLight : public LightObject {
 	public:
 		DirectionalLight(glm::dvec3 dir, double i, Color c) : LightObject(i, c), direction{dir}{}
+		virtual inline Lights getType() override {return Lights::DIRECTIONAL; }
 		inline Ray getRay(const HitRecord &rec, double &tMax) const override {
 			tMax = INF;
 			return Ray(rec.p, -direction);
@@ -53,6 +64,7 @@ class DirectionalLight : public LightObject {
 class AmbientLight : public LightObject {
 	public:
 		AmbientLight(double i, Color c) : LightObject(i,c) {}
+		virtual inline Lights getType() override {return Lights::AMBIENT; }
 		virtual Ray getRay(const HitRecord &rec, double &tMax) const override {
 			Ray ray;
 			return ray;

@@ -52,6 +52,7 @@ Color Scene::traceLights(HitRecord &rec) const {
 		HitRecord shadow;
 		if(!traverse(ray, 0.0001, tMax, shadow)){
 			i+=light->getLight(rec, ray);
+			light->attenuate(i, rec.p);
 		}
 	}
 	return i;

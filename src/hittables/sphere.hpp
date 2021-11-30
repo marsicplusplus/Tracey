@@ -24,9 +24,6 @@ class Sphere : public Hittable {
 					rec.material = mat;
 					glm::dvec3 normal = (rec.p - center) / radius;
 					rec.setFaceNormal(ray, normal);
-					if(!rec.frontFace){
-						std::cout << "I'M IN" << std::endl;
-					}
 					getUV(rec);
 					return true;
 				}
