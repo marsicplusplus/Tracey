@@ -39,18 +39,6 @@ inline double randomDouble(std::mt19937 &gen, double min, double max){
 	std::uniform_real_distribution<double> dist(min, max);
 	return dist(gen);
 }
-inline glm::dvec3 randomVec3(std::mt19937 &gen, double min, double max) {
-	return glm::dvec3(randomDouble(gen, min, max), randomDouble(gen, min, max), randomDouble(gen, min, max));
-}
-inline glm::dvec3 randomUnitSphere(std::mt19937 &gen) {
-	while (true) {
-		auto p = randomVec3(gen, -1.0, 1.0);
-		if (glm::length2(p)>= 1) continue;
-		return p;
-	}
-}
-inline static glm::dvec3 randomUnitVector(std::mt19937 &gen) {
-	return glm::normalize(randomUnitSphere(gen));
-}
+
 
 #endif

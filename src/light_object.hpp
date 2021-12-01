@@ -6,64 +6,97 @@
 
 // light.intensity * dot(n,l)/(length(N) * length(L))
 
+enum class Lights {
+	NILL,
+	DIRECTIONAL,
+	POINT,
+	AMBIENT
+};
+
 class LightObject {
+
 	public:
 		LightObject(double i, Color c) : intensity{i}, color{c} {}
+
+		virtual inline Lights getType() {return Lights::NILL; }
+
 		virtual Ray getRay(const HitRecord &rec, double &tMax) const = 0;
-		virtual inline Color getLight(const HitRecord &rec, Ray& ray, glm::dvec3 cameraPos) const {
-			Color i(0.0);
+
+		virtual Color attenuate(Color color, const glm::dvec3& p) { return color; };
+
+		virtual inline Color getLight(const HitRecord &rec, Ray& ray) const {
+			Color illumination(0.0);
 			double nd = glm::dot(rec.normal,ray.getDirection());
-			if( nd>0 ){
-				i += color * intensity * nd/static_cast<double>(rec.normal.length() * ray.getDirection().length());
+			if(nd > 0){
+				illumination += this->color * this->intensity * nd;
 			}
-			//if(rec.material->getSpecular() > 0){
-				//glm::dvec3 R = 2.0 * rec.normal * glm::dot(rec.normal, ray.getDirection()) - ray.getDirection();
-					//double rv = glm::dot(R, cameraPos);
-					//if (rv > 0) {
-						//i += intensity * pow(rv/static_cast<double>(glm::length(R) * glm::length(cameraPos)), rec.material->getSpecular());
-					//}
-			//}
-			
-			return i*1.0/static_cast<double>(rec.t * rec.t);
+			return illumination;
 		};
+
 	protected:
 		double intensity;
 		Color color;
 };
 
+
+
+
 class PointLight : public LightObject {
+
 	public:
 		PointLight(glm::dvec3 pos, double i, Color c) : LightObject(i, c), position{pos}{}
+
+		virtual inline Lights getType() override {return Lights::POINT; }
+
 		inline Ray getRay(const HitRecord &rec, double &tMax) const override {
-			tMax = 1;
-			return Ray(rec.p, position - rec.p);
+			tMax = glm::distance(this->position, rec.p);
+			return Ray(rec.p, this->position - rec.p);
+		}
+
+		inline Color attenuate(Color color, const glm::dvec3 &p) override {
+			return color * 1.0 / glm::distance(this->position, p);
 		}
 
 	private:
 		glm::dvec3 position;
 };
 
+
+
+
 class DirectionalLight : public LightObject {
+
 	public:
 		DirectionalLight(glm::dvec3 dir, double i, Color c) : LightObject(i, c), direction{dir}{}
+
+		virtual inline Lights getType() override {return Lights::DIRECTIONAL; }
+
 		inline Ray getRay(const HitRecord &rec, double &tMax) const override {
 			tMax = INF;
-			return Ray(rec.p, -direction);
+			return Ray(rec.p, -this->direction);
 		}
 
 	private:
 		glm::dvec3 direction;
 };
 
+
+
+
 class AmbientLight : public LightObject {
+
 	public:
 		AmbientLight(double i, Color c) : LightObject(i,c) {}
+
+		virtual inline Lights getType() override {return Lights::AMBIENT; }
+
 		virtual Ray getRay(const HitRecord &rec, double &tMax) const override {
 			Ray ray;
 			return ray;
 		}
-		virtual inline Color getLight(const HitRecord &rec, Ray& ray, glm::dvec3 camPos) const override {
-			return intensity * color;
+
+		virtual inline Color getLight(const HitRecord &rec, Ray& ray) const override {
+			return this->intensity * this->color;
 		}
 };
 
