@@ -52,7 +52,11 @@ int main(int argc, char *args[]){
 			parseOptions(&args[i][strlen("config=")]);
 		}
 		if(strncmp("scene=", args[i], strlen("scene=")) == 0){
-			scene = std::make_shared<Scene>(&args[i][strlen("scene=")]);
+			try{
+				scene = std::make_shared<Scene>(&args[i][strlen("scene=")]);
+			} catch(std::exception &e){
+				std::cout << e.what();
+			}
 		}
 	}
 	OptionsMap::Instance()->printOptions();
