@@ -57,11 +57,16 @@ Scene::Scene(std::filesystem::path sceneFile){
 		if(type == "DIFFUSE"){
 			mat = std::make_shared<DiffuseMaterial>(texture->second);
 		} else if(type == "MIRROR") {
-			double ref = m["reflect"].get<double>();
+			double ref = m.count("reflect") ? m["reflect"].get<double>() : 1.0;
 			mat = std::make_shared<MirrorMaterial>(texture->second, ref);
-		} else if (type == "DIELECTRIC"){
-			double idx = m["idx"].get<double>();
-			mat = std::make_shared<DielectricMaterial>(texture->second, idx);
+		}
+		else if (type == "DIELECTRIC") {
+			double idx = m.count("idx") ? m["idx"].get<double>() : 1.56;
+			double r = m.count("a.r") ? m["a.r"].get<double>() : 0;
+			double g = m.count("a.g") ? m["a.g"].get<double>() : 0;
+			double b = m.count("a.b") ? m["a.b"].get<double>() : 0;
+
+			mat = std::make_shared<DielectricMaterial>(texture->second, idx, Color(r,g,b));
 		}
 		materials[m["name"].get<std::string>()] = mat;
 	}

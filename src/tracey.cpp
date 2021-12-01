@@ -32,7 +32,7 @@ void parseOptions(char *path){
 			// std::thread::hardware_concurrency() can return 0 on failure 
 			int hardwareConcurrency = std::thread::hardware_concurrency();
 			if(hardwareConcurrency != 0){
-				nThreads = (nThreads < 1) ? hardwareConcurrency : std::min(hardwareConcurrency, nThreads);
+				nThreads = (nThreads < 1) ? hardwareConcurrency : (std::min)(hardwareConcurrency, nThreads);
 			}else{
 				nThreads = 1;
 			}
