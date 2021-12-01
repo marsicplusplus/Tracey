@@ -9,8 +9,9 @@ class DiffuseMaterial : public Material {
 		DiffuseMaterial(Color color) : albedo(std::make_shared<SolidColor>(color)) {}
 		DiffuseMaterial(std::shared_ptr<Texture> t) : albedo(t) {}
 		DiffuseMaterial() : albedo(std::make_shared<SolidColor>(0.5, 0.5, 0.5)) {}
-		inline bool reflect(const Ray& in, const HitRecord &r, Color& attenuation, Ray &scattered, double& s) const override {
-			s = 0.0;
+		inline Materials getType() const override { return Materials::DIFFUSE; }
+		inline bool reflect(const Ray& in, const HitRecord &r, Color& attenuation, Ray &scattered, double& reflectance) const override {
+			reflectance = 0.0;
 			attenuation = albedo->color(r.u, r.v, r.p);
 			return false;
 		}

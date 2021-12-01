@@ -1,6 +1,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
+#include "materials/material_diffuse.hpp"
+#include "materials/material_dielectric.hpp"
+#include "materials/material_mirror.hpp"
 #include "textures/checkered.hpp"
 #include "textures/image_texture.hpp"
 #include "light_object.hpp"
@@ -39,7 +42,7 @@ void parseOptions(char *path){
 }
 
 void printHelp(char *name){
-	printf("USAGE:\n%s scene=<path-to-scene.json> [config=<path-to-config.txt>]\n", name);
+	printf("USAGE:\n%s [scene=<path-to-scene.json>] [config=<path-to-config.txt>]\n", name);
 }
 
 int main(int argc, char *args[]){

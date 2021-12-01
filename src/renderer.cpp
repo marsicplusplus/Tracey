@@ -111,9 +111,9 @@ bool Renderer::init(){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
-
-	nSamples = OptionsMap::Instance()->getOption(Options::SAMPLES);
-	nBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
+	
+	this->nSamples = OptionsMap::Instance()->getOption(Options::SAMPLES);
+	this->nBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
 	return true;
 }
 
@@ -160,7 +160,6 @@ bool Renderer::start() {
 
 	const int horizontalTiles = wWidth / tWidth;
 	const int verticalTiles = wHeight / tHeight;
-
 
 	while(!glfwWindowShouldClose(this->window)){
 		double now = glfwGetTime();
@@ -218,8 +217,8 @@ bool Renderer::start() {
 			lastUpdateTime = glfwGetTime() - now;
 			std::cout << std::endl << "Last frame info:" <<std::endl;
 			std::cout << lastUpdateTime << "s" << std::endl;
-			std::cout << nSamples << " samples per pixel" << std::endl;
-			std::cout << nBounces << " maximum number of ray bounces" << std::endl;
+			std::cout << this->nSamples << " samples per pixel" << std::endl;
+			std::cout << this->nBounces << " maximum number of ray bounces" << std::endl;
 			isBufferInvalid = false;
 		}
 
@@ -241,20 +240,38 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 	HitRecord hr;
 	if(!scene || bounces <= 0)
 		return Color{0,0,0};
-	if(scene->traverse(ray, 0.001, INF, hr)){
-		Ray scattered;
+	if (scene->traverse(ray, 0.001, INF, hr)) {
+		Ray reflectedRay;
 		Color attenuation;
-		double reflectionIdx = 1;
-		double refractionIdx = ray.getCurrentRefraction();
-		if(!hr.material->reflect(ray, hr, attenuation, scattered, reflectionIdx)){
+		double reflectance = 1;
+		if (hr.material->getType() == Materials::DIFFUSE) {
+
+			hr.material->reflect(ray, hr, attenuation, reflectedRay, reflectance);
 			return attenuation * scene->traceLights(hr);
-		} else {
-			//if(!hr.material->refract()){
-				if(reflectionIdx == 1.0)
-					return attenuation * (trace(scattered, bounces - 1, scene));
-				else
-					return attenuation * (reflectionIdx * trace(scattered, bounces - 1, scene) + (1.0-reflectionIdx) * scene->traceLights(hr));
-			//}
+
+		} else if (hr.material->getType() == Materials::MIRROR) {
+
+			hr.material->reflect(ray, hr, attenuation, reflectedRay, reflectance);
+			if (reflectance == 1.0)
+				return attenuation * (trace(reflectedRay, bounces - 1, scene));
+			else
+				return attenuation * (reflectance * trace(reflectedRay, bounces - 1, scene) + (1.0 - reflectance) * scene->traceLights(hr));
+		} else if(hr.material->getType() == Materials::DIELECTRIC) {
+
+			Color refractionColor(0.0);
+			Color reflectionColor(0.0);
+			double reflectance;
+			hr.material->reflect(ray, hr, attenuation, reflectedRay, reflectance);
+			reflectionColor = trace(reflectedRay, bounces - 1, scene);
+
+			if(reflectance < 1.0){
+				Ray refractedRay;
+				double refractance;
+				hr.material->refract(ray, hr, attenuation, refractedRay, refractance);
+				refractionColor = trace(refractedRay, bounces-1, scene);
+			}
+
+			return attenuation * (reflectionColor * reflectance + refractionColor * (1 - reflectance));
 		}
 		return Color{0,0,0};
 	}
