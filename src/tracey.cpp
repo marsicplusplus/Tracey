@@ -52,13 +52,9 @@ int main(int argc, char *args[]){
 			scene = std::make_shared<Scene>(&args[i][strlen("scene=")]);
 		}
 	}
-	if(!scene){
-		printHelp(args[0]);
-		return 1;
-	}
 	OptionsMap::Instance()->printOptions();
 	Renderer renderer("TraceyGL", OptionsMap::Instance()->getOption(Options::THREADS));
-	renderer.setScene(scene);
+	if(scene) renderer.setScene(scene);
 	renderer.init();
 	renderer.start();
 }

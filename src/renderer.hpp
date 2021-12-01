@@ -8,6 +8,8 @@
 #include "options_manager.hpp"
 #include "thread_pool.hpp"
 #include <string>
+#include "imgui.h"
+#include "imfilebrowser.h"
 
 class Renderer{
 public:
@@ -53,6 +55,7 @@ public:
 		float guiFisheyeAngle;
 		int nSamples;
 		int nBounces;
+		ImGui::FileBrowser fBrowser;
 };
 
 #endif
