@@ -33,7 +33,7 @@
 		{
 			"name": "WoodTexture",
 			"type": "IMAGE",
-			"path": "../Textures/parque.png"
+			"path": "../Textures/parque.jpg"
 		},
 		{
 			"name": "SolidWhite",
@@ -72,7 +72,12 @@
 			"name": "WoodSurface",
 			"texture": "WoodTexture"
 		},
-
+		{
+			"type": "DIELECTRIC",
+			"name": "Glass",
+			"texture": "SolidWhite",
+			"idx": 1.5
+		},
 		{
 			"type": "MIRROR",
 			"name": "WhiteMirror",
@@ -115,7 +120,7 @@
 			"type": "SPHERE",
 			"position": [-1.0, 0.0, -0.6],
 			"radius": 0.4,
-			"material": "WhiteMirror"
+			"material": "Glass"
 		},
 		{
 			"type": "SPHERE",
@@ -129,19 +134,19 @@
 			"type": "DIRECTIONAL",
 			"direction": [0.0, -1.0, 0.0],
 			"color": [0.8, 0.8, 0.6],
-			"intensity": 35.0
+			"intensity": 1.0
 		},
 		{
 			"type": "POINT",
 			"position": [1.5, 2.0, -1.5],
 			"color": [1.0, 1.0, 1.0],
-			"intensity": 20.2
+			"intensity": 1.2
 		},
 		{
 			"type": "POINT",
 			"position": [-1.5, 2.0, -1.5],
 			"color": [1.0, 0.5, 1.0],
-			"intensity": 20.2
+			"intensity": 1.2
 		}
 	]
 }
