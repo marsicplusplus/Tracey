@@ -73,7 +73,7 @@
 	"lights": [
 		{
 			"type": "DIRECTIONAL",
-			"direction": [0.0, -1.0, 0.0],
+			"direction": [0.0, -1.0, -0.5],
 			"color": [0.8, 0.8, 0.6],
 			"intensity": 0.6
 		},
