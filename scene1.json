@@ -112,5 +112,25 @@
 			"radius": 0.2,
 			"material": "EarthSurface"
 		}
+	],
+	"lights": [
+		{
+			"type": "DIRECTIONAL",
+			"direction": [0.0, -1.0, 0.0],
+			"color": [0.8, 0.8, 0.6],
+			"intensity": 35.0
+		},
+		{
+			"type": "POINT",
+			"position": [1.5, 2.0, -1.5],
+			"color": [1.0, 1.0, 1.0],
+			"intensity": 20.2
+		},
+		{
+			"type": "POINT",
+			"position": [-1.5, 2.0, -1.5],
+			"color": [1.0, 0.5, 1.0],
+			"intensity": 20.2
+		}
 	]
 }

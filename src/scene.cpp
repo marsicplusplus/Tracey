@@ -16,6 +16,10 @@
 #include <iostream>
 #include <fstream>
 
+glm::dvec3 parseArray(nlohmann::basic_json<> arr){
+	return glm::dvec3(arr[0].get<double>(), arr[1].get<double>(),arr[2].get<double>());
+}
+
 Scene::Scene(){}
 Scene::Scene(std::filesystem::path sceneFile){
 	std::filesystem::path currPath = std::filesystem::current_path();
@@ -24,19 +28,20 @@ Scene::Scene(std::filesystem::path sceneFile){
 	auto j = nlohmann::json::parse(i);
 	std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
 	std::unordered_map<std::string, MaterialPtr> materials;
-	glm::dvec3 camPosition(j["camera"]["position"][0].get<double>(), j["camera"]["position"][1].get<double>(),j["camera"]["position"][2].get<double>());
-	glm::dvec3 dir(j["camera"]["dir"][0].get<double>(), j["camera"]["dir"][1].get<double>(),j["camera"]["dir"][2].get<double>());
-	glm::dvec3 up(j["camera"]["up"][0].get<double>(), j["camera"]["up"][1].get<double>(),j["camera"]["up"][2].get<double>());
+
+	glm::dvec3 camPosition(parseArray(j["camera"]["position"]));
+	glm::dvec3 cameraDir(parseArray(j["camera"]["dir"]));
+	glm::dvec3 cameraUp(parseArray(j["camera"]["up"]));
 	double fov = j["camera"]["fov"].get<double>();
-	setCamera(std::make_shared<Camera>(camPosition, dir, up, fov));
+	setCamera(std::make_shared<Camera>(camPosition, cameraDir, cameraUp, fov));
 	for(auto t : j["textures"]){
 		std::shared_ptr<Texture> text;
 		if(t["type"] == "SOLID_COLOR"){
-			text = std::make_shared<SolidColor>(Color(t["color"][0].get<double>(), t["color"][1].get<double>(), t["color"][2].get<double>()));
+			text = std::make_shared<SolidColor>(parseArray(t["color"]));
 		} else if(t["type"] == "CHECKERED"){
 			if(t.contains("color1") && t.contains("color2")){
-				Color c1 = Color(t["color1"][0].get<double>(), t["color1"][1].get<double>(), t["color1"][2].get<double>());
-				Color c2 = Color(t["color2"][0].get<double>(), t["color2"][1].get<double>(), t["color2"][2].get<double>());
+				Color c1 = parseArray(t["color1"]);
+				Color c2 = parseArray(t["color2"]);
 				text = std::make_shared<Checkered>(c1,c2);
 			} else text = std::make_shared<Checkered>();
 		} else if(t["type"] == "IMAGE"){
@@ -48,7 +53,6 @@ Scene::Scene(std::filesystem::path sceneFile){
 		std::string type = m["type"].get<std::string>();
 		std::string textname = m["texture"].get<std::string>();
 		auto texture = textures.find(textname);
-		if(texture == textures.end()) std::cout << "ERROR WITH TEXTURE " << textname << std::endl;
 		std::shared_ptr<Material> mat;
 		if(type == "DIFFUSE"){
 			mat = std::make_shared<DiffuseMaterial>(texture->second);
@@ -64,14 +68,26 @@ Scene::Scene(std::filesystem::path sceneFile){
 	for(auto p : j["primitives"]){
 		std::string type = p["type"].get<std::string>();
 		auto material = materials[p["material"].get<std::string>()];
-		glm::dvec3 pos(p["position"][0].get<double>(), p["position"][1].get<double>(), p["position"][2].get<double>());
+		glm::dvec3 pos(parseArray(p["position"]));
 		if(type == "PLANE"){
-			glm::dvec3 norm(p["normal"][0].get<double>(), p["normal"][1].get<double>(), p["normal"][2].get<double>());
+			glm::dvec3 norm(parseArray(p["normal"]));
 			hittables.push_back(std::make_shared<Plane>(pos, norm, material));
 		} else if(type == "SPHERE"){
 			double radius = p["radius"].get<double>();
 			hittables.push_back(std::make_shared<Sphere>(pos, radius, material));
 		} else if(type == "MESH"){
+		}
+	}
+	for(auto l : j["lights"]){
+		std::string type = l["type"].get<std::string>();
+		glm::dvec3 color(parseArray(l["color"]));
+		double intensity(l["intensity"].get<double>());
+		if(type == "POINT"){
+			glm::dvec3 pos(parseArray(l["position"]));
+			addLight(std::make_shared<PointLight>(pos, intensity, color));
+		} else if(type == "DIRECTIONAL"){
+			glm::dvec3 dir(parseArray(l["direction"]));
+			addLight(std::make_shared<DirectionalLight>(dir, intensity, color));
 		}
 	}
 	std::filesystem::current_path(currPath);
