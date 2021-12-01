@@ -27,6 +27,10 @@ inline ImageTexture::ImageTexture(std::string fp){
 		std::cerr << "ERROR: Could not load texture image file '" << fp << "'.\n";
 		width = height = 0;
 	}
+	if(((width & (width-1)) != 0) || (height & (height-1)) != 0){
+		std::cerr << "ERROR: textures need to be power of 2'" << fp << "'.\n";
+		width = height = 0;
+	}
 	slice = bpp * width;
 }
 
@@ -35,14 +39,11 @@ inline ImageTexture::~ImageTexture(){
 }
 
 inline Color ImageTexture::color(double u, double v, const glm::dvec3 &p) const{
-	if(img == nullptr) return Color(0.4,0.4,0.4);
-	u = std::clamp(u, 0.0, 1.0);
-	v = 1.0 - std::clamp(v, 0.0, 1.0);
-
-	int i = static_cast<int>(u*width);
-	int j = static_cast<int>(v*height);
-	if(i >= width) i = width - 1;
-	if(j >= height) j = height - 1;
+	if(img == nullptr || width == 0 || height == 0) return Color(0.4,0.4,0.4);
+	u = abs(u);
+	v = abs(v);
+	int i = static_cast<int>(u*width) & (width-1);
+	int j = static_cast<int>(v*height) & (height-1);
 	unsigned char *pixel = img + j * slice + i * bpp;
 	return Color(pixel[0]/static_cast<double>(255.0),pixel[1]/static_cast<double>(255.0),pixel[2]/static_cast<double>(255.0));
 }

@@ -88,6 +88,8 @@ Scene::Scene(std::filesystem::path sceneFile){
 		} else if(type == "DIRECTIONAL"){
 			glm::dvec3 dir(parseArray(l["direction"]));
 			addLight(std::make_shared<DirectionalLight>(dir, intensity, color));
+		} else if(type == "AMBIENT"){
+			addLight(std::make_shared<AmbientLight>(intensity, color));
 		}
 	}
 	std::filesystem::current_path(currPath);
