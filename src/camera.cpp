@@ -217,10 +217,21 @@ glm::dvec3 Camera::Fisheye(double u, double v)
 	//                |                 			                | 
 	//
 
+	
+	// Bring u and v from 0 - 1 to -1 - +1
+	u *= 2;
+	v *= 2;
+	u -= 1;
+	v -= 1;
+
+	// Adjust for aspect ratio
+	if (this->viewportWidth > this->viewportHeight) {
+		u *= aspectRatio;
+	} else if (this->viewportHeight > this->viewportWidth) {
+		v /= aspectRatio;
+	}
+
 	auto uv = glm::vec2(u, v);
-	// Bring uv from 0 - 1 to -1 - +1
-	uv *= 2;
-	uv -= 1;
 
 
 	float radius = glm::length(uv);
