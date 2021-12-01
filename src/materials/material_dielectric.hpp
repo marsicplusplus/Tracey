@@ -13,7 +13,7 @@ class DielectricMaterial : public Material {
 			albedo = std::make_shared<SolidColor>(color);
 		}
 
-		DielectricMaterial(std::shared_ptr<Texture> t, double _idx = 1.0) : refractIdx{_idx}{
+		DielectricMaterial(std::shared_ptr<Texture> t, double _refractIdx = 1.0, Color _absorption = Color(0, 0, 0)) : refractIdx{_refractIdx}, absorption{_absorption}{
 			albedo = t;
 		}
 

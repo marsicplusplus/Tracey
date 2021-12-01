@@ -1,0 +1,127 @@
+{
+	"camera" : {
+		"position": [0.0, 0.0, 1.0],
+		"dir": [0.0, 0.0, -1.0],
+		"up": [0.0, 1.0, 0.0],
+		"fov": 60
+	},
+	"textures" : [
+		{
+			"name": "SolidWhite",
+			"type": "SOLID_COLOR",
+			"color": [ 1.0, 1.0, 1.0 ]
+		},
+		{
+			"name": "SolidGrey",
+			"type": "SOLID_COLOR",
+			"color": [ 0.7, 0.7, 0.7 ]
+		},
+		{
+			"name": "SolidPink",
+			"type": "SOLID_COLOR",
+			"color": [ 0.9, 0.38039, 0.41176 ]
+		},
+		{
+			"name": "SolidLightBlue",
+			"type": "SOLID_COLOR",
+			"color": [ 0.33137, 0.30392, 0.68627 ]
+		},
+		{
+			"name": "SolidBlack",
+			"type": "SOLID_COLOR",
+			"color": [ 0, 0, 0 ]
+		}
+	],
+	"materials": [
+		{
+			"type": "DIFFUSE",
+			"name": "GreySurface",
+			"texture": "SolidGrey"
+		},
+		{
+			"type": "DIFFUSE",
+			"name": "LightBlueSurface",
+			"texture": "SolidLightBlue"
+		},
+		{
+			"type": "DIFFUSE",
+			"name": "PinkSurface",
+			"texture": "SolidPink"
+		},
+		{
+			"type": "DIFFUSE",
+			"name": "BlackSurface",
+			"texture": "SolidBlack"
+		},
+		{
+			"type": "DIELECTRIC",
+			"name": "GlassSurface",
+			"texture": "SolidWhite",
+			"idx": 1.52
+		},
+		{
+			"type": "MIRROR",
+			"name": "WhiteMirror",
+			"texture": "SolidWhite",
+			"reflect": 1.0
+		}
+	],
+	"primitives": [
+		{
+			"type": "PLANE",
+			"position": [ 0.0, -0.5, 0.0 ],
+			"normal": [ 0.0, 1.0, 0.0 ],
+			"material": "GreySurface"
+		},
+		{
+			"type": "PLANE",
+			"position": [ 0.0, 1.0, 0.0 ],
+			"normal": [ 0.0, -1.0, -0.0 ],
+			"material": "GreySurface"
+		},
+		{
+			"type": "PLANE",
+			"position": [ 0.0, 0.0, -2.0 ],
+			"normal": [ 0.0, 0.0, 1.0 ],
+			"material": "GreySurface"
+		},
+		{
+			"type": "PLANE",
+			"position": [ -1.0, 0.0, 0.0 ],
+			"normal": [ 1.0, 0.0, 0.0 ],
+			"material": "PinkSurface"
+		},
+		{
+			"type": "PLANE",
+			"position": [ 1.0, 0.0, 0.0 ],
+			"normal": [ -1.0, 0.0, 0.0 ],
+			"material": "LightBlueSurface"
+		},
+		{
+			"type": "PLANE",
+			"position": [ 0.0, 0.0, 2.0 ],
+			"normal": [ 0.0, 0.0, 1.0 ],
+			"material": "BlackSurface"
+		},
+		{
+			"type": "SPHERE",
+			"position": [ -0.4, -0.2, -1.2 ],
+			"radius": 0.3,
+			"material": "WhiteMirror"
+		},
+		{
+			"type": "SPHERE",
+			"position": [ 0.45, -0.2, -0.9 ],
+			"radius": 0.3,
+			"material": "GlassSurface"
+		}
+	],
+	"lights": [
+		{
+			"type": "POINT",
+			"position": [0.0, 0.9, -0.5],
+			"color": [1.0, 1.0, 1.0],
+			"intensity": 1.0
+		}
+	]
+}
