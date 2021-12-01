@@ -137,6 +137,9 @@ void Renderer::initGui() {
 	guiContinuousRender = false;
 	guiCamPos = glm::dvec3(0, 0, 1);
 	guiCamDir = glm::dvec3(0, 0, -1);
+	this->fBrowser.SetTitle("Choose a scene");
+	this->fBrowser.SetWindowSize(300, 300);
+	this->fBrowser.SetTypeFilters({".json"});
 }
 
 bool Renderer::start() {
@@ -171,7 +174,7 @@ bool Renderer::start() {
 			this->showGui = false;
 		}
 
-		if(scene->update(lastUpdateTime)){
+		if(scene && scene->update(lastUpdateTime)){
 			this->isBufferInvalid = true;
 		}
 
@@ -308,143 +311,152 @@ void Renderer::renderGUI() {
 
 		if (ImGui::CollapsingHeader("Scene")) {
 			if (ImGui::Button("Load Scene")) {
+				this->fBrowser.Open();
 			}
 		}
-		if (ImGui::CollapsingHeader("Camera Settings")) {
+		if(scene){
+			if (ImGui::CollapsingHeader("Camera Settings")) {
 
-			ImGui::Spacing();
-			ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Spacing();
 
-			guiSensitivity = this->scene->getCamera()->getSensitivity();
-			ImGui::TextWrapped("Camera Sensitivity");
-			if (ImGui::SliderFloat("##CameraSensitivity", &guiSensitivity, 1, 20)) {
-				this->scene->getCamera()->setSensitivity(guiSensitivity);
-			}
-
-			ImGui::Spacing();
-			ImGui::Spacing();
-			guiFOV = glm::degrees(this->scene->getCamera()->getFOV());
-			ImGui::TextWrapped("FOV");
-			if (ImGui::SliderInt("##FOV", &guiFOV, 20, 120)) {
-				this->scene->getCamera()->setFOV(guiFOV);
-			}
-
-			ImGui::Spacing();
-			ImGui::Spacing();
-			guiCamPos = this->scene->getCamera()->getPosition();
-			ImGui::Text("Position");
-			if (ImGui::InputFloat3("##Position", &guiCamPos[0], "%.2f")) {
-				this->scene->getCamera()->setPosition(guiCamPos);
-			}
-
-			ImGui::Spacing();
-			ImGui::Spacing();
-			guiCamDir = this->scene->getCamera()->getDirection();
-			ImGui::Text("Direction");
-			if (ImGui::InputFloat3("##Direction", &guiCamDir[0], "%.2f")) {
-				this->scene->getCamera()->setDirection(guiCamDir, false);
-			}
-
-			ImGui::Spacing();
-			ImGui::Spacing();
-			if (ImGui::Checkbox("Barrel Distorion", &guiBarrel)) {
-				this->scene->getCamera()->setCameraType(CameraType::barrel);
-				if (guiBarrel && guiFisheye) {
-					guiFisheye = false;
+				guiSensitivity = this->scene->getCamera()->getSensitivity();
+				ImGui::TextWrapped("Camera Sensitivity");
+				if (ImGui::SliderFloat("##CameraSensitivity", &guiSensitivity, 1, 20)) {
+					this->scene->getCamera()->setSensitivity(guiSensitivity);
 				}
-				else if (!guiBarrel && !guiFisheye) {
-					this->scene->getCamera()->setCameraType(CameraType::normal);
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+				guiFOV = glm::degrees(this->scene->getCamera()->getFOV());
+				ImGui::TextWrapped("FOV");
+				if (ImGui::SliderInt("##FOV", &guiFOV, 20, 120)) {
+					this->scene->getCamera()->setFOV(guiFOV);
 				}
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+				guiCamPos = this->scene->getCamera()->getPosition();
+				ImGui::Text("Position");
+				if (ImGui::InputFloat3("##Position", &guiCamPos[0], "%.2f")) {
+					this->scene->getCamera()->setPosition(guiCamPos);
+				}
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+				guiCamDir = this->scene->getCamera()->getDirection();
+				ImGui::Text("Direction");
+				if (ImGui::InputFloat3("##Direction", &guiCamDir[0], "%.2f")) {
+					this->scene->getCamera()->setDirection(guiCamDir, false);
+				}
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+				if (ImGui::Checkbox("Barrel Distorion", &guiBarrel)) {
+					this->scene->getCamera()->setCameraType(CameraType::barrel);
+					if (guiBarrel && guiFisheye) {
+						guiFisheye = false;
+					}
+					else if (!guiBarrel && !guiFisheye) {
+						this->scene->getCamera()->setCameraType(CameraType::normal);
+					}
+				}
+
+				if (guiBarrel) {
+					ImGui::TextWrapped("r'=r*(1 + k1*r^2 + k2*r^4)");
+					if (ImGui::SliderFloat("K1", &guiK1, -10.0f, 10.0f, "%.2f")) {
+						this->scene->getCamera()->setDistortionCoefficients(guiK1, guiK2);
+					}
+					if (ImGui::SliderFloat("K2", &guiK2, -10.0f, 10.0f, "%.2f")) {
+						this->scene->getCamera()->setDistortionCoefficients(guiK1, guiK2);
+					}
+				}
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+				if (ImGui::Checkbox("Fisheye Lens", &guiFisheye)) {
+					this->scene->getCamera()->setCameraType(CameraType::fisheye);
+					if (guiBarrel && guiFisheye) {
+						guiBarrel = false;
+					}
+					else if (!guiBarrel && !guiFisheye) {
+						this->scene->getCamera()->setCameraType(CameraType::normal);
+					}
+				}
+
+				if (guiFisheye) {
+					if (ImGui::SliderAngle("Fisheye Angle", &guiFisheyeAngle, 0, 180, "%.2f deg")) {
+						this->scene->getCamera()->setFisheyeAngle(guiFisheyeAngle);
+					}
+				}
+
+				ImGui::Spacing();
+				ImGui::Spacing();
 			}
 
-			if (guiBarrel) {
-				ImGui::TextWrapped("r'=r*(1 + k1*r^2 + k2*r^4)");
-				if (ImGui::SliderFloat("K1", &guiK1, -10.0f, 10.0f, "%.2f")) {
-					this->scene->getCamera()->setDistortionCoefficients(guiK1, guiK2);
+
+			if (ImGui::CollapsingHeader("Rendering Settings")) {
+				ImGui::Spacing();
+				ImGui::Spacing();
+
+				if (ImGui::Checkbox("Render Continuously", &guiContinuousRender)) {
+					if (guiContinuousRender) {
+						this->scene->getCamera()->update(0, true);
+					}
 				}
-				if (ImGui::SliderFloat("K2", &guiK2, -10.0f, 10.0f, "%.2f")) {
-					this->scene->getCamera()->setDistortionCoefficients(guiK1, guiK2);
-				}
+
+				ImGui::TextWrapped("Samples");
+				ImGui::SliderInt("##SAMPLES", &nSamples, 1, 100);
+				ImGui::TextWrapped("Bounces");
+				ImGui::SliderInt("##BOUNCES", &nBounces, 2, 100);
 			}
 
 			ImGui::Spacing();
 			ImGui::Spacing();
-			if (ImGui::Checkbox("Fisheye Lens", &guiFisheye)) {
-				this->scene->getCamera()->setCameraType(CameraType::fisheye);
-				if (guiBarrel && guiFisheye) {
-					guiBarrel = false;
+			if (ImGui::Button("Render New Frame")) {
+				this->scene->getCamera()->update(0, true);
+				this->isBufferInvalid = true;
+			}
+			ImGui::Spacing();
+			if (ImGui::Button("Save current Frame")) {
+				time_t rawtime;
+				struct tm * timeinfo;
+				char buffer[80];
+
+				time (&rawtime);
+				timeinfo = localtime(&rawtime);
+
+				strftime(buffer,80,"%d-%m-%Y-%H-%M-%S.png",timeinfo);
+				std::string str(buffer);
+
+				int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
+				int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
+				uint8_t *bitmap = new uint8_t[3*wWidth * wHeight];
+				int i = 0;
+				int k = 0;
+				while(i < wWidth * wHeight){
+					bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 16);
+					bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 8);
+					bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 0);
+					i++;
 				}
-				else if (!guiBarrel && !guiFisheye) {
-					this->scene->getCamera()->setCameraType(CameraType::normal);
-				}
+				stbi_write_png(buffer, wWidth, wHeight, 3, bitmap, 3* wWidth);
+				delete[] bitmap;
 			}
 
-			if (guiFisheye) {
-				if (ImGui::SliderAngle("Fisheye Angle", &guiFisheyeAngle, 0, 180, "%.2f deg")) {
-					this->scene->getCamera()->setFisheyeAngle(guiFisheyeAngle);
-				}
-			}
 
-			ImGui::Spacing();
-			ImGui::Spacing();
+			if (guiContinuousRender) {
+				this->isBufferInvalid = true;
+			}
 		}
-
-
-		if (ImGui::CollapsingHeader("Rendering Settings")) {
-			ImGui::Spacing();
-			ImGui::Spacing();
-
-			if (ImGui::Checkbox("Render Continuously", &guiContinuousRender)) {
-				if (guiContinuousRender) {
-					this->scene->getCamera()->update(0, true);
-				}
-			}
-
-			ImGui::TextWrapped("Samples");
-			ImGui::SliderInt("##SAMPLES", &nSamples, 1, 100);
-			ImGui::TextWrapped("Bounces");
-			ImGui::SliderInt("##BOUNCES", &nBounces, 2, 100);
-		}
-
-		ImGui::Spacing();
-		ImGui::Spacing();
-		if (ImGui::Button("Render New Frame")) {
-			this->scene->getCamera()->update(0, true);
-			this->isBufferInvalid = true;
-		}
-		ImGui::Spacing();
-		if (ImGui::Button("Save current Frame")) {
-			time_t rawtime;
-			struct tm * timeinfo;
-			char buffer[80];
-
-			time (&rawtime);
-			timeinfo = localtime(&rawtime);
-
-			strftime(buffer,80,"%d-%m-%Y-%H-%M-%S.png",timeinfo);
-			std::string str(buffer);
-
-			int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
-			int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
-			uint8_t *bitmap = new uint8_t[3*wWidth * wHeight];
-			int i = 0;
-			int k = 0;
-			while(i < wWidth * wHeight){
-				bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 16);
-				bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 8);
-				bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 0);
-				i++;
-			}
-			stbi_write_png(buffer, wWidth, wHeight, 3, bitmap, 3* wWidth);
-			delete[] bitmap;
-		}
-
-
-		if (guiContinuousRender) {
-			this->isBufferInvalid = true;
-		}
-
 		ImGui::End();
+		this->fBrowser.Display();
+		if(this->fBrowser.HasSelected())
+		{
+			std::cout << "Selected filename" << this->fBrowser.GetSelected().string() << std::endl;
+			this->setScene(std::make_shared<Scene>(this->fBrowser.GetSelected().string()));
+			this->fBrowser.ClearSelected();
+		}
 	}
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
