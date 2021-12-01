@@ -238,16 +238,15 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 		return Color{0,0,0};
 	if (scene->traverse(ray, 0.001, INF, hr)) {
 		Ray reflectedRay;
-		Color attenuation;
+		Color attenuation = hr.material->getMaterialColor(hr.u, hr.v, hr.p);
 		double reflectance = 1;
+
 		if (hr.material->getType() == Materials::DIFFUSE) {
 
-			hr.material->reflect(ray, hr, attenuation, reflectedRay, reflectance);
 			return attenuation * scene->traceLights(hr);
-
 		} else if (hr.material->getType() == Materials::MIRROR) {
 
-			hr.material->reflect(ray, hr, attenuation, reflectedRay, reflectance);
+			hr.material->reflect(ray, hr, reflectedRay, reflectance);
 			if (reflectance == 1.0)
 				return attenuation * (trace(reflectedRay, bounces - 1, scene));
 			else
@@ -257,21 +256,23 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 			Color refractionColor(0.0);
 			Color reflectionColor(0.0);
 			double reflectance;
-			hr.material->reflect(ray, hr, attenuation, reflectedRay, reflectance);
+			hr.material->reflect(ray, hr, reflectedRay, reflectance);
 			reflectionColor = trace(reflectedRay, bounces - 1, scene);
 
 			if(reflectance < 1.0){
 				Ray refractedRay;
 				double refractance;
-				hr.material->refract(ray, hr, attenuation, refractedRay, refractance);
+				hr.material->refract(ray, hr, refractedRay, refractance);
 				refractionColor = trace(refractedRay, bounces-1, scene);
 			}
+
+			hr.material->absorb(ray, hr, attenuation);
 
 			return attenuation * (reflectionColor * reflectance + refractionColor * (1 - reflectance));
 		}
 		return Color{0,0,0};
 	}
-	return Color(0.8,0.5,0.8);
+	return Color(0.9,0.9,0.9);
 }
 
 void Renderer::putPixel(uint32_t fb[], int idx, Color& color){
