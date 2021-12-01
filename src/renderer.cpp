@@ -8,9 +8,12 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "renderer.hpp"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
+#include <sstream>
 
 namespace{
 	const char *vertexShaderSource = "#version 450 core\n"
@@ -53,6 +56,8 @@ bool Renderer::init(){
 	CHECK_ERROR(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "Failed to initialize GLAD", false);
 
 	initGui();
+
+	stbi_flip_vertically_on_write(true);
 
 	/* Shader */
 	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -106,6 +111,7 @@ bool Renderer::init(){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+	
 	this->nSamples = OptionsMap::Instance()->getOption(Options::SAMPLES);
 	this->nBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
 	return true;
@@ -175,8 +181,8 @@ bool Renderer::start() {
 					int samples = this->nSamples;
 					int bounces = this->nBounces;
 					futures.push_back(pool.queue([&, tileRow, tileCol, samples, bounces](std::mt19937& gen){
-							CameraPtr cam = scene->getCamera();					
-							for (int row = 0; row < tHeight; ++row) {
+						CameraPtr cam = scene->getCamera();
+						for (int row = 0; row < tHeight; ++row) {
 							for (int col = 0; col < tWidth; ++col) {
 								Color pxColor(0,0,0);
 								int x = col + tWidth * tileCol;
@@ -404,16 +410,45 @@ void Renderer::renderGUI() {
 					this->scene->getCamera()->update(0, true);
 				}
 			}
-			ImGui::Spacing();
-			ImGui::SliderInt("Samples", &nSamples, 1, 100);
-			ImGui::Spacing();
-			ImGui::Spacing();
-			if (ImGui::Button("Render New Frame")) {
-				this->scene->getCamera()->update(0, true);
-				this->isBufferInvalid = true;
-			}
+
+			ImGui::TextWrapped("Samples");
+			ImGui::SliderInt("##SAMPLES", &nSamples, 1, 100);
+			ImGui::TextWrapped("Bounces");
+			ImGui::SliderInt("##BOUNCES", &nBounces, 2, 100);
 		}
 
+		ImGui::Spacing();
+		ImGui::Spacing();
+		if (ImGui::Button("Render New Frame")) {
+			this->scene->getCamera()->update(0, true);
+			this->isBufferInvalid = true;
+		}
+		ImGui::Spacing();
+		if (ImGui::Button("Save current Frame")) {
+			time_t rawtime;
+			struct tm * timeinfo;
+			char buffer[80];
+
+			time (&rawtime);
+			timeinfo = localtime(&rawtime);
+
+			strftime(buffer,80,"%d-%m-%Y-%H-%M-%S.png",timeinfo);
+			std::string str(buffer);
+
+			int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
+			int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
+			uint8_t *bitmap = new uint8_t[3*wWidth * wHeight];
+			int i = 0;
+			int k = 0;
+			while(i < wWidth * wHeight){
+				bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 16);
+				bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 8);
+				bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 0);
+				i++;
+			}
+			stbi_write_png(buffer, wWidth, wHeight, 3, bitmap, 3* wWidth);
+			delete[] bitmap;
+		}
 
 		if (guiContinuousRender) {
 			this->isBufferInvalid = true;
