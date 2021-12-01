@@ -56,6 +56,7 @@ int main(int argc, char *args[]){
 		}
 	}
 	OptionsMap::Instance()->printOptions();
+
 	Renderer renderer("TraceyGL", OptionsMap::Instance()->getOption(Options::THREADS));
 	if(scene) renderer.setScene(scene);
 	renderer.init();

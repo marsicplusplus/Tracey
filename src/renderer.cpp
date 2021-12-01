@@ -1,3 +1,4 @@
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "camera.hpp"
 #include "glad/glad.h"
 #include "glm/gtc/random.hpp"
@@ -8,8 +9,8 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "renderer.hpp"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+#include "stb_image.h"
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>

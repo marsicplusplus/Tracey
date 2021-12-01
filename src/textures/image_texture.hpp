@@ -40,10 +40,8 @@ inline ImageTexture::~ImageTexture(){
 
 inline Color ImageTexture::color(double u, double v, const glm::dvec3 &p) const{
 	if(img == nullptr || width == 0 || height == 0) return Color(0.4,0.4,0.4);
-	u = abs(u);
-	v = abs(v);
-	int i = static_cast<int>(u*width) & (width-1);
-	int j = static_cast<int>(v*height) & (height-1);
+	unsigned int i = static_cast<unsigned int>(u*width) & (width-1);
+	unsigned int j = static_cast<unsigned int>((1-v)*height) & (height-1);
 	unsigned char *pixel = img + j * slice + i * bpp;
 	return Color(pixel[0]/static_cast<double>(255.0),pixel[1]/static_cast<double>(255.0),pixel[2]/static_cast<double>(255.0));
 }
