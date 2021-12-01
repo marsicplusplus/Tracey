@@ -3,14 +3,15 @@
 
 #include "camera.hpp"
 #include "light_object.hpp"
+#include "hittables/hittable.hpp"
 
 #include <vector>
-#include <hittables/hittable.hpp>
 #include <string>
+#include <filesystem>
 
 class Scene {
 	public:
-		Scene(std::string sceneFile);
+		Scene(std::filesystem::path sceneFile);
 		Scene();
 		~Scene();
 

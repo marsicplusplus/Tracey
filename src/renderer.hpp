@@ -11,7 +11,7 @@
 
 class Renderer{
 public:
-	inline Renderer(const std::string& _title, size_t pool = 1) : title{ _title }, pool{ pool }, isBufferInvalid(true){
+	inline Renderer(const std::string& _title, size_t pool = 1) : title{ _title }, pool{ pool }, isBufferInvalid(false){
 			this->frameBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 		};
 		~Renderer();

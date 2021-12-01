@@ -111,6 +111,9 @@ bool Renderer::init(){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+
+	nSamples = OptionsMap::Instance()->getOption(Options::SAMPLES);
+	nBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
 	return true;
 }
 
@@ -171,7 +174,6 @@ bool Renderer::start() {
 		if(scene->update(lastUpdateTime)){
 			this->isBufferInvalid = true;
 		}
-
 
 		if(this->isBufferInvalid) {
 			std::vector<std::future<void>> futures;
@@ -265,6 +267,7 @@ void Renderer::putPixel(uint32_t fb[], int idx, Color& color){
 
 void Renderer::setScene(ScenePtr scene){
 	this->scene = scene;
+	this->isBufferInvalid = true;
 }
 
 void Renderer::handleInput(){
@@ -303,6 +306,10 @@ void Renderer::renderGUI() {
 	{
 		ImGui::Begin("Menu", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 
+		if (ImGui::CollapsingHeader("Scene")) {
+			if (ImGui::Button("Load Scene")) {
+			}
+		}
 		if (ImGui::CollapsingHeader("Camera Settings")) {
 
 			ImGui::Spacing();
@@ -428,6 +435,8 @@ void Renderer::renderGUI() {
 				bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 0);
 				i++;
 			}
+			stbi_write_png(buffer, wWidth, wHeight, 3, bitmap, 3* wWidth);
+			delete[] bitmap;
 		}
 
 

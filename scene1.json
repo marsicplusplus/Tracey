@@ -1,7 +1,7 @@
 {
 	"camera" : {
 		"position": [0.0, 0.0, 1.0],
-		"lookat": [0.0, 0.0, 0.0],
+		"dir": [0.0, 0.0, -1.0],
 		"up": [0.0, 1.0, 0.0],
 		"fov": 60
 	},
@@ -28,7 +28,7 @@
 		{
 			"name": "EarthTexture",
 			"type": "IMAGE",
-			"path": "/home/lorenzo/University/AdvancedGraphic/Textures/earthmap.jpg"
+			"path": "../Textures/earthmap.jpg"
 		},
 		{
 			"name": "SolidWhite",
