@@ -18,13 +18,13 @@ enum class Materials {
 
 class Material {
 	public:
-		inline virtual bool reflect(const Ray& in, const HitRecord &r, Color& attenuation, Ray &scattered, double &s) const {
+		inline virtual bool reflect(const Ray& in, const HitRecord &r, Color& attenuation, Ray &reflectedRay, double &reflectance) const {
 			return false;
 		};
 		inline virtual Materials getType() const {
 			return Materials::NILL;
 		}
-		inline virtual bool refract(const Ray& in, const HitRecord &r, Color& attenuation, Ray &scattered, double &s) const {
+		inline virtual bool refract(const Ray& in, const HitRecord &r, Color& attenuation, Ray &refractedRay, double &refractance) const {
 			return false;
 		}
 };

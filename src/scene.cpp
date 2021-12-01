@@ -45,15 +45,15 @@ bool Scene::update(double dt){
 }
 
 Color Scene::traceLights(HitRecord &rec) const {
-	Color i(0.0);
+	Color illumination(0.0);
 	for(auto &light : lights){
 		double tMax;
-		Ray ray = light->getRay(rec, tMax);
-		HitRecord shadow;
-		if(!traverse(ray, 0.0001, tMax, shadow)){
-			i+=light->getLight(rec, ray);
-			light->attenuate(i, rec.p);
+		Ray shadowRay = light->getRay(rec, tMax);
+		HitRecord obstruction;
+		if(!traverse(shadowRay, 0.0001, tMax, obstruction)){
+			auto contribution = light->getLight(rec, shadowRay);
+			illumination += light->attenuate(contribution, rec.p);
 		}
 	}
-	return i;
+	return illumination;
 }

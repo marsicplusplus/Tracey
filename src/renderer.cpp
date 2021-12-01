@@ -230,38 +230,38 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 	HitRecord hr;
 	if(!scene || bounces <= 0)
 		return Color{0,0,0};
-	if(scene->traverse(ray, 0.001, INF, hr)){
-		Ray scattered;
+	if (scene->traverse(ray, 0.001, INF, hr)) {
+		Ray reflectedRay;
 		Color attenuation;
-		double reflectionIdx = 1;
-		if(hr.material->getType() == Materials::DIFFUSE){
-			hr.material->reflect(ray, hr, attenuation, scattered, reflectionIdx);
+		double reflectance = 1;
+		if (hr.material->getType() == Materials::DIFFUSE) {
+
+			hr.material->reflect(ray, hr, attenuation, reflectedRay, reflectance);
 			return attenuation * scene->traceLights(hr);
-		} else if(hr.material->getType() == Materials::MIRROR) {
-			hr.material->reflect(ray, hr, attenuation, scattered, reflectionIdx);
-			if(reflectionIdx == 1.0)
-				return attenuation * (trace(scattered, bounces - 1, scene));
+
+		} else if (hr.material->getType() == Materials::MIRROR) {
+
+			hr.material->reflect(ray, hr, attenuation, reflectedRay, reflectance);
+			if (reflectance == 1.0)
+				return attenuation * (trace(reflectedRay, bounces - 1, scene));
 			else
-				return attenuation * (reflectionIdx * trace(scattered, bounces - 1, scene) + (1.0-reflectionIdx) * scene->traceLights(hr));
+				return attenuation * (reflectance * trace(reflectedRay, bounces - 1, scene) + (1.0 - reflectance) * scene->traceLights(hr));
 		} else if(hr.material->getType() == Materials::DIELECTRIC) {
-			double coeff;
-			if(hr.material->refract(ray, hr, attenuation, scattered, coeff)){
-				return attenuation * trace(scattered, bounces - 1, scene);
-			}
-#if 0
+
 			Color refractionColor(0.0);
 			Color reflectionColor(0.0);
-			double kr;
-			hr.material->reflect(ray, hr, attenuation, scattered, kr);
-			if(kr < 1.0){
-				Ray refract;
-				double k;
-				hr.material->refract(ray, hr, attenuation, refract, k);
-				refractionColor = trace(refract, bounces-1, scene);
+			double reflectance;
+			hr.material->reflect(ray, hr, attenuation, reflectedRay, reflectance);
+			reflectionColor = trace(reflectedRay, bounces - 1, scene);
+
+			if(reflectance < 1.0){
+				Ray refractedRay;
+				double refractance;
+				hr.material->refract(ray, hr, attenuation, refractedRay, refractance);
+				refractionColor = trace(refractedRay, bounces-1, scene);
 			}
-			reflectionColor = trace(scattered, bounces-1, scene);
-			return attenuation * (reflectionColor * kr + refractionColor * (1-kr));
-#endif
+
+			return attenuation * (reflectionColor * reflectance + refractionColor * (1 - reflectance));
 		}
 		return Color{0,0,0};
 	}
