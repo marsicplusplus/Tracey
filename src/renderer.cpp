@@ -48,7 +48,14 @@ bool Renderer::init(){
 	glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	CHECK_ERROR(this->window = glfwCreateWindow(OptionsMap::Instance()->getOption(Options::W_WIDTH)*OptionsMap::Instance()->getOption(Options::SCALING), OptionsMap::Instance()->getOption(Options::W_HEIGHT)*OptionsMap::Instance()->getOption(Options::SCALING), title.c_str(), NULL, NULL), "ERROR::Renderer::initSystems > could not create GLFW3 window\n", false)
+	double scaling = OptionsMap::Instance()->getOption(Options::SCALING);
+	if(scaling < 1){
+		GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+		CHECK_ERROR(this->window = glfwCreateWindow(mode->width, mode->height, title.c_str(), NULL, NULL), "ERROR::Renderer::initSystems > could not create GLFW3 window\n", false)
+	} else {
+		CHECK_ERROR(this->window = glfwCreateWindow(OptionsMap::Instance()->getOption(Options::W_WIDTH)*OptionsMap::Instance()->getOption(Options::SCALING), OptionsMap::Instance()->getOption(Options::W_HEIGHT)*OptionsMap::Instance()->getOption(Options::SCALING), title.c_str(), NULL, NULL), "ERROR::Renderer::initSystems > could not create GLFW3 window\n", false)
+	}
 
 	glfwMakeContextCurrent(this->window);
 	glfwSetMouseButtonCallback(this->window, mouseCallback);
