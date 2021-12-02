@@ -79,6 +79,12 @@
 		},
 		{
 			"type": "POINT",
+			"position": [0.0, 1.0, 0.5],
+			"color": [1.0, 1.0, 1.0],
+			"intensity": 0.8
+		},
+		{
+			"type": "POINT",
 			"position": [1.5, 2.0, -1.5],
 			"color": [1.0, 1.0, 1.0],
 			"intensity": 0.4

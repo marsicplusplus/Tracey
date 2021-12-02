@@ -22,9 +22,7 @@
 			"name": "RedGlass",
 			"texture": "SolidRed",
 			"idx": 1.52,
-			"a.r": 1,
-			"a.g": 1,
-			"a.b": 1
+			"absorption": [1.0,1.0,1.0]
 		},
 		{
 			"type": "DIFFUSE",
