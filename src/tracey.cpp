@@ -14,7 +14,7 @@
 #include <fstream>
 #include <memory>
 
-void parseOptions(char *path){
+void parseOptions(std::filesystem::path path){
 	std::ifstream config(path);
 	std::string line;
 	while(std::getline(config, line)){
@@ -46,18 +46,22 @@ void printHelp(char *name){
 }
 
 int main(int argc, char *args[]){
-	ScenePtr scene;
+	std::string scenePath = "";
+	std::string configPath = "";
 	for(int i = 1; i < argc; i++){
 		if(strncmp("config=", args[i], strlen("config=")) == 0){
-			parseOptions(&args[i][strlen("config=")]);
+			configPath = (&args[i][strlen("config=")]);
 		}
 		if(strncmp("scene=", args[i], strlen("scene=")) == 0){
-			try{
-				scene = std::make_shared<Scene>(&args[i][strlen("scene=")]);
-			} catch(std::exception &e){
-				std::cout << e.what();
-			}
+			scenePath = (&args[i][strlen("scene=")]);
 		}
+	}
+	ScenePtr scene;
+	if(!configPath.empty() && std::filesystem::exists(configPath)){
+		parseOptions(configPath.c_str());
+	}
+	if(!scenePath.empty() && std::filesystem::exists(scenePath)){
+		scene = std::make_shared<Scene>(scenePath);
 	}
 	OptionsMap::Instance()->printOptions();
 
