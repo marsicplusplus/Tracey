@@ -21,6 +21,11 @@
 			"path": "../Textures/parque.jpg"
 		},
 		{
+			"name": "BrickTexture",
+			"type": "IMAGE",
+			"path": "../Textures/brick.jpg"
+		},
+		{
 			"name": "SolidWhite",
 			"type": "SOLID_COLOR",
 			"color": [1.0, 1.0, 1.0]
@@ -39,6 +44,11 @@
 		},
 		{
 			"type": "DIFFUSE",
+			"name": "BrickSurface",
+			"texture": "BrickTexture"
+		},
+		{
+			"type": "DIFFUSE",
 			"name": "EarthSurface",
 			"texture": "EarthTexture"
 		},
@@ -54,7 +64,7 @@
 			"type": "PLANE",
 			"position": [0.0, -0.5, -0.0],
 			"normal": [0.0, 1.0, -0.0],
-			"material": "WoodSurface"
+			"material": "Checkerboard"
 		},
 		{
 			"type": "SPHERE",

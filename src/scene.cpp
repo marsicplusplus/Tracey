@@ -16,11 +16,11 @@
 #include <iostream>
 #include <fstream>
 
-static glm::dvec3 parseVec3(nlohmann::basic_json<> arr){
+static glm::dvec3 parseVec3(nlohmann::basic_json<> &arr){
 	return glm::dvec3(arr[0].get<double>(), arr[1].get<double>(),arr[2].get<double>());
 }
 
-static glm::dvec4 parseVec4(nlohmann::basic_json<> arr){
+static glm::dvec4 parseVec4(nlohmann::basic_json<> &arr){
 	return glm::dvec4(arr[0].get<double>(), arr[1].get<double>(),arr[2].get<double>(), arr[3].get<double>());
 }
 
@@ -125,14 +125,21 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 	if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
 	auto material = materials.find(hit.at("material"));
 	if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
-	glm::dvec3 pos(parseVec3(hit["position"]));
 	if(type == "PLANE"){
+		glm::dvec3 pos(parseVec3(hit["position"]));
 		if(!hit.contains("normal")) throw std::invalid_argument("Plane doesn't specify a normal");
 		glm::dvec3 norm(parseVec3(hit.at("normal")));
 		return (std::make_shared<Plane>(pos, norm, material->second));
 	} else if(type == "SPHERE"){
+		glm::dvec3 pos(parseVec3(hit["position"]));
 		double radius = (hit.contains("radius")) ?hit["radius"].get<double>() : 0.5;
 		return (std::make_shared<Sphere>(pos, radius, material->second));
+	} else if(type == "ZXRect"){
+		if(!hit.contains("size")) throw std::invalid_argument("ZXRect doesn't specify a correct size [x0, x1, z0, z1]");
+		glm::dvec4 size(parseVec4(hit.at("size")));
+		if(!hit.contains("y")) throw std::invalid_argument("ZXRect doesn't specify a correct y");
+		double yCoord(hit.at("y"));
+		return std::make_shared<ZXRect>(yCoord, size, material->second);
 	} else if(type == "MESH"){
 		return nullptr;
 	} else{

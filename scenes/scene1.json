@@ -36,12 +36,22 @@
 			"path": "../Textures/parque.jpg"
 		},
 		{
+			"name": "BrickTexture",
+			"type": "IMAGE",
+			"path": "../Textures/brick.jpg"
+		},
+		{
 			"name": "SolidWhite",
 			"type": "SOLID_COLOR",
 			"color": [1.0, 1.0, 1.0]
 		}
 	],
 	"materials": [
+		{
+			"type": "DIFFUSE",
+			"name": "BrickSurface",
+			"texture": "BrickTexture"
+		},
 		{
 			"type": "DIFFUSE",
 			"name": "DiffuseBlue",
@@ -90,30 +100,36 @@
 			"type": "PLANE",
 			"normal": [0.0, 1.0, 0.0],
 			"position": [0.0, -0.5, 0.0],
-			"material": "WoodSurface"
+			"material": "BrickSurface"
 		},
 		{
 			"type": "PLANE",
 			"normal": [-1.0, 0.0, 0.0],
 			"position": [2.0, 0.0, 0.0],
-			"material": "DiffuseRed"
+			"material": "WoodSurface"
 		},
 		{
 			"type": "PLANE",
 			"normal": [1.0, 0.0, 0.0],
 			"position": [-2.0, 0.0, 0.0],
-			"material": "DiffuseBlue"
+			"material": "WoodSurface"
 		},
 		{
 			"type": "PLANE",
 			"normal": [0.0, 0.0, 1.0],
 			"position": [0.0, 0.0,-2.5],
-			"material": "DiffuseGreen"
+			"material": "WoodSurface"
 		},
 		{
 			"type": "SPHERE",
 			"position": [0.8, 0.0, -0.6],
 			"radius": 0.4,
+			"material": "WhiteMirror"
+		},
+		{
+			"type": "ZXRect",
+			"y": 0.5,
+			"size": [-0.3, 0.3, -0.2, 0.2],
 			"material": "WhiteMirror"
 		},
 		{
