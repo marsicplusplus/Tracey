@@ -9,7 +9,14 @@
 
 class Plane : public Hittable {
 	public:
-		Plane(glm::dvec3 pos, glm::dvec3 norm, MaterialPtr mat) : pos{pos}, norm{norm}, mat{mat} {}
+		Plane(glm::dvec3 pos, glm::dvec3 norm, MaterialPtr mat) : pos{pos}, norm{norm}, mat{mat} {
+			glm::dvec3 a = cross(norm, glm::dvec3(1, 0, 0));
+			glm::dvec3 b = cross(norm, glm::dvec3(0, 1, 0));
+			glm::dvec3 maxAB = glm::dot(a, a) < glm::dot(b, b) ? b : a;
+			glm::dvec3 c = glm::cross(norm, glm::dvec3(0, 0, 1));
+			uAxis = (glm::dot(maxAB, maxAB) < glm::dot(c, c)) ? c : maxAB;
+			vAxis  = glm::cross(norm, uAxis);
+		}
 		inline bool hit(const Ray &ray, double tMin, double tMax, HitRecord &rec) const override {
 			double d = glm::dot(this->norm, ray.getDirection());
 			if(std::abs(d) > 1e-6){
@@ -28,15 +35,14 @@ class Plane : public Hittable {
 		}
 
 		inline void getUV(HitRecord &rec) const {
-			glm::dvec3 uAxis = glm::dvec3(1,0,0);
-			glm::dvec3 vAxis = glm::dvec3(0,0,-1);
-
 			rec.u = glm::dot(rec.p, uAxis);
 			rec.v = glm::dot(rec.p, vAxis);
 		}
 
 	private:
 		glm::dvec3 pos;
+		glm::dvec3 uAxis;
+		glm::dvec3 vAxis;
 		glm::dvec3 norm;
 		MaterialPtr mat;
 };
