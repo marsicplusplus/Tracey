@@ -48,7 +48,7 @@ bool Renderer::init(){
 	glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	CHECK_ERROR(this->window = glfwCreateWindow(OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), title.c_str(), NULL, NULL), "ERROR::Renderer::initSystems > could not create GLFW3 window\n", false)
+	CHECK_ERROR(this->window = glfwCreateWindow(OptionsMap::Instance()->getOption(Options::W_WIDTH)*OptionsMap::Instance()->getOption(Options::SCALING), OptionsMap::Instance()->getOption(Options::W_HEIGHT)*OptionsMap::Instance()->getOption(Options::SCALING), title.c_str(), NULL, NULL), "ERROR::Renderer::initSystems > could not create GLFW3 window\n", false)
 
 	glfwMakeContextCurrent(this->window);
 	glfwSetMouseButtonCallback(this->window, mouseCallback);
@@ -129,17 +129,22 @@ void Renderer::initGui() {
 	ImGui_ImplGlfw_InitForOpenGL(this->window, true);
 	ImGui_ImplOpenGL3_Init("#version 450");
 
-	showGui = false;
-	guiK1 = 1;
-	guiK2 = 1;
-	guiBarrel = false;
-	guiFisheye = false;
-	guiFisheyeAngle = glm::radians(90.0f);
-	guiContinuousRender = false;
-	guiCamPos = glm::dvec3(0, 0, 1);
-	guiCamDir = glm::dvec3(0, 0, -1);
+	this->showGui = false;
+	this->guiK1 = 1;
+	this->guiK2 = 1;
+	this->guiBarrel = false;
+	this->guiFisheye = false;
+	this->guiFisheyeAngle = glm::radians(90.0f);
+	this->guiContinuousRender = false;
+	this->guiCamPos = glm::dvec3(0, 0, 1);
+	this->guiCamDir = glm::dvec3(0, 0, -1);
+	this->guiGammaCorrection = false;
+	this->guiAberration = false;
+	this->aberrationOffset = glm::dvec3(0.0, 0.0, 0.0);
+	this->guiVignetting = false;
+	this->vignettingSlider = 1.0f;
 	this->fBrowser.SetTitle("Choose a scene");
-	this->fBrowser.SetWindowSize(300, 300);
+	this->fBrowser.SetWindowSize(350, 300);
 	this->fBrowser.SetTypeFilters({".json"});
 }
 
@@ -223,9 +228,10 @@ bool Renderer::start() {
 			isBufferInvalid = false;
 		}
 
+		uint32_t* buffer = applyPostProcessing();
 
 		glBindTexture(GL_TEXTURE_2D, this->texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wWidth, wHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, frameBuffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wWidth, wHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, buffer);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glBindVertexArray(this->VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -279,11 +285,14 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 	}
 	return Color(0.9,0.9,0.9);
 }
+void Renderer::putPixel(uint32_t fb[], int idx, uint8_t r, uint8_t g, uint8_t b){
+	fb[idx] = r << 16 | g << 8 | b << 0;
+}
 
 void Renderer::putPixel(uint32_t fb[], int idx, Color& color){
-	unsigned char r = static_cast<unsigned char>(std::clamp(sqrt(color.r), 0.0, 0.999) * 255.999);
-	unsigned char g = static_cast<unsigned char>(std::clamp(sqrt(color.g), 0.0, 0.999) * 255.999);
-	unsigned char b = static_cast<unsigned char>(std::clamp(sqrt(color.b), 0.0, 0.999) * 255.999);
+	unsigned char r = static_cast<unsigned char>(std::clamp(color.r, 0.0, 0.999) * 255.999);
+	unsigned char g = static_cast<unsigned char>(std::clamp(color.g, 0.0, 0.999) * 255.999);
+	unsigned char b = static_cast<unsigned char>(std::clamp(color.b, 0.0, 0.999) * 255.999);
 	fb[idx] = r << 16 | g << 8 | b << 0;
 }
 
@@ -324,7 +333,7 @@ void Renderer::renderGUI() {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 	ImGui::SetNextWindowPos(ImVec2(.0f, .0f));
-	ImGui::SetNextWindowSize(ImVec2(OptionsMap::Instance()->getOption(Options::W_WIDTH) / 3, OptionsMap::Instance()->getOption(Options::W_HEIGHT)));
+	ImGui::SetNextWindowSize(ImVec2(OptionsMap::Instance()->getOption(Options::W_WIDTH) / 3, OptionsMap::Instance()->getOption(Options::W_HEIGHT) * OptionsMap::Instance()->getOption(Options::SCALING)));
 	{
 		ImGui::Begin("Menu", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 
@@ -429,7 +438,13 @@ void Renderer::renderGUI() {
 				ImGui::TextWrapped("Bounces");
 				ImGui::SliderInt("##BOUNCES", &nBounces, 2, 100);
 			}
-
+			if(ImGui::CollapsingHeader("PostProcessing Effects")){
+				ImGui::Checkbox("Gamma Correction", &guiGammaCorrection);
+				ImGui::Checkbox("Vignetting", &guiVignetting);
+				if(guiVignetting) ImGui::SliderFloat("##VignetteFactor", &vignettingSlider, 0.0, 2.0);
+				ImGui::Checkbox("Chromatic Aberration", &guiAberration);
+				if(guiAberration) ImGui::SliderFloat3("##AberrationOffset", &aberrationOffset[0], -10.00, 10.0, "%.3f");
+			}
 			ImGui::Spacing();
 			ImGui::Spacing();
 			if (ImGui::Button("Render New Frame")) {
@@ -453,16 +468,16 @@ void Renderer::renderGUI() {
 				uint8_t *bitmap = new uint8_t[3*wWidth * wHeight];
 				int i = 0;
 				int k = 0;
+				uint32_t *fb = applyPostProcessing();
 				while(i < wWidth * wHeight){
-					bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 16);
-					bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 8);
-					bitmap[k++] = static_cast<uint8_t>(this->frameBuffer[i] >> 0);
+					bitmap[k++] = static_cast<uint8_t>(fb[i] >> 16);
+					bitmap[k++] = static_cast<uint8_t>(fb[i] >> 8);
+					bitmap[k++] = static_cast<uint8_t>(fb[i] >> 0);
 					i++;
 				}
 				stbi_write_png(buffer, wWidth, wHeight, 3, bitmap, 3* wWidth);
 				delete[] bitmap;
 			}
-
 
 			if (guiContinuousRender) {
 				this->isBufferInvalid = true;
@@ -472,7 +487,6 @@ void Renderer::renderGUI() {
 		this->fBrowser.Display();
 		if(this->fBrowser.HasSelected())
 		{
-			std::cout << "Selected filename" << this->fBrowser.GetSelected().string() << std::endl;
 			this->setScene(std::make_shared<Scene>(this->fBrowser.GetSelected().string()));
 			this->fBrowser.ClearSelected();
 		}
@@ -482,7 +496,8 @@ void Renderer::renderGUI() {
 }
 
 Renderer::~Renderer() {
-	delete(this->frameBuffer);
+	delete[] this->frameBuffer;
+	delete[] this->secondaryBuffer;
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
@@ -493,4 +508,41 @@ Renderer::~Renderer() {
 	glDeleteVertexArrays(1, &this->VAO);
 }
 
-
+uint32_t* Renderer::applyPostProcessing(){
+	int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
+	int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
+	if(guiGammaCorrection || guiVignetting || guiAberration){
+		glm::dvec2 center(wWidth/2, wHeight/2);
+		for(size_t y = 0; y < wHeight; ++y){
+			for(size_t x = 0; x < wWidth; ++x){
+				int idx = y * wWidth + x;
+				double dist = sqrt((x-center.x)*(x-center.x) + (y-center.y)*(y-center.y)); 
+				uint32_t pixel = frameBuffer[idx];
+				double r = static_cast<uint8_t>(pixel >> 16) / 255.0;
+				double g = static_cast<uint8_t>(pixel >> 8) / 255.0;
+				double b = static_cast<uint8_t>(pixel >> 0) / 255.0;
+				Color c(r,g,b);
+				if(guiAberration){
+					int nX = static_cast<int>(x + aberrationOffset.r) % wWidth;
+					c.r = static_cast<uint8_t>(frameBuffer[y * wWidth + nX] >> 16)/255.0;
+					nX = static_cast<int>(x + aberrationOffset.g) % wWidth;
+					c.g = static_cast<uint8_t>(frameBuffer[y * wWidth + nX] >> 8)/255.0;
+					nX = static_cast<int>(x + aberrationOffset.b) % wWidth;
+					c.b = static_cast<uint8_t>(frameBuffer[y * wWidth + nX] >> 0)/255.0;
+				}
+				if(guiGammaCorrection){
+					c.r = sqrt(c.r);
+					c.g = sqrt(c.g);
+					c.b = sqrt(c.b);
+				}
+				if(guiVignetting){
+					double scaledDist = dist / sqrt(wWidth/2*wWidth/2 + wHeight/2*wHeight/2);
+					c = (Color(0.0,0.0,0.0) - c) * (scaledDist*this->vignettingSlider) + c;
+				}
+				putPixel(secondaryBuffer, idx, c);
+			}
+		}
+		return this->secondaryBuffer;
+	}
+	return this->frameBuffer;
+}
