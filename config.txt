@@ -5,5 +5,6 @@ TILE_WIDTH=32
 TILE_HEIGHT=32
 W_WIDTH=640
 W_HEIGHT=384
+# 0 To go fullscreen on your primary monitor
 SCALING=2
 THREADS=-1
