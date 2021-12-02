@@ -21,8 +21,10 @@ static glm::dvec3 parseVec3(nlohmann::basic_json<> arr){
 }
 
 static glm::dvec4 parseVec4(nlohmann::basic_json<> arr){
-	return glm::dvec4(arr[0].get<double>(), arr[1].get<double>(),arr[2].get<double>(),arr[3].get<double>());
+	return glm::dvec4(arr[0].get<double>(), arr[1].get<double>(),arr[2].get<double>(), arr[3].get<double>());
 }
+
+
 
 Scene::Scene(){}
 Scene::Scene(std::filesystem::path sceneFile){
@@ -30,76 +32,31 @@ Scene::Scene(std::filesystem::path sceneFile){
 	std::filesystem::current_path(sceneFile.parent_path());
 	std::ifstream i(sceneFile.filename());
 	auto j = nlohmann::json::parse(i);
-	std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
-	std::unordered_map<std::string, MaterialPtr> materials;
 
-	glm::dvec3 camPosition(parseVec3(j["camera"]["position"]));
-	glm::dvec3 cameraDir(parseVec3(j["camera"]["dir"]));
-	glm::dvec3 cameraUp(parseVec3(j["camera"]["up"]));
-	double fov = j["camera"]["fov"].get<double>();
-	setCamera(std::make_shared<Camera>(camPosition, cameraDir, cameraUp, fov));
+	auto camera = parseCamera(j["camera"]);
+	setCamera(camera);
+
 	for(auto t : j["textures"]){
-		std::shared_ptr<Texture> text;
-		if(t["type"] == "SOLID_COLOR"){
-			text = std::make_shared<SolidColor>(parseVec3(t["color"]));
-		} else if(t["type"] == "CHECKERED"){
-			if(t.contains("color1") && t.contains("color2")){
-				Color c1 = parseVec3(t["color1"]);
-				Color c2 = parseVec3(t["color2"]);
-				text = std::make_shared<Checkered>(c1,c2);
-			} else text = std::make_shared<Checkered>();
-		} else if(t["type"] == "IMAGE"){
-			text = std::make_shared<ImageTexture>(t["path"].get<std::string>());
+		auto text = parseTexture(t);
+		if (text.second){
+			textures.insert(text);
 		}
-		textures[t["name"].get<std::string>()] = text;
 	}
 	for(auto m : j["materials"]){
-		std::string type = m["type"].get<std::string>();
-		std::string textname = m["texture"].get<std::string>();
-		auto texture = textures.find(textname);
-		std::shared_ptr<Material> mat;
-		if(type == "DIFFUSE"){
-			mat = std::make_shared<DiffuseMaterial>(texture->second);
-		} else if(type == "MIRROR") {
-			double ref = m.count("reflect") ? m["reflect"].get<double>() : 1.0;
-			mat = std::make_shared<MirrorMaterial>(texture->second, ref);
+		auto mat = parseMaterial(m);
+		if (mat.second){
+			materials.insert(mat);
 		}
-		else if (type == "DIELECTRIC") {
-			double idx = m.count("idx") ? m["idx"].get<double>() : 1.56;
-			double r = m.count("a.r") ? m["a.r"].get<double>() : 0;
-			double g = m.count("a.g") ? m["a.g"].get<double>() : 0;
-			double b = m.count("a.b") ? m["a.b"].get<double>() : 0;
-
-			mat = std::make_shared<DielectricMaterial>(texture->second, idx, Color(r,g,b));
-		}
-		materials[m["name"].get<std::string>()] = mat;
 	}
 	for(auto p : j["primitives"]){
-		std::string type = p["type"].get<std::string>();
-		auto material = materials[p["material"].get<std::string>()];
-		glm::dvec3 pos(parseVec3(p["position"]));
-		if(type == "PLANE"){
-			glm::dvec3 norm(parseVec3(p["normal"]));
-			hittables.push_back(std::make_shared<Plane>(pos, norm, material));
-		} else if(type == "SPHERE"){
-			double radius = p["radius"].get<double>();
-			hittables.push_back(std::make_shared<Sphere>(pos, radius, material));
-		} else if(type == "MESH"){
-		}
+		auto hit=parseHittable(p);
+		if(hit)
+			hittables.push_back(hit);
 	}
 	for(auto l : j["lights"]){
-		std::string type = l["type"].get<std::string>();
-		glm::dvec3 color(parseVec3(l["color"]));
-		double intensity(l["intensity"].get<double>());
-		if(type == "POINT"){
-			glm::dvec3 pos(parseVec3(l["position"]));
-			addLight(std::make_shared<PointLight>(pos, intensity, color));
-		} else if(type == "DIRECTIONAL"){
-			glm::dvec3 dir(parseVec3(l["direction"]));
-			addLight(std::make_shared<DirectionalLight>(dir, intensity, color));
-		} else if(type == "AMBIENT"){
-			addLight(std::make_shared<AmbientLight>(intensity, color));
-		}
+		auto light=parseLight(l);
+		if(light)
+			lights.push_back(light);
 	}
 	std::filesystem::current_path(currPath);
 }
@@ -152,4 +109,102 @@ Color Scene::traceLights(HitRecord &rec) const {
 		}
 	}
 	return illumination;
+}
+
+CameraPtr Scene::parseCamera(nlohmann::json &cam) const {
+	glm::dvec3 pos = parseVec3(cam.at("position"));
+	glm::dvec3 dir = parseVec3(cam.at("dir"));
+	glm::dvec3 up = parseVec3(cam.at("up"));
+	double fov = (cam.at("fov"));
+	return std::make_shared<Camera>(pos, dir, up, fov);	
+}
+
+std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
+	if(!hit.contains("type")) throw std::invalid_argument("Hittable doesn't name a type");
+	std::string type = hit.at("type");
+	if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
+	auto material = materials.find(hit.at("material"));
+	if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
+	glm::dvec3 pos(parseVec3(hit["position"]));
+	if(type == "PLANE"){
+		if(!hit.contains("normal")) throw std::invalid_argument("Plane doesn't specify a normal");
+		glm::dvec3 norm(parseVec3(hit.at("normal")));
+		return (std::make_shared<Plane>(pos, norm, material->second));
+	} else if(type == "SPHERE"){
+		double radius = (hit.contains("radius")) ?hit["radius"].get<double>() : 0.5;
+		return (std::make_shared<Sphere>(pos, radius, material->second));
+	} else if(type == "MESH"){
+		return nullptr;
+	} else{
+		throw std::invalid_argument("Hittable doesn't name a valid type");
+	}
+}
+std::shared_ptr<LightObject> Scene::parseLight(nlohmann::json &l) const{
+	if(!l.contains("type")) throw std::invalid_argument("LightObject doesn't name a type");
+	std::string type = l.at("type");
+	Color color = (l.contains("color")) ? (parseVec3(l["color"])) : Color(1.0);
+	double intensity = (l.contains("intensity")) ? (double)(l.at("intensity")) : 1.0;
+	if(type == "POINT"){
+		glm::dvec3 pos(parseVec3(l["position"]));
+		return (std::make_shared<PointLight>(pos, intensity, color));
+	} else if(type == "DIRECTIONAL"){
+		glm::dvec3 dir(parseVec3(l["direction"]));
+		return (std::make_shared<DirectionalLight>(dir, intensity, color));
+	} else if(type == "AMBIENT"){
+		return (std::make_shared<AmbientLight>(intensity, color));
+	} else {
+		throw std::invalid_argument("LightObject doesn't name a valid type");
+	}
+}
+
+std::pair<std::string, std::shared_ptr<Material>> Scene::parseMaterial(nlohmann::json &m) const {
+	std::pair<std::string, std::shared_ptr<Material>> mat;
+	if(!m.contains("name")) throw std::invalid_argument("Material is missing name");
+	mat.first = m.at("name");
+	if(!m.contains("type")) throw std::invalid_argument("Material is missing type");
+	std::string type = m.at("type");
+	if(!m.contains("texture")) throw std::invalid_argument("Material is missing texture");
+	std::string textname = m.at("texture");
+	auto texture = textures.find(textname);
+	if(texture == textures.end()) throw std::invalid_argument("Material doesn't name a valid texture");
+	if(type == "DIFFUSE"){
+		mat.second = std::make_shared<DiffuseMaterial>(texture->second);
+	} else if(type == "MIRROR") {
+		double ref = m.contains("reflect") ? m["reflect"].get<double>() : 1.0;
+		mat.second = std::make_shared<MirrorMaterial>(texture->second, ref);
+	}
+	else if (type == "DIELECTRIC") {
+		double idx = (m.contains("idx")) ? (double)m.at("idx") : 1.0;
+		Color absorption = m.contains("absorption") ? parseVec3(m.at("absorption")) : Color(1.0,1.0,1.0);
+		mat.second = std::make_shared<DielectricMaterial>(texture->second, idx, absorption);
+	}
+	return mat;
+}
+
+std::pair<std::string, std::shared_ptr<Texture>> Scene::parseTexture(nlohmann::json &text) const {
+	std::pair<std::string, std::shared_ptr<Texture>> texture;
+	std::string type;
+	try{
+		texture.first = text.at("name");
+		 type = text.at("type");
+	} catch (std::exception &e){
+		throw std::invalid_argument("Cannot find name or type of texture");
+	}
+	if(type == "SOLID_COLOR"){
+		texture.second = std::make_shared<SolidColor>((text.contains("color")) ? parseVec3(text["color"]) : Color(0,0,0));
+	} else if(type == "CHECKERED"){
+		if(text.contains("color1") && text.contains("color2")){
+			Color c1 = parseVec3(text["color1"]);
+			Color c2 = parseVec3(text["color2"]);
+			texture.second = std::make_shared<Checkered>(c1,c2);
+		} else {
+			texture.second = std::make_shared<Checkered>();
+		}
+	} else if(type == "IMAGE"){
+		if (text.contains("path"))
+			texture.second = std::make_shared<ImageTexture>(text["path"].get<std::string>());
+		else 
+			throw std::invalid_argument("Image Texture doesn't contains a valid path");
+	}
+	return texture;
 }

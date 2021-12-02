@@ -60,9 +60,14 @@ int main(int argc, char *args[]){
 	if(!configPath.empty() && std::filesystem::exists(configPath)){
 		parseOptions(configPath.c_str());
 	}
-	if(!scenePath.empty() && std::filesystem::exists(scenePath)){
-		scene = std::make_shared<Scene>(scenePath);
+	try{
+		if(!scenePath.empty() && std::filesystem::exists(scenePath)){
+			scene = std::make_shared<Scene>(scenePath);
+		}
+	} catch(std::exception &e){
+		std::cout << "Failed parsing the scene file: " << e.what() << std::endl;
 	}
+
 	OptionsMap::Instance()->printOptions();
 
 	Renderer renderer("TraceyGL", OptionsMap::Instance()->getOption(Options::THREADS));
