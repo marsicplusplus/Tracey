@@ -18,6 +18,7 @@ void parseOptions(std::filesystem::path path){
 	std::ifstream config(path);
 	std::string line;
 	while(std::getline(config, line)){
+		if(line[0] == '#') continue;
 		std::string key = line.substr(0, line.find('='));
 		line.erase(0, line.find('=') + 1);
 		if(key == "MAX_BOUNCES") OptionsMap::Instance()->setOption(Options::MAX_BOUNCES, std::stoi(line));
@@ -27,6 +28,7 @@ void parseOptions(std::filesystem::path path){
 		if(key == "TILE_HEIGHT") OptionsMap::Instance()->setOption(Options::TILE_HEIGHT, std::stoi(line));
 		if(key == "W_HEIGHT") OptionsMap::Instance()->setOption(Options::W_HEIGHT, std::stoi(line));
 		if(key == "W_WIDTH") OptionsMap::Instance()->setOption(Options::W_WIDTH, std::stoi(line));
+		if(key == "SCALING") OptionsMap::Instance()->setOption(Options::SCALING, std::stoi(line));
 		if(key == "THREADS"){
 			int nThreads = std::stoi(line);
 			// std::thread::hardware_concurrency() can return 0 on failure 
@@ -56,6 +58,8 @@ int main(int argc, char *args[]){
 			scenePath = (&args[i][strlen("scene=")]);
 		}
 	}
+	stbi_set_flip_vertically_on_load(true);
+
 	ScenePtr scene;
 	if(!configPath.empty() && std::filesystem::exists(configPath)){
 		parseOptions(configPath.c_str());
