@@ -22,6 +22,7 @@ public:
 		bool init();
 		void initGui();
 		bool start();
+		inline void toggleGui() {showGui = !showGui;}
 		void setScene(ScenePtr scene);
 
 	private:
