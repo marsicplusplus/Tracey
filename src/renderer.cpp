@@ -60,6 +60,16 @@ bool Renderer::init(){
 	glfwMakeContextCurrent(this->window);
 	glfwSetMouseButtonCallback(this->window, mouseCallback);
 	glfwSetScrollCallback(this->window, scrollCallback);
+	glfwSetWindowUserPointer(this->window, this);
+	glfwSetKeyCallback(this->window, [](GLFWwindow* w, int key, int scancode, int action, int mods) {
+		InputManager::Instance()->setKeyValue(key, action != GLFW_RELEASE);
+		if(key == GLFW_KEY_T && action == GLFW_PRESS){
+			static_cast<Renderer*>(glfwGetWindowUserPointer(w))->toggleGui();
+		}
+	});
+
+	glfwSetCursorPosCallback(this->window, [](GLFWwindow* w, double xpos, double ypos){
+	});
 
 	CHECK_ERROR(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "Failed to initialize GLAD", false);
 
@@ -177,18 +187,9 @@ bool Renderer::start() {
 	while(!glfwWindowShouldClose(this->window)){
 		double now = glfwGetTime();
 		glfwPollEvents();
-		handleInput();
-
-		if (InputManager::Instance()->isKeyDown(GLFW_KEY_T)) {
-			this->showGui = true;
-		}
-		if (InputManager::Instance()->isKeyDown(GLFW_KEY_N)) {
-			this->showGui = false;
-		}
-
-		if(scene && scene->update(lastUpdateTime)){
-			this->isBufferInvalid = true;
-		}
+		double xpos, ypos;
+		glfwGetCursorPos(this->window, &xpos, &ypos);
+		InputManager::Instance()->setMouseState(xpos, ypos);
 
 		if(this->isBufferInvalid) {
 			std::vector<std::future<void>> futures;
@@ -235,8 +236,9 @@ bool Renderer::start() {
 			isBufferInvalid = false;
 		}
 
-		uint32_t* buffer = applyPostProcessing();
+		if(scene) this->isBufferInvalid = this->scene->update(lastUpdateTime);
 
+		uint32_t* buffer = applyPostProcessing();
 		glBindTexture(GL_TEXTURE_2D, this->texture);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wWidth, wHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, buffer);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -308,27 +310,8 @@ void Renderer::setScene(ScenePtr scene){
 	this->isBufferInvalid = true;
 }
 
-void Renderer::handleInput(){
-	double xpos, ypos;
-	glfwGetCursorPos(this->window, &xpos, &ypos);
-	InputManager::Instance()->setMouseState(xpos, ypos);
-	InputManager::Instance()->setKeyValue(GLFW_KEY_D, glfwGetKey(this->window, GLFW_KEY_D) == GLFW_PRESS);
-	InputManager::Instance()->setKeyValue(GLFW_KEY_A, glfwGetKey(this->window, GLFW_KEY_A) == GLFW_PRESS);
-	InputManager::Instance()->setKeyValue(GLFW_KEY_W, glfwGetKey(this->window, GLFW_KEY_W) == GLFW_PRESS);
-	InputManager::Instance()->setKeyValue(GLFW_KEY_S, glfwGetKey(this->window, GLFW_KEY_S) == GLFW_PRESS);
-	InputManager::Instance()->setKeyValue(GLFW_KEY_Q, glfwGetKey(this->window, GLFW_KEY_Q) == GLFW_PRESS);
-	InputManager::Instance()->setKeyValue(GLFW_KEY_E, glfwGetKey(this->window, GLFW_KEY_E) == GLFW_PRESS);
-	InputManager::Instance()->setKeyValue(GLFW_KEY_T, glfwGetKey(this->window, GLFW_KEY_T) == GLFW_PRESS);
-	InputManager::Instance()->setKeyValue(GLFW_KEY_N, glfwGetKey(this->window, GLFW_KEY_N) == GLFW_PRESS);
-}
-
 void Renderer::mouseCallback(GLFWwindow* window, int button, int action, int mods) {
-	if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-		InputManager::Instance()->setKeyValue(GLFW_MOUSE_BUTTON_RIGHT, (action == GLFW_PRESS) ? true : false);
-	}
-	if (button == GLFW_MOUSE_BUTTON_LEFT) {
-		InputManager::Instance()->setKeyValue(GLFW_MOUSE_BUTTON_LEFT, (action == GLFW_PRESS) ? true : false);
-	}
+		InputManager::Instance()->setKeyValue(button, action == GLFW_PRESS);
 }
 
 void Renderer::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {

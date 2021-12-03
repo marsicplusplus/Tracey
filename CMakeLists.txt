@@ -17,6 +17,7 @@ include_directories(
     external/glad/include
     external/imgui
     external/imgui/backends
+    external/tinygltf
     src/
     )
 
