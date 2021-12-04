@@ -8,10 +8,13 @@
 #include "textures/image_texture.hpp"
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
+#include "hittables/mesh.hpp"
 #include "materials/material.hpp"
 #include "materials/material_dielectric.hpp"
 #include "materials/material_mirror.hpp"
 #include "materials/material_diffuse.hpp"
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
 
 #include <iostream>
 #include <fstream>
@@ -24,7 +27,52 @@ static glm::dvec4 parseVec4(nlohmann::basic_json<> &arr){
 	return glm::dvec4(arr[0].get<double>(), arr[1].get<double>(),arr[2].get<double>(), arr[3].get<double>());
 }
 
+std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path) const {
+	tinyobj::ObjReaderConfig reader_config;
+	reader_config.triangulate = true;
+	reader_config.mtl_search_path = path.parent_path(); // Path to material files
 
+	tinyobj::ObjReader reader;
+	if (!reader.ParseFromFile(path, reader_config)) {
+		if (!reader.Error().empty()) std::cerr << "TinyObjReader: " << reader.Error();
+		throw std::invalid_argument("Failed parsing of obj mesh");
+	}
+	if (!reader.Warning().empty()) std::cout << "TinyObjReader: " << reader.Warning();
+
+	auto& attrib = reader.GetAttrib();
+	auto& shapes = reader.GetShapes();
+	auto& materials = reader.GetMaterials();
+
+	// Loop over faces(polygon)
+	size_t idxOff = 0;
+	std::vector<glm::dvec3> pos;
+	std::vector<glm::dvec3> norm;
+	std::vector<glm::dvec2> uv;
+	std::vector<tinyobj::index_t> indices;
+	for(size_t v = 0; v < attrib.vertices.size(); v += 3){
+		tinyobj::real_t vx = attrib.vertices[v];
+		tinyobj::real_t vy = attrib.vertices[v+1];
+		tinyobj::real_t vz = attrib.vertices[v+2];
+		pos.push_back(glm::dvec3(vx, vy, vz));
+	}
+	for(size_t v = 0; v < attrib.normals.size(); v += 3){
+		tinyobj::real_t vx = attrib.normals[v];
+		tinyobj::real_t vy = attrib.normals[v+1];
+		tinyobj::real_t vz = attrib.normals[v+2];
+		norm.push_back(glm::dvec3(vx, vy, vz));
+	}
+	for(size_t v = 0; v < attrib.texcoords.size(); v += 2){
+		tinyobj::real_t vx = attrib.texcoords[v];
+		tinyobj::real_t vy = attrib.texcoords[v+1];
+		uv.push_back(glm::dvec2(vx, vy));
+	}
+	for(size_t s = 0; s < shapes.size(); ++s){
+		for(size_t i = 0; i < shapes[s].mesh.indices.size(); ++i){
+			indices.push_back(shapes[s].mesh.indices[i]);
+		}
+	}
+	return (std::make_shared<Mesh>(pos, norm, uv, indices, std::make_shared<DiffuseMaterial>(Color{0.0, 0.0, 1.0})));
+}
 
 Scene::Scene(){}
 Scene::Scene(std::filesystem::path sceneFile){
@@ -122,26 +170,34 @@ CameraPtr Scene::parseCamera(nlohmann::json &cam) const {
 std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 	if(!hit.contains("type")) throw std::invalid_argument("Hittable doesn't name a type");
 	std::string type = hit.at("type");
-	if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
-	auto material = materials.find(hit.at("material"));
-	if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
 	if(type == "PLANE"){
+		if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
+		auto material = materials.find(hit.at("material"));
+		if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
 		glm::dvec3 pos(parseVec3(hit["position"]));
 		if(!hit.contains("normal")) throw std::invalid_argument("Plane doesn't specify a normal");
 		glm::dvec3 norm(parseVec3(hit.at("normal")));
 		return (std::make_shared<Plane>(pos, norm, material->second));
 	} else if(type == "SPHERE"){
+		if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
+		auto material = materials.find(hit.at("material"));
+		if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
 		glm::dvec3 pos(parseVec3(hit["position"]));
 		double radius = (hit.contains("radius")) ?hit["radius"].get<double>() : 0.5;
 		return (std::make_shared<Sphere>(pos, radius, material->second));
 	} else if(type == "ZXRect"){
+		if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
+		auto material = materials.find(hit.at("material"));
+		if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
 		if(!hit.contains("size")) throw std::invalid_argument("ZXRect doesn't specify a correct size [x0, x1, z0, z1]");
 		glm::dvec4 size(parseVec4(hit.at("size")));
 		if(!hit.contains("y")) throw std::invalid_argument("ZXRect doesn't specify a correct y");
 		double yCoord(hit.at("y"));
 		return std::make_shared<ZXRect>(yCoord, size, material->second);
 	} else if(type == "MESH"){
-		return nullptr;
+		if(!hit.contains("path")) throw std::invalid_argument("Mesh doesn't specify a valid path;");
+		std::filesystem::path p = hit.at("path");
+		return parseMesh(p);
 	} else{
 		throw std::invalid_argument("Hittable doesn't name a valid type");
 	}

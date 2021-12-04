@@ -17,7 +17,7 @@ include_directories(
     external/glad/include
     external/imgui
     external/imgui/backends
-    external/tinygltf
+    external/tinyobjloader
     src/
     )
 
@@ -38,6 +38,7 @@ set( SRC
 	 src/renderer.cpp
 	 src/camera.cpp
 	 src/scene.cpp
+	 src/hittables/mesh.cpp
 	 src/options_manager.cpp
 	 src/input_manager.cpp
 )
