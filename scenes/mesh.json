@@ -1,0 +1,60 @@
+{
+	"camera" : {
+		"position": [0.0, 0.0, 1.5],
+		"dir": [0.0, 0.0, -1.0],
+		"up": [0.0, 1.0, 0.0],
+		"fov": 60
+	},
+	"textures" : [		
+		{
+			"name": "BWCheckered",
+			"type": "CHECKERED"
+		}
+	],
+	"materials": [
+		{
+			"type": "DIFFUSE",
+			"name": "Checkerboard",
+			"texture": "BWCheckered"
+		}
+	],
+	"primitives": [
+		{
+			"type": "PLANE",
+			"position": [0.0, -0.5, -0.0],
+			"normal": [0.0, 1.0, -0.0],
+			"material": "Checkerboard"
+		},
+
+		{
+			"type": "MESH",
+			"path": "./cube.obj"
+		}
+	],
+	"lights": [
+		{
+			"type": "DIRECTIONAL",
+			"direction": [0.0, -1.0, -0.5],
+			"color": [0.8, 0.8, 0.6],
+			"intensity": 0.6
+		},
+		{
+			"type": "POINT",
+			"position": [0.0, 1.0, 0.5],
+			"color": [1.0, 1.0, 1.0],
+			"intensity": 0.8
+		},
+		{
+			"type": "POINT",
+			"position": [1.5, 2.0, -1.5],
+			"color": [1.0, 1.0, 1.0],
+			"intensity": 0.4
+		},
+		{
+			"type": "POINT",
+			"position": [-1.5, 2.0, -1.5],
+			"color": [1.0, 0.5, 1.0],
+			"intensity": 0.4
+		}
+	]
+}
