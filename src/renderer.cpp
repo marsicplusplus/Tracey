@@ -507,17 +507,18 @@ uint32_t* Renderer::applyPostProcessing(){
 			for(size_t x = 0; x < wWidth; ++x){
 				int idx = y * wWidth + x;
 				double dist = sqrt((x-center.x)*(x-center.x) + (y-center.y)*(y-center.y)); 
+				double scaledDist = dist / sqrt(wWidth/2*wWidth/2 + wHeight/2*wHeight/2);
 				uint32_t pixel = frameBuffer[idx];
 				double r = static_cast<uint8_t>(pixel >> 16) / 255.0;
 				double g = static_cast<uint8_t>(pixel >> 8) / 255.0;
 				double b = static_cast<uint8_t>(pixel >> 0) / 255.0;
 				Color c(r,g,b);
 				if(guiAberration){
-					int nX = static_cast<int>(x + aberrationOffset.r) % wWidth;
+					int nX = static_cast<int>(x + scaledDist * aberrationOffset.r) % wWidth;
 					c.r = static_cast<uint8_t>(frameBuffer[y * wWidth + nX] >> 16)/255.0;
-					nX = static_cast<int>(x + aberrationOffset.g) % wWidth;
+					nX = static_cast<int>(x + scaledDist * aberrationOffset.g) % wWidth;
 					c.g = static_cast<uint8_t>(frameBuffer[y * wWidth + nX] >> 8)/255.0;
-					nX = static_cast<int>(x + aberrationOffset.b) % wWidth;
+					nX = static_cast<int>(x + scaledDist * aberrationOffset.b) % wWidth;
 					c.b = static_cast<uint8_t>(frameBuffer[y * wWidth + nX] >> 0)/255.0;
 				}
 				if(guiGammaCorrection){
@@ -526,7 +527,6 @@ uint32_t* Renderer::applyPostProcessing(){
 					c.b = sqrt(c.b);
 				}
 				if(guiVignetting){
-					double scaledDist = dist / sqrt(wWidth/2*wWidth/2 + wHeight/2*wHeight/2);
 					c = (Color(0.0,0.0,0.0) - c) * (scaledDist*this->vignettingSlider) + c;
 				}
 				putPixel(secondaryBuffer, idx, c);
