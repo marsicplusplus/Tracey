@@ -9,6 +9,7 @@
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
 #include "hittables/mesh.hpp"
+#include "hittables/torus.hpp"
 #include "materials/material.hpp"
 #include "materials/material_dielectric.hpp"
 #include "materials/material_mirror.hpp"
@@ -30,10 +31,10 @@ static glm::dvec4 parseVec4(nlohmann::basic_json<> &arr){
 std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path) const {
 	tinyobj::ObjReaderConfig reader_config;
 	reader_config.triangulate = true;
-	reader_config.mtl_search_path = path.parent_path(); // Path to material files
+	reader_config.mtl_search_path = path.parent_path().string(); // Path to material files
 
 	tinyobj::ObjReader reader;
-	if (!reader.ParseFromFile(path, reader_config)) {
+	if (!reader.ParseFromFile(path.string(), reader_config)) {
 		if (!reader.Error().empty()) std::cerr << "TinyObjReader: " << reader.Error();
 		throw std::invalid_argument("Failed parsing of obj mesh");
 	}
@@ -150,6 +151,12 @@ Color Scene::traceLights(HitRecord &rec) const {
 	for(auto &light : lights){
 		double tMax;
 		Ray shadowRay = light->getRay(rec, tMax);
+
+		// Required for Spotlights
+		if (shadowRay.getDirection() == glm::dvec3(0, 0, 0)) {
+			continue;
+		}
+
 		HitRecord obstruction;
 		if(!traverse(shadowRay, 0.0001, tMax, obstruction)){
 			auto contribution = light->getLight(rec, shadowRay);
@@ -170,7 +177,9 @@ CameraPtr Scene::parseCamera(nlohmann::json &cam) const {
 std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 	if(!hit.contains("type")) throw std::invalid_argument("Hittable doesn't name a type");
 	std::string type = hit.at("type");
+
 	if(type == "PLANE"){
+
 		if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
 		auto material = materials.find(hit.at("material"));
 		if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
@@ -178,14 +187,39 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 		if(!hit.contains("normal")) throw std::invalid_argument("Plane doesn't specify a normal");
 		glm::dvec3 norm(parseVec3(hit.at("normal")));
 		return (std::make_shared<Plane>(pos, norm, material->second));
+
 	} else if(type == "SPHERE"){
+
 		if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
 		auto material = materials.find(hit.at("material"));
 		if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
 		glm::dvec3 pos(parseVec3(hit["position"]));
-		double radius = (hit.contains("radius")) ?hit["radius"].get<double>() : 0.5;
+		double radius = (hit.contains("radius")) ? hit["radius"].get<double>() : 0.5;
 		return (std::make_shared<Sphere>(pos, radius, material->second));
+
+	} else if (type == "TORUS"){
+
+		if (!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
+		auto material = materials.find(hit.at("material"));
+		if (material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
+
+		glm::dvec3 pos(parseVec3(hit["position"]));
+
+		double xRot = hit.contains("xRot") ? hit["xRot"].get<double>() : 0.0;
+		double yRot = hit.contains("yRot") ? hit["yRot"].get<double>() : 0.0;
+		double zRot = hit.contains("zRot") ? hit["zRot"].get<double>() : 0.0;
+
+		auto torusTransform(glm::dmat4x4(1));
+		torusTransform = glm::translate(torusTransform, pos);
+		torusTransform = glm::rotate(torusTransform, glm::radians(xRot), glm::dvec3(1, 0, 0));
+		torusTransform = glm::rotate(torusTransform, glm::radians(yRot), glm::dvec3(0, 1, 0));
+		torusTransform = glm::rotate(torusTransform, glm::radians(zRot), glm::dvec3(0, 0, 1));
+		double radiusMajor = (hit.contains("radiusMajor")) ? hit["radiusMajor"].get<double>() : 0.5;
+		double radiusMinor = (hit.contains("radiusMinor")) ? hit["radiusMinor"].get<double>() : 0.1;
+		return (std::make_shared<Torus>(radiusMajor, radiusMinor, torusTransform, material->second));
+
 	} else if(type == "ZXRect"){
+
 		if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
 		auto material = materials.find(hit.at("material"));
 		if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
@@ -194,10 +228,13 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 		if(!hit.contains("y")) throw std::invalid_argument("ZXRect doesn't specify a correct y");
 		double yCoord(hit.at("y"));
 		return std::make_shared<ZXRect>(yCoord, size, material->second);
+
 	} else if(type == "MESH"){
+
 		if(!hit.contains("path")) throw std::invalid_argument("Mesh doesn't specify a valid path;");
 		std::filesystem::path p = hit.at("path");
 		return parseMesh(p);
+
 	} else{
 		throw std::invalid_argument("Hittable doesn't name a valid type");
 	}
@@ -215,6 +252,11 @@ std::shared_ptr<LightObject> Scene::parseLight(nlohmann::json &l) const{
 		return (std::make_shared<DirectionalLight>(dir, intensity, color));
 	} else if(type == "AMBIENT"){
 		return (std::make_shared<AmbientLight>(intensity, color));
+	} else if (type == "SPOT") {
+		glm::dvec3 pos(parseVec3(l["position"]));
+		glm::dvec3 dir(parseVec3(l["direction"]));
+		double cutoff = l.contains("cutoffAngle") ? l.at("cutoffAngle") : 45.0;
+		return (std::make_shared<SpotLight>(pos, dir, glm::radians(cutoff), intensity, color));
 	} else {
 		throw std::invalid_argument("LightObject doesn't name a valid type");
 	}
