@@ -96,6 +96,8 @@ std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, std::sha
 	std::cout << "Faces: " << std::endl;
 	for(size_t i = 0; i < triangles.size(); ++i){
 		std::cout << i << ": (" << triangles[i].face.x <<", " << triangles[i].face.y << ", " << triangles[i].face.z<<");"<<std::endl;
+		std::cout << i << ": (" << triangles[i].normal.x <<", " << triangles[i].normal.y << ", " << triangles[i].normal.z<<");"<<std::endl;
+		std::cout << i << ": (" << triangles[i].texture.x <<", " << triangles[i].texture.y << ", " << triangles[i].texture.z<<");"<<std::endl;
 	}
 	return std::make_shared<Mesh>(pos, norm, uv, triangles);
 }
@@ -293,9 +295,9 @@ std::pair<std::string, std::shared_ptr<Material>> Scene::parseMaterial(nlohmann:
 		mat.second = std::make_shared<MirrorMaterial>(texture->second, ref);
 	}
 	else if (type == "DIELECTRIC") {
-		double idx = (m.contains("idx")) ? (double)m.at("idx") : 1.0;
+		double ior = (m.contains("ior")) ? (double)m.at("ior") : 1.0;
 		Color absorption = m.contains("absorption") ? parseVec3(m.at("absorption")) : Color(1.0,1.0,1.0);
-		mat.second = std::make_shared<DielectricMaterial>(texture->second, idx, absorption);
+		mat.second = std::make_shared<DielectricMaterial>(texture->second, ior, absorption);
 	}
 	return mat;
 }

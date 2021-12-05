@@ -79,7 +79,7 @@ public:
 				4.0 * localp.z * (sumSquared - radii)
 			));
 
-			auto transformedNormal = glm::inverse(transformInv) * glm::dvec4(normal, 0);
+			auto transformedNormal = transform * glm::dvec4(normal, 0);
 
 			rec.t = minRealRoot;
 			rec.p = ray.at(minRealRoot);

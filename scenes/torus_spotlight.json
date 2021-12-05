@@ -14,15 +14,25 @@
 			"name": "SolidBlue",
 			"type": "SOLID_COLOR",
 			"color": [ 0.3, 0.3, 1.0 ]
+		},
+		{
+			"name": "SolidWhite",
+			"type": "SOLID_COLOR",
+			"color": [ 1.0, 1.0, 1.0 ]
 		}
 	],
 	"materials": [
 		{
 			"type": "DIELECTRIC",
-			"name": "BlueGlass",
-			"texture": "SolidBlue",
-			"idx": 1.52,
+			"name": "Glass",
+			"texture": "SolidWhite",
+			"ior": 1.52,
 			"absorption": [ 1.0, 1.0, 1.0 ]
+		},
+		{
+			"type": "MIRROR",
+			"name": "WhiteMirror",
+			"texture": "SolidWhite"
 		},
 		{
 			"type": "DIFFUSE",
@@ -45,15 +55,28 @@
 		{
 			"type": "TORUS",
 			"position": [ 0.0, 1.0, -1.0 ],
-			"xRot": 30,
+			"xRot": 0,
 			"yRot": 30,
 			"zRot": 30,
 			"radiusMajor": 0.8,
 			"radiusMinor": 0.2,
-			"material": "BlueDiffuse"
+			"material": "Glass"
+		},
+		{
+			"type": "SPHERE",
+			"position": [0.0, 1.0, -1.0],
+			"radius": 0.5,
+			"material": "WhiteMirror"
 		}
 	],
 	"lights": [
+		{
+			"type": "DIRECTIONAL",
+			"direction": [ 0.0, -0.6, 0.4 ],
+			"cutoffAngle": 60,
+			"color": [ 0.8, 0.8, 1.0 ],
+			"intensity": 1.0
+		},
 		{
 			"type": "SPOT",
 			"position": [ 0.0, 3, -1.5 ],
