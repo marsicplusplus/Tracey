@@ -218,7 +218,6 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 		return (std::make_shared<Sphere>(pos, radius, material->second));
 
 	} else if (type == "TORUS"){
-
 		if (!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
 		auto material = materials.find(hit.at("material"));
 		if (material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
@@ -270,7 +269,7 @@ std::shared_ptr<LightObject> Scene::parseLight(nlohmann::json &l) const{
 	} else if (type == "SPOT") {
 		glm::dvec3 pos(parseVec3(l["position"]));
 		glm::dvec3 dir(parseVec3(l["direction"]));
-		double cutoff = l.contains("cutoffAngle") ? l.at("cutoffAngle") : 45.0;
+		double cutoff = l.contains("cutoffAngle") ? (double)l.at("cutoffAngle") : 45.0;
 		return (std::make_shared<SpotLight>(pos, dir, glm::radians(cutoff), intensity, color));
 	} else {
 		throw std::invalid_argument("LightObject doesn't name a valid type");
