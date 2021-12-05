@@ -7,19 +7,29 @@
 #include "glm/gtx/norm.hpp"
 #include "tiny_obj_loader.h"
 
+struct Triangle {
+	public:
+		Triangle(glm::ivec3 fIdx, glm::ivec3 nIdx, glm::ivec3 tIdx, MaterialPtr m) : face{fIdx}, normal{nIdx}, texture{tIdx}, mat{m} {}
+
+		glm::ivec3 face;
+		glm::ivec3 normal;
+		glm::ivec3 texture;
+		MaterialPtr mat;
+};
+
+
 class Mesh : public Hittable {
 	public:
-		Mesh(std::vector<glm::dvec3> &p, std::vector<glm::dvec3> &n, std::vector<glm::dvec2> &t, std::vector<tinyobj::index_t> &idx, MaterialPtr m) : pos{p}, norm{n}, uvs{t}, indices{idx}, mat{m} {};
+		Mesh(std::vector<glm::dvec3> &p, std::vector<glm::dvec3> &n, std::vector<glm::dvec2> &t, std::vector<Triangle> &triangles) : pos{p}, norm{n}, uvs{t}, tris{triangles} {};
 		bool hit(const Ray &ray, double tMin, double tMax, HitRecord &rec) const override;
 
 	private:
 		std::vector<glm::dvec3> pos;
 		std::vector<glm::dvec3> norm;
 		std::vector<glm::dvec2> uvs;
-		std::vector<tinyobj::index_t> indices;
-		MaterialPtr mat;
+		std::vector<Triangle> tris;
 
-		bool intersect(const glm::dvec3 &v0, const glm::dvec3 &v1, const glm::dvec3 &v2, const Ray& ray, double &t) const;
+		bool intersectTri(const Triangle &tri, const Ray& ray, HitRecord &rec) const;
 };
 
 #endif

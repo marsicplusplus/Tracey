@@ -36,7 +36,7 @@ class Scene {
 		std::pair<std::string, std::shared_ptr<Material>> parseMaterial(nlohmann::json &text) const;
 		std::shared_ptr<Hittable> parseHittable(nlohmann::json &text) const;
 		std::shared_ptr<LightObject> parseLight(nlohmann::json &text) const;
-		std::shared_ptr<Hittable> parseMesh(std::filesystem::path &path) const;
+		std::shared_ptr<Hittable> parseMesh(std::filesystem::path &path, std::shared_ptr<Material> mat) const;
 };
 
 typedef std::shared_ptr<Scene> ScenePtr;
