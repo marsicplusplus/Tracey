@@ -41,6 +41,7 @@ set( SRC
 	 src/hittables/mesh.cpp
 	 src/options_manager.cpp
 	 src/input_manager.cpp
+	 src/quartic.cpp
 )
 
 if (UNIX)
