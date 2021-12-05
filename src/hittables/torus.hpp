@@ -100,7 +100,7 @@ public:
 private:
 	glm::dmat4x4 transformInv;
 	glm::dmat4x4 transform;
-	double radiusMajorSquared;// Distance from denter of tube to center of torus
+	double radiusMajorSquared;// Distance from center of tube to center of torus
 	double radiusMinorSquared;// Radius of the Tube
 	MaterialPtr mat;
 };
