@@ -1,22 +1,13 @@
 #include "hittables/mesh.hpp"
-
 #include <iostream>
+
 bool Mesh::hit(const Ray &ray, double tMin, double tMax, HitRecord &rec) const {
 	bool ret = false;
-	for(size_t i = 0; i < this->indices.size(); i+=3){
-		glm::dvec3 v0 = this->pos[indices[i].vertex_index];
-		glm::dvec3 v1 = this->pos[indices[i+1].vertex_index];
-		glm::dvec3 v2 = this->pos[indices[i+2].vertex_index];
-		double t, closest = tMax;
-		if(intersect(v0, v1, v2, ray, t)){
-			if(t < tMax && t > tMin && closest > t) {
-				closest = t;
-				rec.t = t;
-				rec.p = ray.at(rec.t);
-				rec.u = this->uvs[indices[i].texcoord_index].x;
-				rec.v = this->uvs[indices[i].texcoord_index].y;
-				rec.material = mat;
-				rec.setFaceNormal(ray, this->norm[indices[i].normal_index]);
+	double closest = tMax;
+	for(auto &tri : this->tris){
+		if(intersectTri(tri, ray, rec)){
+			if(rec.t < tMax && rec.t > tMin && rec.t < closest){
+				closest = rec.t;
 				ret = true;
 			}
 		}
@@ -24,23 +15,44 @@ bool Mesh::hit(const Ray &ray, double tMin, double tMax, HitRecord &rec) const {
 	return ret;
 }
 
-bool Mesh::intersect(const glm::dvec3 &v0, const glm::dvec3 &v1, const glm::dvec3 &v2, const Ray &ray, double &t) const {
+bool Mesh::intersectTri(const Triangle &tri, const Ray &ray, HitRecord &rec) const {
+		const glm::dvec3 &v0 = this->pos[tri.face.x];
+		const glm::dvec3 &v1 = this->pos[tri.face.y];
+		const glm::dvec3 &v2 = this->pos[tri.face.z];
+
 		glm::dvec3 v0v1 = v1 - v0;
 		glm::dvec3 v0v2 = v2 - v0;
 		glm::dvec3 p = glm::cross(ray.getDirection(), v0v2);
 		double det = glm::dot(v0v1, p);
-		if(fabs(det) < 0.001) return false;
+		if(det < 0.00001) return false;
 		double inv = 1.0/det;
 
 		glm::dvec3 tv = ray.getOrigin() - v0;
 		double u = glm::dot(tv, p) * inv;
-		if(u < 0 || u > 1) return false;
+		if(u < 0.0 || u > 1.0) return false;
 
 		glm::dvec3 q = glm::cross(tv, v0v1);
 		double v = glm::dot(ray.getDirection(), q) * inv;
 		if(v < 0 || u + v > 1) return false;
 		double tmp = glm::dot(v0v2, q) * inv;
 		if(tmp < 0) return false;
-		t = tmp;
+
+		rec.t = tmp;
+		rec.p = ray.at(tmp);
+
+		const glm::dvec3 &n0 = this->norm[tri.normal.x]; 
+		const glm::dvec3 &n1 = this->norm[tri.normal.y]; 
+		const glm::dvec3 &n2 = this->norm[tri.normal.z]; 
+		glm::dvec3 hitNormal = (1.0 - u - v) * n0 + u * n1 + v * n2; 
+		rec.setFaceNormal(ray, hitNormal);
+
+		const glm::dvec2 &st0 = this->uvs[tri.texture.x]; 
+		const glm::dvec2 &st1 = this->uvs[tri.texture.y];
+		const glm::dvec2 &st2 = this->uvs[tri.texture.z]; 
+		glm::dvec2 uv = (1.0 - u - v) * st0 + u * st1 + v * st2; 
+		rec.u = uv.x;
+		rec.v = uv.y;
+		rec.material = tri.mat;
+
 		return true;
 }

@@ -27,7 +27,7 @@ static glm::dvec4 parseVec4(nlohmann::basic_json<> &arr){
 	return glm::dvec4(arr[0].get<double>(), arr[1].get<double>(),arr[2].get<double>(), arr[3].get<double>());
 }
 
-std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path) const {
+std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, std::shared_ptr<Material> mat) const {
 	tinyobj::ObjReaderConfig reader_config;
 	reader_config.triangulate = true;
 	reader_config.mtl_search_path = path.parent_path(); // Path to material files
@@ -35,43 +35,68 @@ std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path) const {
 	tinyobj::ObjReader reader;
 	if (!reader.ParseFromFile(path, reader_config)) {
 		if (!reader.Error().empty()) std::cerr << "TinyObjReader: " << reader.Error();
-		throw std::invalid_argument("Failed parsing of obj mesh");
+		return nullptr;
 	}
 	if (!reader.Warning().empty()) std::cout << "TinyObjReader: " << reader.Warning();
 
 	auto& attrib = reader.GetAttrib();
 	auto& shapes = reader.GetShapes();
-	auto& materials = reader.GetMaterials();
 
-	// Loop over faces(polygon)
-	size_t idxOff = 0;
 	std::vector<glm::dvec3> pos;
 	std::vector<glm::dvec3> norm;
 	std::vector<glm::dvec2> uv;
-	std::vector<tinyobj::index_t> indices;
-	for(size_t v = 0; v < attrib.vertices.size(); v += 3){
-		tinyobj::real_t vx = attrib.vertices[v];
-		tinyobj::real_t vy = attrib.vertices[v+1];
-		tinyobj::real_t vz = attrib.vertices[v+2];
-		pos.push_back(glm::dvec3(vx, vy, vz));
+	std::vector<Triangle> triangles;
+
+	for(size_t i = 0; i < attrib.vertices.size(); i+=3) {
+		pos.push_back(glm::dvec3{
+				attrib.vertices[i],
+				attrib.vertices[i+1],
+				attrib.vertices[i+2],
+				});
 	}
-	for(size_t v = 0; v < attrib.normals.size(); v += 3){
-		tinyobj::real_t vx = attrib.normals[v];
-		tinyobj::real_t vy = attrib.normals[v+1];
-		tinyobj::real_t vz = attrib.normals[v+2];
-		norm.push_back(glm::dvec3(vx, vy, vz));
+	for(size_t i = 0; i < attrib.normals.size(); i+=3) {
+		norm.push_back(glm::dvec3{
+				attrib.vertices[i],
+				attrib.vertices[i+1],
+				attrib.vertices[i+2],
+				});
 	}
-	for(size_t v = 0; v < attrib.texcoords.size(); v += 2){
-		tinyobj::real_t vx = attrib.texcoords[v];
-		tinyobj::real_t vy = attrib.texcoords[v+1];
-		uv.push_back(glm::dvec2(vx, vy));
+	for(size_t i = 0; i < attrib.texcoords.size(); i+=2) {
+		uv.push_back(glm::dvec2{
+				attrib.vertices[i],
+				attrib.vertices[i+1],
+				});
 	}
-	for(size_t s = 0; s < shapes.size(); ++s){
-		for(size_t i = 0; i < shapes[s].mesh.indices.size(); ++i){
-			indices.push_back(shapes[s].mesh.indices[i]);
+
+	for(auto &shape : shapes){
+		const std::vector<tinyobj::index_t> idx = shape.mesh.indices;
+		const std::vector<int> & mat_ids = shape.mesh.material_ids;
+		for(size_t face_ind = 0; face_ind < mat_ids.size(); face_ind++) {
+			triangles.push_back(Triangle(
+						glm::ivec3{idx[3*face_ind].vertex_index, 	idx[3*face_ind+1].vertex_index, 	idx[3*face_ind+2].vertex_index},
+						glm::ivec3{idx[3*face_ind].normal_index, 	idx[3*face_ind+1].normal_index, 	idx[3*face_ind+2].normal_index},
+						glm::ivec3{idx[3*face_ind].texcoord_index, 	idx[3*face_ind+1].texcoord_index, 	idx[3*face_ind+2].texcoord_index},
+						mat
+					));
 		}
 	}
-	return (std::make_shared<Mesh>(pos, norm, uv, indices, std::make_shared<DiffuseMaterial>(Color{0.0, 0.0, 1.0})));
+	std::cout << "Vertices: " << std::endl;
+	for(size_t i = 0; i < pos.size(); ++i){
+		std::cout << i << ": (" << pos[i].x <<", " << pos[i].y << ", " << pos[i].z<<");"<<std::endl;
+	}
+	std::cout << "Normals: " << std::endl;
+	for(size_t i = 0; i < norm.size(); ++i){
+		std::cout << i << ": (" << norm[i].x <<", " << norm[i].y << ", " << norm[i].z<<");"<<std::endl;
+	}
+	std::cout << "Textures: " << std::endl;
+	for(size_t i = 0; i < uv.size(); ++i){
+		std::cout << i << ": (" << uv[i].x <<", " << uv[i].y << ");"<<std::endl;
+	}
+	std::cout << "Faces: " << std::endl;
+	for(size_t i = 0; i < triangles.size(); ++i){
+		std::cout << i << ": (" << triangles[i].face.x <<", " << triangles[i].face.y << ", " << triangles[i].face.z<<");"<<std::endl;
+	}
+	return std::make_shared<Mesh>(pos, norm, uv, triangles);
 }
 
 Scene::Scene(){}
@@ -170,25 +195,20 @@ CameraPtr Scene::parseCamera(nlohmann::json &cam) const {
 std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 	if(!hit.contains("type")) throw std::invalid_argument("Hittable doesn't name a type");
 	std::string type = hit.at("type");
+	if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
+	auto material = materials.find(hit.at("material"));
+	if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
+
 	if(type == "PLANE"){
-		if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
-		auto material = materials.find(hit.at("material"));
-		if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
 		glm::dvec3 pos(parseVec3(hit["position"]));
 		if(!hit.contains("normal")) throw std::invalid_argument("Plane doesn't specify a normal");
 		glm::dvec3 norm(parseVec3(hit.at("normal")));
 		return (std::make_shared<Plane>(pos, norm, material->second));
 	} else if(type == "SPHERE"){
-		if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
-		auto material = materials.find(hit.at("material"));
-		if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
 		glm::dvec3 pos(parseVec3(hit["position"]));
 		double radius = (hit.contains("radius")) ?hit["radius"].get<double>() : 0.5;
 		return (std::make_shared<Sphere>(pos, radius, material->second));
 	} else if(type == "ZXRect"){
-		if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
-		auto material = materials.find(hit.at("material"));
-		if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
 		if(!hit.contains("size")) throw std::invalid_argument("ZXRect doesn't specify a correct size [x0, x1, z0, z1]");
 		glm::dvec4 size(parseVec4(hit.at("size")));
 		if(!hit.contains("y")) throw std::invalid_argument("ZXRect doesn't specify a correct y");
@@ -197,7 +217,7 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 	} else if(type == "MESH"){
 		if(!hit.contains("path")) throw std::invalid_argument("Mesh doesn't specify a valid path;");
 		std::filesystem::path p = hit.at("path");
-		return parseMesh(p);
+		return parseMesh(p, material->second);
 	} else{
 		throw std::invalid_argument("Hittable doesn't name a valid type");
 	}
