@@ -81,6 +81,27 @@ std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, std::sha
 					));
 		}
 	}
+	std::cout << "Vertices: " << std::endl;
+	int i=0;
+	for(auto &v : pos){
+		std::cout << i++ << ": (" << v.x << ", " << v.y << ", " << v.z << ")" << std::endl;
+	}
+	i=0;
+	std::cout << "Normals: " << std::endl;
+	for(auto &v : norm){
+		std::cout << i++ << ": (" << v.x << ", " << v.y << ", " << v.z << ")" << std::endl;
+	}
+	std::cout << "Textures: " << std::endl;
+	for(auto &v : uv){
+		std::cout << i++ << ": (" << v.x << ", " << v.y << ")" << std::endl;
+	}
+	std::cout << "Indices: " << std::endl;
+	i=0;
+	for(auto &v : triangles){
+		std::cout << i << ": (" << v.face.x << ", " << v.face.y << ", " << v.face.z << ")" << std::endl;
+		std::cout << i << ": (" << v.normal.x << ", " << v.normal.y << ", " << v.normal.z << ")" << std::endl;
+		std::cout << i++ << ": (" << v.texture.x << ", " << v.texture.y << ", " << v.texture.z << ")" << std::endl;
+	}
 	return std::make_shared<Mesh>(pos, norm, uv, triangles);
 }
 
