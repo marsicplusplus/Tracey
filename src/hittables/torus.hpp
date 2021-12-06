@@ -10,7 +10,7 @@
 
 class Torus : public Hittable {
 public:
-	Torus(double _radiusMajor, double _radiusMinor, glm::dmat4x4 _transform, MaterialPtr mat) : transform{_transform}, transformInv{glm::inverse(_transform)}, mat{mat} {
+	Torus(double _radiusMajor, double _radiusMinor, MaterialPtr mat) : Hittable(), mat{mat} {
 		//if (_radiusMinor > _radiusMajor) {
 		//	auto tmp = _radiusMajor;
 		//	_radiusMajor = _radiusMinor;
@@ -98,8 +98,6 @@ public:
 	}
 
 private:
-	glm::dmat4x4 transformInv;
-	glm::dmat4x4 transform;
 	double radiusMajor;// Distance from center of tube to center of torus
 	double radiusMajorSquared;// Distance from center of tube to center of torus
 	double radiusMinorSquared;// Radius of the Tube

@@ -25,6 +25,22 @@ static glm::dvec4 parseVec4(nlohmann::basic_json<> &arr){
 	return glm::dvec4(arr[0].get<double>(), arr[1].get<double>(),arr[2].get<double>(), arr[3].get<double>());
 }
 
+void Scene::parseTransform(nlohmann::basic_json<> &hit, HittablePtr& primitive) const {
+	if(hit.contains("transform")){
+		auto trans = hit.at("transform");
+		if(trans.contains("scale")){ 
+			if(trans.at("scale").is_array()) primitive->scale(parseVec3(trans.at("scale")));
+			else primitive->scale((double)(trans.at("scale")));
+		}
+		if(trans.contains("rotation")){ 
+			auto rot = parseVec3(trans.at("rotation"));
+			if(rot.x != 0) primitive->rotate(rot.x, glm::dvec3(1.0,0.0,0.0));
+			if(rot.y != 0) primitive->rotate(rot.y, glm::dvec3(0.0,1.0,0.0));
+			if(rot.z != 0) primitive->rotate(rot.z, glm::dvec3(0.0,0.0,1.0));
+		}
+		if(trans.contains("translation")) primitive->translate(parseVec3(trans.at("translation")));
+	}
+}
 
 
 Scene::Scene(){}
@@ -132,47 +148,33 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 	if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
 	auto material = materials.find(hit.at("material"));
 	if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
+	std::shared_ptr<Hittable> primitive = nullptr;
 	if(type == "PLANE"){
-		glm::dvec3 pos(parseVec3(hit["position"]));
 		if(!hit.contains("normal")) throw std::invalid_argument("Plane doesn't specify a normal");
 		glm::dvec3 norm(parseVec3(hit.at("normal")));
-		return (std::make_shared<Plane>(pos, norm, material->second));
-	} else if(type == "SPHERE"){
 		glm::dvec3 pos(parseVec3(hit["position"]));
+		primitive = (std::make_shared<Plane>(pos, norm, material->second));
+	} else if(type == "SPHERE"){
 		double radius = (hit.contains("radius")) ? hit["radius"].get<double>() : 0.5;
-		return (std::make_shared<Sphere>(pos, radius, material->second));
+		primitive = (std::make_shared<Sphere>(radius, material->second));
 
 	} else if (type == "TORUS"){
-		if (!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
-		auto material = materials.find(hit.at("material"));
-		if (material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
-
-		glm::dvec3 pos(parseVec3(hit["position"]));
-
-		double xRot = hit.contains("xRot") ? hit["xRot"].get<double>() : 0.0;
-		double yRot = hit.contains("yRot") ? hit["yRot"].get<double>() : 0.0;
-		double zRot = hit.contains("zRot") ? hit["zRot"].get<double>() : 0.0;
-
-		auto torusTransform(glm::dmat4x4(1));
-		torusTransform = glm::translate(torusTransform, pos);
-		torusTransform = glm::rotate(torusTransform, glm::radians(xRot), glm::dvec3(1, 0, 0));
-		torusTransform = glm::rotate(torusTransform, glm::radians(yRot), glm::dvec3(0, 1, 0));
-		torusTransform = glm::rotate(torusTransform, glm::radians(zRot), glm::dvec3(0, 0, 1));
 		double radiusMajor = (hit.contains("radiusMajor")) ? hit["radiusMajor"].get<double>() : 0.5;
 		double radiusMinor = (hit.contains("radiusMinor")) ? hit["radiusMinor"].get<double>() : 0.1;
-		return (std::make_shared<Torus>(radiusMajor, radiusMinor, torusTransform, material->second));
-
+		primitive = (std::make_shared<Torus>(radiusMajor, radiusMinor, material->second));
 	} else if(type == "ZXRect"){
 		if(!hit.contains("size")) throw std::invalid_argument("ZXRect doesn't specify a correct size [x0, x1, z0, z1]");
 		glm::dvec4 size(parseVec4(hit.at("size")));
 		if(!hit.contains("y")) throw std::invalid_argument("ZXRect doesn't specify a correct y");
 		double yCoord(hit.at("y"));
-		return std::make_shared<ZXRect>(yCoord, size, material->second);
+		primitive = std::make_shared<ZXRect>(yCoord, size, material->second);
 	} else if(type == "MESH"){
-		return nullptr;
+		primitive = nullptr;
 	} else{
 		throw std::invalid_argument("Hittable doesn't name a valid type");
 	}
+	parseTransform(hit, primitive);
+	return primitive;
 }
 std::shared_ptr<LightObject> Scene::parseLight(nlohmann::json &l) const{
 	if(!l.contains("type")) throw std::invalid_argument("LightObject doesn't name a type");

@@ -8,29 +8,34 @@
 
 class Sphere : public Hittable {
 	public:
-		Sphere(glm::dvec3 c, double r, MaterialPtr mat) : center{c}, radius{r}, radiusSquared{r*r}, mat{mat} {}
+		Sphere(double r, MaterialPtr mat) : Hittable(), radius{r}, radiusSquared{r*r}, mat{mat} {}
 		inline bool hit(const Ray &ray, double tMin, double tMax, HitRecord &rec) const override {
+			const auto transformedRay = ray.transformRay(transformInv);
+			const auto transformedRayDir = transformedRay.getDirection();
+			const auto transformedOrigin = transformedRay.getOrigin();
+
 			if(mat->getType() != Materials::DIELECTRIC){ 
-				glm::dvec3 C = this->center - ray.getOrigin();
-				double t = glm::dot(C, ray.getDirection());
-				glm::dvec3 Q = C - t * ray.getDirection();
+				glm::dvec3 C = glm::dvec3(0.0) - transformedOrigin;
+				double t = glm::dot(C, transformedRayDir);
+				glm::dvec3 Q = C - t * transformedRayDir;
 				float p2 = glm::dot(Q, Q); if(p2 > this->radiusSquared) return false;
 				t -= sqrt(this->radiusSquared - p2);
 				if((t < tMax) && (t > tMin) && (t > 0)){
 					rec.t = t;
-					rec.p = ray.at(t);
+					rec.p = transformedRay.at(t);
 					rec.material = mat;
-					glm::dvec3 normal = (rec.p - center) / radius;
-					rec.setFaceNormal(ray, normal);
+					glm::dvec3 normal = (rec.p) / radius;
+					auto transformedNormal = transform * glm::dvec4(normal, 0);
+					rec.setFaceNormal(ray, transformedNormal);
 					getUV(rec);
 					return true;
 				}
 				return false;
 			} else {
 			/* Inefficent, but needed */
-				glm::dvec3 oc = ray.getOrigin() - center;
-				auto a = glm::dot(ray.getDirection(), ray.getDirection());
-				auto b = 2.0 * glm::dot(oc, ray.getDirection());
+				glm::dvec3 oc = transformedOrigin;
+				auto a = glm::dot(transformedRayDir, transformedRayDir);
+				auto b = 2.0 * glm::dot(oc, transformedRayDir);
 				auto c = glm::dot(oc, oc) - radius*radius;
 				auto discriminant = b*b - 4*a*c;
 				if(discriminant >= 0){
@@ -43,10 +48,11 @@ class Sphere : public Hittable {
 					else return false;
 					if(cT < tMax && cT > tMin){
 						rec.t = cT;
-						rec.p = ray.at(cT);
+						rec.p = transformedRay.at(cT);
 						rec.material = mat;
-						glm::dvec3 normal = (rec.p - center) / radius;
-						rec.setFaceNormal(ray, normal);
+						glm::dvec3 normal = (rec.p) / radius;
+						auto transformedNormal = transform * glm::dvec4(normal, 0);
+						rec.setFaceNormal(ray, transformedNormal);
 						getUV(rec);
 						return true;
 					}
@@ -63,7 +69,6 @@ class Sphere : public Hittable {
 		}
 
 	private:
-		glm::dvec3 center;
 		double radius;
 		double radiusSquared;
 		MaterialPtr mat;
