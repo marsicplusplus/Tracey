@@ -9,19 +9,19 @@
 class DielectricMaterial : public Material {
 
 	public: 
-		DielectricMaterial(Color color, double _refractIdx = 1.0, Color _absorption = Color(0, 0, 0)) : refractIdx{_refractIdx}, absorption{_absorption}{
+		DielectricMaterial(Color color, double _ior = 1.0, Color _absorption = Color(0, 0, 0)) : ior{_ior}, absorption{_absorption}{
 			albedo = std::make_shared<SolidColor>(color);
 		}
 
-		DielectricMaterial(std::shared_ptr<Texture> t, double _refractIdx = 1.0, Color _absorption = Color(0, 0, 0)) : refractIdx{_refractIdx}, absorption{_absorption}{
+		DielectricMaterial(std::shared_ptr<Texture> t, double _ior = 1.0, Color _absorption = Color(0, 0, 0)) : ior{_ior}, absorption{_absorption}{
 			albedo = t;
 		}
 
 		inline Materials getType() const override { return Materials::DIELECTRIC; }
 
 		inline bool reflect(const Ray& in, const HitRecord &r, Ray &reflectedRay, double &reflectance) const override {
-			double n1 = (r.frontFace) ? 1.0 : refractIdx;
-			double n2 = (r.frontFace) ? refractIdx : 1.0;
+			double n1 = (r.frontFace) ? 1.0 : ior;
+			double n2 = (r.frontFace) ? ior : 1.0;
 			double cosThetai = glm::dot(-in.getDirection(), r.normal);
 			double ratio = n1/n2;
 			double k = 1 - (ratio * ratio) * (1 - (cosThetai * cosThetai));
@@ -43,8 +43,8 @@ class DielectricMaterial : public Material {
 
 		inline virtual bool refract(const Ray& in, const HitRecord &r, Ray &refractedRay, double &refractance) const override {
 			double cosi = glm::dot(-in.getDirection(), r.normal);
-			double n1 = r.frontFace ? 1.0 : refractIdx;
-			double n2 = r.frontFace ? refractIdx : 1.0;
+			double n1 = r.frontFace ? 1.0 : ior;
+			double n2 = r.frontFace ? ior : 1.0;
 			double ratio = n1/n2;
 			double k = 1.0 - ratio * ratio * (1.0 - (cosi * cosi));
 			if(k < 0){
@@ -67,7 +67,7 @@ class DielectricMaterial : public Material {
 		}
 
 	private: 
-		double refractIdx;
+		double ior;
 		Color absorption;
 };
 

@@ -9,8 +9,7 @@
 #include <limits>
 #include <memory>
 
-#define PI 3.1415926535897932385
-
+const double PI = 3.141592653589793238463L;
 const double INF = std::numeric_limits<double>::infinity();
 
 #define CHECK_ERROR(COND, MESSAGE, RET) if(!(COND)){\

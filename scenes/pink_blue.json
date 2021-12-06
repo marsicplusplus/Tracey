@@ -57,7 +57,7 @@
 			"type": "DIELECTRIC",
 			"name": "GlassSurface",
 			"texture": "SolidWhite",
-			"idx": 1.52
+			"ior": 1.52
 		},
 		{
 			"type": "MIRROR",

@@ -40,6 +40,7 @@ set( SRC
 	 src/scene.cpp
 	 src/options_manager.cpp
 	 src/input_manager.cpp
+	 src/quartic.cpp
 )
 
 if (UNIX)

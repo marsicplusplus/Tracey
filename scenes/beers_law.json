@@ -21,7 +21,7 @@
 			"type": "DIELECTRIC",
 			"name": "RedGlass",
 			"texture": "SolidRed",
-			"idx": 1.52,
+			"ior": 1.52,
 			"absorption": [1.0,1.0,1.0]
 		},
 		{

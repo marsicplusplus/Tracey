@@ -8,6 +8,7 @@
 #include "textures/image_texture.hpp"
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
+#include "hittables/torus.hpp"
 #include "materials/material.hpp"
 #include "materials/material_dielectric.hpp"
 #include "materials/material_mirror.hpp"
@@ -102,6 +103,12 @@ Color Scene::traceLights(HitRecord &rec) const {
 	for(auto &light : lights){
 		double tMax;
 		Ray shadowRay = light->getRay(rec, tMax);
+
+		// Required for Spotlights
+		if (shadowRay.getDirection() == glm::dvec3(0, 0, 0)) {
+			continue;
+		}
+
 		HitRecord obstruction;
 		if(!traverse(shadowRay, 0.0001, tMax, obstruction)){
 			auto contribution = light->getLight(rec, shadowRay);
@@ -132,8 +139,29 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 		return (std::make_shared<Plane>(pos, norm, material->second));
 	} else if(type == "SPHERE"){
 		glm::dvec3 pos(parseVec3(hit["position"]));
-		double radius = (hit.contains("radius")) ?hit["radius"].get<double>() : 0.5;
+		double radius = (hit.contains("radius")) ? hit["radius"].get<double>() : 0.5;
 		return (std::make_shared<Sphere>(pos, radius, material->second));
+
+	} else if (type == "TORUS"){
+		if (!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
+		auto material = materials.find(hit.at("material"));
+		if (material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
+
+		glm::dvec3 pos(parseVec3(hit["position"]));
+
+		double xRot = hit.contains("xRot") ? hit["xRot"].get<double>() : 0.0;
+		double yRot = hit.contains("yRot") ? hit["yRot"].get<double>() : 0.0;
+		double zRot = hit.contains("zRot") ? hit["zRot"].get<double>() : 0.0;
+
+		auto torusTransform(glm::dmat4x4(1));
+		torusTransform = glm::translate(torusTransform, pos);
+		torusTransform = glm::rotate(torusTransform, glm::radians(xRot), glm::dvec3(1, 0, 0));
+		torusTransform = glm::rotate(torusTransform, glm::radians(yRot), glm::dvec3(0, 1, 0));
+		torusTransform = glm::rotate(torusTransform, glm::radians(zRot), glm::dvec3(0, 0, 1));
+		double radiusMajor = (hit.contains("radiusMajor")) ? hit["radiusMajor"].get<double>() : 0.5;
+		double radiusMinor = (hit.contains("radiusMinor")) ? hit["radiusMinor"].get<double>() : 0.1;
+		return (std::make_shared<Torus>(radiusMajor, radiusMinor, torusTransform, material->second));
+
 	} else if(type == "ZXRect"){
 		if(!hit.contains("size")) throw std::invalid_argument("ZXRect doesn't specify a correct size [x0, x1, z0, z1]");
 		glm::dvec4 size(parseVec4(hit.at("size")));
@@ -159,6 +187,11 @@ std::shared_ptr<LightObject> Scene::parseLight(nlohmann::json &l) const{
 		return (std::make_shared<DirectionalLight>(dir, intensity, color));
 	} else if(type == "AMBIENT"){
 		return (std::make_shared<AmbientLight>(intensity, color));
+	} else if (type == "SPOT") {
+		glm::dvec3 pos(parseVec3(l["position"]));
+		glm::dvec3 dir(parseVec3(l["direction"]));
+		double cutoff = l.contains("cutoffAngle") ? (double)l.at("cutoffAngle") : 45.0;
+		return (std::make_shared<SpotLight>(pos, dir, glm::radians(cutoff), intensity, color));
 	} else {
 		throw std::invalid_argument("LightObject doesn't name a valid type");
 	}
@@ -181,9 +214,9 @@ std::pair<std::string, std::shared_ptr<Material>> Scene::parseMaterial(nlohmann:
 		mat.second = std::make_shared<MirrorMaterial>(texture->second, ref);
 	}
 	else if (type == "DIELECTRIC") {
-		double idx = (m.contains("idx")) ? (double)m.at("idx") : 1.0;
+		double ior = (m.contains("ior")) ? (double)m.at("ior") : 1.0;
 		Color absorption = m.contains("absorption") ? parseVec3(m.at("absorption")) : Color(1.0,1.0,1.0);
-		mat.second = std::make_shared<DielectricMaterial>(texture->second, idx, absorption);
+		mat.second = std::make_shared<DielectricMaterial>(texture->second, ior, absorption);
 	}
 	return mat;
 }
