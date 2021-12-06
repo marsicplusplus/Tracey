@@ -11,6 +11,12 @@
 			"type": "CHECKERED"
 		},
 		{
+			"name": "BrickTexture",
+			"type": "IMAGE",
+			"path": "../Textures/brick.jpg"
+		},
+
+		{
 			"name": "SolidBlue",
 			"type": "SOLID_COLOR",
 			"color": [ 0.3, 0.3, 1.0 ]
@@ -33,6 +39,11 @@
 			"type": "MIRROR",
 			"name": "WhiteMirror",
 			"texture": "SolidWhite"
+		},
+		{
+			"type": "DIFFUSE",
+			"name": "Brick",
+			"texture": "BrickTexture"
 		},
 		{
 			"type": "DIFFUSE",
@@ -60,7 +71,7 @@
 			"zRot": 30,
 			"radiusMajor": 0.8,
 			"radiusMinor": 0.2,
-			"material": "Glass"
+			"material": "Brick"
 		},
 		{
 			"type": "SPHERE",

@@ -16,7 +16,7 @@ public:
 		//	_radiusMajor = _radiusMinor;
 		//	_radiusMinor = tmp;
 		//}
-
+		radiusMajor = _radiusMajor;
 		radiusMajorSquared = _radiusMajor * _radiusMajor;
 		radiusMinorSquared = _radiusMinor * _radiusMinor;
 	}
@@ -93,13 +93,14 @@ public:
 	}
 
 	inline void getUV(HitRecord& rec) const {
-		rec.u = 0;
-		rec.v = 0;
+		rec.u = 0.5 + atan2(rec.p.z, rec.p.x) / (2.0*PI);
+  		rec.v = 0.5 + atan2(rec.p.y, (sqrt(rec.p.x * rec.p.x + rec.p.z * rec.p.z) - radiusMajor)) / (2.0 * PI);
 	}
 
 private:
 	glm::dmat4x4 transformInv;
 	glm::dmat4x4 transform;
+	double radiusMajor;// Distance from center of tube to center of torus
 	double radiusMajorSquared;// Distance from center of tube to center of torus
 	double radiusMinorSquared;// Radius of the Tube
 	MaterialPtr mat;
