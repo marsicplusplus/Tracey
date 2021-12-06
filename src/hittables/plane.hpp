@@ -9,7 +9,7 @@
 
 class Plane : public Hittable {
 	public:
-		Plane(glm::dvec3 pos, glm::dvec3 norm, MaterialPtr mat) : pos{pos}, norm{norm}, mat{mat} {
+		Plane(glm::dvec3 pos, glm::dvec3 norm, MaterialPtr mat) : Hittable(), pos{pos}, norm{norm}, mat{mat} {
 			glm::dvec3 a = cross(norm, glm::dvec3(1, 0, 0));
 			glm::dvec3 b = cross(norm, glm::dvec3(0, 1, 0));
 			glm::dvec3 maxAB = glm::dot(a, a) < glm::dot(b, b) ? b : a;

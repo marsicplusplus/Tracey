@@ -36,6 +36,7 @@ class Scene {
 		std::pair<std::string, std::shared_ptr<Material>> parseMaterial(nlohmann::json &text) const;
 		std::shared_ptr<Hittable> parseHittable(nlohmann::json &text) const;
 		std::shared_ptr<LightObject> parseLight(nlohmann::json &text) const;
+		void parseTransform(nlohmann::basic_json<> &hit, HittablePtr& primitive) const;
 };
 
 typedef std::shared_ptr<Scene> ScenePtr;

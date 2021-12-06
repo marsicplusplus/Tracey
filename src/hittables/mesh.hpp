@@ -8,8 +8,8 @@
 
 class Mesh : public Hittable {
 	public:
-		Mesh(std::string meshPath);
-		inline bool hit(const Ray &ray, double tMin, double tMax, HitRecord &rec) const override;
+		Mesh(std::string meshPath) : Hittable() {};
+		inline bool hit(const Ray &ray, double tMin, double tMax, HitRecord &rec) const override{return false;};
 
 	private:
 		MaterialPtr mat;
