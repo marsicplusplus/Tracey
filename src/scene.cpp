@@ -57,15 +57,15 @@ std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, std::sha
 	}
 	for(size_t i = 0; i < attrib.normals.size(); i+=3) {
 		norm.push_back(glm::dvec3{
-				attrib.vertices[i],
-				attrib.vertices[i+1],
-				attrib.vertices[i+2],
+				attrib.normals[i],
+				attrib.normals[i+1],
+				attrib.normals[i+2],
 				});
 	}
 	for(size_t i = 0; i < attrib.texcoords.size(); i+=2) {
 		uv.push_back(glm::dvec2{
-				attrib.vertices[i],
-				attrib.vertices[i+1],
+				attrib.texcoords[i],
+				attrib.texcoords[i+1],
 				});
 	}
 
@@ -80,24 +80,6 @@ std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, std::sha
 						mat
 					));
 		}
-	}
-	std::cout << "Vertices: " << std::endl;
-	for(size_t i = 0; i < pos.size(); ++i){
-		std::cout << i << ": (" << pos[i].x <<", " << pos[i].y << ", " << pos[i].z<<");"<<std::endl;
-	}
-	std::cout << "Normals: " << std::endl;
-	for(size_t i = 0; i < norm.size(); ++i){
-		std::cout << i << ": (" << norm[i].x <<", " << norm[i].y << ", " << norm[i].z<<");"<<std::endl;
-	}
-	std::cout << "Textures: " << std::endl;
-	for(size_t i = 0; i < uv.size(); ++i){
-		std::cout << i << ": (" << uv[i].x <<", " << uv[i].y << ");"<<std::endl;
-	}
-	std::cout << "Faces: " << std::endl;
-	for(size_t i = 0; i < triangles.size(); ++i){
-		std::cout << i << ": (" << triangles[i].face.x <<", " << triangles[i].face.y << ", " << triangles[i].face.z<<");"<<std::endl;
-		std::cout << i << ": (" << triangles[i].normal.x <<", " << triangles[i].normal.y << ", " << triangles[i].normal.z<<");"<<std::endl;
-		std::cout << i << ": (" << triangles[i].texture.x <<", " << triangles[i].texture.y << ", " << triangles[i].texture.z<<");"<<std::endl;
 	}
 	return std::make_shared<Mesh>(pos, norm, uv, triangles);
 }
@@ -247,7 +229,6 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 		return std::make_shared<ZXRect>(yCoord, size, material->second);
 
 	} else if(type == "MESH"){
-
 		if(!hit.contains("path")) throw std::invalid_argument("Mesh doesn't specify a valid path;");
 		std::filesystem::path p = hit.at("path");
 		return parseMesh(p, material->second);
