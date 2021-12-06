@@ -10,6 +10,7 @@ enum class Lights {
 	NILL,
 	DIRECTIONAL,
 	POINT,
+	SPOT,
 	AMBIENT
 };
 
@@ -59,6 +60,38 @@ class PointLight : public LightObject {
 
 	private:
 		glm::dvec3 position;
+};
+
+
+
+
+class SpotLight : public LightObject {
+
+public:
+	SpotLight(glm::dvec3 pos, glm::dvec3 dir, double cutoff, double i, Color c) : LightObject(i, c), position{pos}, direction{dir}, cutoffAngle{cutoff} {}
+
+	virtual inline Lights getType() override { return Lights::SPOT; }
+
+	inline Ray getRay(const HitRecord& rec, double& tMax) const override {
+		tMax = glm::distance(this->position, rec.p);
+		auto hitToLight = Ray(rec.p, this->position - rec.p);
+
+		auto angle = std::acos(glm::dot(direction, glm::normalize(rec.p - this->position)));
+		if (angle > cutoffAngle) {
+			return Ray(rec.p, glm::dvec3(0, 0, 0));
+		} else {
+			return hitToLight;
+		}
+	}
+
+	inline Color attenuate(Color color, const glm::dvec3& p) override {
+		return color * 1.0 / glm::distance(this->position, p);
+	}
+
+private:
+	glm::dvec3 position;
+	glm::dvec3 direction;
+	double cutoffAngle;
 };
 
 

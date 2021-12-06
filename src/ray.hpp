@@ -27,6 +27,10 @@ class Ray{
 			this->currentRefraction = idx;
 		}
 
+		inline Ray transformRay(glm::dmat4x4 transform) const {
+			return Ray(transform * glm::dvec4(origin, 1), transform * glm::dvec4(direction, 0));
+		}
+
 
 	private:
 		glm::dvec3 origin;
