@@ -1,9 +1,9 @@
 {
 	"camera" : {
-		"position": [0.0, 0.0, 2.5],
+		"position": [0.0, 0.0, 30.5],
 		"dir": [0.0, 0.0, -1.0],
 		"up": [0.0, 1.0, 0.0],
-		"fov": 60
+		"fov": 90
 	},
 	"textures" : [
 		{
@@ -62,31 +62,24 @@
 		}
 	],
 	"primitives": [
-		
+		{
+			"type": "PLANE",
+			"normal": [0.0, 0.0, 1.0],
+			"position": [0,0,-20],
+			"material": "Brick"
+		},
 		{
 			"type": "MESH",
-			"path": "./cube.obj",
-			"material": "Glass"
+			"path": "./obj/teddy.obj",
+			"material": "DiffuseRed"
 		}
 	],
 	"lights": [
 		{
-			"type": "DIRECTIONAL",
-			"direction": [0.0, -0.0, -1.0],
+			"type": "POINT",
+			"position": [0.0, 15.0, 20.0],
 			"color": [0.8, 0.8, 0.6],
-			"intensity": 1.0
-		},
-		{
-			"type": "POINT",
-			"position": [1.5, 2.0, -1.5],
-			"color": [1.0, 1.0, 1.0],
-			"intensity": 1.2
-		},
-		{
-			"type": "POINT",
-			"position": [-1.5, 2.0, -1.5],
-			"color": [1.0, 0.5, 1.0],
-			"intensity": 1.2
+			"intensity": 200.0
 		}
 	]
 }

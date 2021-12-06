@@ -1,0 +1,60 @@
+{
+	"camera" : {
+		"position": [0.0, 0.0, 1.5],
+		"dir": [0.0, 0.0, -1.0],
+		"up": [0.0, 1.0, 0.0],
+		"fov": 60
+	},
+	"textures" : [
+		{
+			"name": "BWCheckered",
+			"type": "CHECKERED"
+		},
+		{
+			"name": "SolidWhite",
+			"type": "SOLID_COLOR",
+			"color": [1.0, 1.0, 1.0]
+		}
+	],
+	"materials": [
+		{
+			"type": "DIFFUSE",
+			"name": "Checkerboard",
+			"texture": "BWCheckered"
+		},
+		{
+			"type": "DIELECTRIC",
+			"name": "GlassSurface",
+			"texture": "SolidWhite",
+			"ior": 1.52
+		}
+	],
+	"primitives": [
+		{
+			"type": "PLANE",
+			"position": [0.0, -0.5, -0.0],
+			"normal": [0.0, 1.0, -0.0],
+			"material": "Checkerboard"
+		},
+		{
+			"type": "SPHERE",
+			"position": [0.0, 0.0, -1.0],
+			"radius": 0.5,
+			"material": "GlassSurface"
+		}
+	],
+	"lights": [
+		{
+			"type": "POINT",
+			"position": [1.5, 2.0, -1.5],
+			"color": [1.0, 0.2, 1.0],
+			"intensity": 0.8
+		},
+		{
+			"type": "POINT",
+			"position": [-1.5, 2.0, -1.5],
+			"color": [1.0, 0.0, 0.2],
+			"intensity": 1.8
+		}
+	]
+}
