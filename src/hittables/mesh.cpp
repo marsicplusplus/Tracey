@@ -24,7 +24,7 @@ bool Mesh::intersectTri(const Triangle &tri, const Ray &ray, HitRecord &rec) con
 		glm::dvec3 v0v2 = v2 - v0;
 		glm::dvec3 p = glm::cross(ray.getDirection(), v0v2);
 		double det = glm::dot(v0v1, p);
-		if(det < 0.00001) return false;
+		if(std::fabs(det) < 0.00001) return false;
 		double inv = 1.0/det;
 
 		glm::dvec3 tv = ray.getOrigin() - v0;
@@ -42,7 +42,7 @@ bool Mesh::intersectTri(const Triangle &tri, const Ray &ray, HitRecord &rec) con
 
 		glm::dvec3 hitNormal;
 		if(tri.normal.x == -1 || tri.normal.y == -1 || tri.normal.z == -1)
-			hitNormal = glm::cross((v1 - v0), (v2 - v0));
+			hitNormal = glm::cross(v0v1, v0v2);
 		else{
 			const glm::dvec3 &n0 = this->norm[tri.normal.x];
 			const glm::dvec3 &n1 = this->norm[tri.normal.y];
