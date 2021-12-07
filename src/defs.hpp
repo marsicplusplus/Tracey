@@ -9,33 +9,33 @@
 #include <limits>
 #include <memory>
 
-const double PI = 3.141592653589793238463L;
-const double INF = std::numeric_limits<double>::infinity();
+const float PI = 3.141592653589793238463L;
+const float INF = std::numeric_limits<float>::infinity();
 
 #define CHECK_ERROR(COND, MESSAGE, RET) if(!(COND)){\
 	std::cerr << (MESSAGE);\
 	return (RET);\
 }
 
-typedef glm::dvec3 Color;
+typedef glm::fvec3 Color;
 class Material;
 
 struct HitRecord {
-	glm::dvec3 p;
-	glm::dvec3 normal;
-	double t;
+	glm::fvec3 p;
+	glm::fvec3 normal;
+	float t;
 	bool frontFace;
 	std::shared_ptr<Material> material;
-	double u;
-	double v;
+	float u;
+	float v;
 
-	inline void setFaceNormal(const Ray& r, const glm::dvec3& outNormal) {
+	inline void setFaceNormal(const Ray& r, const glm::fvec3& outNormal) {
 		frontFace = dot(r.getDirection(), outNormal) < 0;
 		normal = frontFace ? outNormal : -outNormal;
 	}
 };
-inline double randomDouble(std::mt19937 &gen, double min, double max){
-	std::uniform_real_distribution<double> dist(min, max);
+inline float randomfloat(std::mt19937 &gen, float min, float max){
+	std::uniform_real_distribution<float> dist(min, max);
 	return dist(gen);
 }
 

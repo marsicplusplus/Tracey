@@ -8,8 +8,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-Camera::Camera(glm::dvec3 origin, glm::dvec3 dir, glm::dvec3 up, double fov) : position{origin}, direction{dir}, up{up}, fov{glm::radians(fov)}, cameraType(CameraType::normal), fisheyeAngle(glm::radians(90.0f)){
-	this->aspectRatio = static_cast<double>(OptionsMap::Instance()->getOption(Options::W_WIDTH))/static_cast<double>(OptionsMap::Instance()->getOption(Options::W_HEIGHT));
+Camera::Camera(glm::fvec3 origin, glm::fvec3 dir, glm::fvec3 up, float fov) : position{origin}, direction{dir}, up{up}, fov{glm::radians(fov)}, cameraType(CameraType::normal), fisheyeAngle(glm::radians(90.0f)){
+	this->aspectRatio = static_cast<float>(OptionsMap::Instance()->getOption(Options::W_WIDTH))/static_cast<float>(OptionsMap::Instance()->getOption(Options::W_HEIGHT));
 	this->sensitivity = 5;
 	this->k1 = 1;
 	this->k2 = 1;
@@ -17,14 +17,14 @@ Camera::Camera(glm::dvec3 origin, glm::dvec3 dir, glm::dvec3 up, double fov) : p
 	updateVectors();
 }
 
-Ray Camera::generateCameraRay(double u, double v) {
+Ray Camera::generateCameraRay(float u, float v) {
 
-	glm::dvec3 rayDir;
+	glm::fvec3 rayDir;
 
 	switch (this->cameraType) {
 		case CameraType::fisheye: {
 			auto xyz = Fisheye(u, v);
-			if (xyz == glm::dvec3(0, 0, 0)) {
+			if (xyz == glm::fvec3(0, 0, 0)) {
 				rayDir = xyz;
 			} else {
 				// Transform directional vector from x, y, z axes to axes of our camera
@@ -48,23 +48,23 @@ Ray Camera::generateCameraRay(double u, double v) {
 	return ray;
 }
 
-void Camera::setPosition(glm::dvec3 pos) {
+void Camera::setPosition(glm::fvec3 pos) {
 	this->position = pos;
 	this->updateVectors();
 }
 
-void Camera::setDirection(glm::dvec3 dir, bool update) {
-	if (dir != glm::dvec3(0, 0, 0))
+void Camera::setDirection(glm::fvec3 dir, bool update) {
+	if (dir != glm::fvec3(0, 0, 0))
 		this->direction = dir;
 	else
-		this->direction = glm::dvec3(0, 0, -1);
+		this->direction = glm::fvec3(0, 0, -1);
 
 	if (update) {
 		this->updateVectors();
 	}
 }
 
-void Camera::setFOV(double fov) {
+void Camera::setFOV(float fov) {
 	this->fov = glm::radians(fov);
 	this->updateVectors();
 };
@@ -73,7 +73,7 @@ void Camera::setCameraType(CameraType type) {
 	this->cameraType = type;
 };
 
-void Camera::setSensitivity(double sensitivity) {
+void Camera::setSensitivity(float sensitivity) {
 	this->sensitivity = sensitivity;
 };
 
@@ -81,22 +81,22 @@ void Camera::setFisheyeAngle(float angle) {
 	this->fisheyeAngle = angle;
 };
 
-void Camera::setDistortionCoefficients(double k1, double k2){
+void Camera::setDistortionCoefficients(float k1, float k2){
 	this->k1 = k1;
 	this->k2 = k2;
 }
 
 void Camera::updateVectors() {
-	double h = tan(this->fov / 2.0);
-	this->viewportHeight = 2.0 * h;
+	float h = tan(this->fov / 2.0f);
+	this->viewportHeight = 2.0f * h;
 	this->viewportWidth = this->aspectRatio * this->viewportHeight;
 
 	// Redefine Up and Right as we allow for camera rotation
 	this->direction = glm::normalize(this->direction);
 	auto w = this->direction;
-	this->right = glm::cross(w, glm::dvec3(0, 1, 0));
-	if (this->right == glm::dvec3(0, 0, 0))
-		this->right = glm::dvec3(0, 0, 1);
+	this->right = glm::cross(w, glm::fvec3(0, 1, 0));
+	if (this->right == glm::fvec3(0, 0, 0))
+		this->right = glm::fvec3(0, 0, 1);
 	this->up = glm::cross(this->right, w);
 
 	this->cameraMatrix = glm::mat3x3(this->right, this->up, this->direction);
@@ -105,32 +105,32 @@ void Camera::updateVectors() {
 	auto v = glm::cross(u, w);
 	this->horizontal = this->viewportWidth * u;
 	this->vertical = this->viewportHeight * v;
-	this->llCorner = this->position - this->horizontal/2.0 - this->vertical/2.0 + w;
+	this->llCorner = this->position - this->horizontal/2.0f - this->vertical/2.0f + w;
 }
 
-bool Camera::update(double dt, bool forceUpdate) {
+bool Camera::update(float dt, bool forceUpdate) {
 	bool updated = forceUpdate;
 	auto inputManager = InputManager::Instance();
 	float scroll = inputManager->getScrollState();
 	if (scroll != 0) {
-		this->fov -= 0.5 * ((scroll > 0) ? dt : -dt);
-		this->fov = std::clamp(this->fov, glm::radians(25.0), glm::radians(120.0));
-		InputManager::Instance()->scrollState(0.0);
+		this->fov -= 0.5f * ((scroll > 0) ? dt : -dt);
+		this->fov = std::clamp(this->fov, glm::radians(25.0f), glm::radians(120.0f));
+		InputManager::Instance()->scrollState(0.0f);
 		updated = true;
 	}
 
 	if (inputManager->isKeyDown(GLFW_MOUSE_BUTTON_RIGHT)) {
 		MouseState ms = inputManager->getMouseState();
 		if (ms.moved) {
-			double xMovement = ms.dx * this->angleToRads * (.05 * this->sensitivity);
-			double yMovement = ms.dy * this->angleToRads * (.05 * this->sensitivity);
+			float xMovement = ms.dx * this->angleToRads * (.05f * this->sensitivity);
+			float yMovement = ms.dy * this->angleToRads * (.05f * this->sensitivity);
 			this->direction = glm::rotate(this->direction, -yMovement, this->right);
 			this->direction = glm::rotate(this->direction, -xMovement, this->up);
 			updated = true;
 		}
 	}
 
-	const double change = this->speed * dt;
+	const float change = this->speed * dt;
 	if (inputManager->isKeyDown(GLFW_KEY_W)) {
 		this->position += this->direction * change;
 		updated = true;
@@ -168,14 +168,14 @@ bool Camera::update(double dt, bool forceUpdate) {
 	return updated;
 }
 
-glm::dvec2 Camera::Distort(double u, double v)
+glm::fvec2 Camera::Distort(float u, float v)
 {
 	// Using The Division Model from A.W. Fitzgibbon 
 	// "Simultaneous linear estimation of multiple view geometry and lens distortion"
 	auto uv = glm::vec2(u, v);
 	// Bring uv from 0 - +1 to -1 - +1
-	uv *= 2;
-	uv -= 1;
+	uv *= 2.0;
+	uv -= 1.0;
 
 	// Calculate angle of uv with x axis
 	float phi = glm::atan(uv.y, uv.x);
@@ -187,11 +187,11 @@ glm::dvec2 Camera::Distort(double u, double v)
 
 	// Bring uv from -1 - +1 to 0 - +1
 	uv += 1;
-	uv *= 0.5;
+	uv *= 0.5f;
 	return uv;
 }
 
-glm::dvec3 Camera::Fisheye(double u, double v)
+glm::fvec3 Camera::Fisheye(float u, float v)
 {
 	// Adapted from http://paulbourke.net/dome/fisheye/
 	// Anything uv with a radius larger than 1 will be black pixel (Left)

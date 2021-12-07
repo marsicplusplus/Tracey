@@ -7,35 +7,35 @@
 class Ray{
 	public:
 		Ray() {};
-		Ray(glm::dvec3 _origin, glm::dvec3 _direction, double idx = 1.0) : origin{_origin}, currentRefraction{idx} {
-			if (_direction != glm::dvec3(0, 0, 0)) {
+		Ray(glm::fvec3 _origin, glm::fvec3 _direction, float idx = 1.0f) : origin{_origin}, currentRefraction{idx} {
+			if (_direction != glm::fvec3(0, 0, 0)) {
 				_direction = glm::normalize(_direction);
 			}
 
 			direction = _direction;
 		};
 
-		inline glm::dvec3 getOrigin() const {return origin; }
-		inline glm::dvec3 getDirection() const {return direction; }
-		inline glm::dvec3 at(double t) const {
+		inline glm::fvec3 getOrigin() const {return origin; }
+		inline glm::fvec3 getDirection() const {return direction; }
+		inline glm::fvec3 at(float t) const {
 			return this->origin + t * this->direction;
 		};
-		inline double getCurrentRefraction() const {
+		inline float getCurrentRefraction() const {
 			return this->currentRefraction;
 		}
-		inline void setCurrentRefraction(const double idx) {
+		inline void setCurrentRefraction(const float idx) {
 			this->currentRefraction = idx;
 		}
 
-		inline Ray transformRay(glm::dmat4x4 transform) const {
-			return Ray(transform * glm::dvec4(origin, 1), transform * glm::dvec4(direction, 0));
+		inline Ray transformRay(glm::fmat4x4 transform) const {
+			return Ray(transform * glm::fvec4(origin, 1), transform * glm::fvec4(direction, 0));
 		}
 
 
 	private:
-		glm::dvec3 origin;
-		glm::dvec3 direction;
-		double currentRefraction;
+		glm::fvec3 origin;
+		glm::fvec3 direction;
+		float currentRefraction;
 };
 
 #endif

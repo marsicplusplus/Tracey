@@ -20,13 +20,13 @@ struct Triangle {
 
 class Mesh : public Hittable {
 	public:
-		Mesh(std::vector<glm::dvec3> &p, std::vector<glm::dvec3> &n, std::vector<glm::dvec2> &t, std::vector<Triangle> &triangles) : pos{p}, norm{n}, uvs{t}, tris{triangles} {};
-		bool hit(const Ray &ray, double tMin, double tMax, HitRecord &rec) const override;
+		Mesh(std::vector<glm::fvec3> &p, std::vector<glm::fvec3> &n, std::vector<glm::fvec2> &t, std::vector<Triangle> &triangles) : pos{p}, norm{n}, uvs{t}, tris{triangles} {};
+		bool hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const override;
 
 	private:
-		std::vector<glm::dvec3> pos;
-		std::vector<glm::dvec3> norm;
-		std::vector<glm::dvec2> uvs;
+		std::vector<glm::fvec3> pos;
+		std::vector<glm::fvec3> norm;
+		std::vector<glm::fvec2> uvs;
 		std::vector<Triangle> tris;
 
 		bool intersectTri(const Triangle &tri, const Ray& ray, HitRecord &rec) const;
