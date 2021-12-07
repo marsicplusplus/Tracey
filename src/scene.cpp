@@ -8,11 +8,14 @@
 #include "textures/image_texture.hpp"
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
+#include "hittables/mesh.hpp"
 #include "hittables/torus.hpp"
 #include "materials/material.hpp"
 #include "materials/material_dielectric.hpp"
 #include "materials/material_mirror.hpp"
 #include "materials/material_diffuse.hpp"
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
 
 #include <iostream>
 #include <fstream>
@@ -25,7 +28,82 @@ static glm::fvec4 parseVec4(nlohmann::basic_json<> &arr){
 	return glm::fvec4(arr[0].get<float>(), arr[1].get<float>(),arr[2].get<float>(), arr[3].get<float>());
 }
 
+std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, std::shared_ptr<Material> mat) const {
+	tinyobj::ObjReaderConfig reader_config;
+	reader_config.triangulate = true;
+	reader_config.mtl_search_path = path.parent_path().string(); // Path to material files
 
+	tinyobj::ObjReader reader;
+	if (!reader.ParseFromFile(path.string(), reader_config)) {
+		if (!reader.Error().empty()) std::cerr << "TinyObjReader: " << reader.Error();
+		return nullptr;
+	}
+	if (!reader.Warning().empty()) std::cout << "TinyObjReader: " << reader.Warning();
+
+	auto& attrib = reader.GetAttrib();
+	auto& shapes = reader.GetShapes();
+
+	std::vector<glm::fvec3> pos;
+	std::vector<glm::fvec3> norm;
+	std::vector<glm::fvec2> uv;
+	std::vector<Triangle> triangles;
+
+	for(size_t i = 0; i < attrib.vertices.size(); i+=3) {
+		pos.push_back(glm::fvec3{
+				attrib.vertices[i],
+				attrib.vertices[i+1],
+				attrib.vertices[i+2],
+				});
+	}
+	for(size_t i = 0; i < attrib.normals.size(); i+=3) {
+		norm.push_back(glm::fvec3{
+				attrib.normals[i],
+				attrib.normals[i+1],
+				attrib.normals[i+2],
+				});
+	}
+	for(size_t i = 0; i < attrib.texcoords.size(); i+=2) {
+		uv.push_back(glm::dvec2{
+				attrib.texcoords[i],
+				attrib.texcoords[i+1],
+				});
+	}
+
+	for(auto &shape : shapes){
+		const std::vector<tinyobj::index_t> idx = shape.mesh.indices;
+		const std::vector<int> & mat_ids = shape.mesh.material_ids;
+		for(size_t face_ind = 0; face_ind < mat_ids.size(); face_ind++) {
+			triangles.push_back(Triangle(
+						glm::ivec3{idx[3*face_ind].vertex_index, 	idx[3*face_ind+1].vertex_index, 	idx[3*face_ind+2].vertex_index},
+						glm::ivec3{idx[3*face_ind].normal_index, 	idx[3*face_ind+1].normal_index, 	idx[3*face_ind+2].normal_index},
+						glm::ivec3{idx[3*face_ind].texcoord_index, 	idx[3*face_ind+1].texcoord_index, 	idx[3*face_ind+2].texcoord_index},
+						mat
+					));
+		}
+	}
+	std::cout << "Vertices: " << std::endl;
+	int i=0;
+	for(auto &v : pos){
+		std::cout << i++ << ": (" << v.x << ", " << v.y << ", " << v.z << ")" << std::endl;
+	}
+	i=0;
+	std::cout << "Normals: " << std::endl;
+	for(auto &v : norm){
+		std::cout << i++ << ": (" << v.x << ", " << v.y << ", " << v.z << ")" << std::endl;
+	}
+	std::cout << "Textures: " << std::endl;
+	for(auto &v : uv){
+		std::cout << i++ << ": (" << v.x << ", " << v.y << ")" << std::endl;
+	}
+	std::cout << "Indices: " << std::endl;
+	i=0;
+	for(auto &v : triangles){
+		std::cout << i << ": (" << v.face.x << ", " << v.face.y << ", " << v.face.z << ")" << std::endl;
+		std::cout << i << ": (" << v.normal.x << ", " << v.normal.y << ", " << v.normal.z << ")" << std::endl;
+		std::cout << i++ << ": (" << v.texture.x << ", " << v.texture.y << ", " << v.texture.z << ")" << std::endl;
+	}
+	return std::make_shared<Mesh>(pos, norm, uv, triangles);
+}
 
 Scene::Scene(){}
 Scene::Scene(std::filesystem::path sceneFile){
@@ -169,7 +247,9 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 		float yCoord(hit.at("y"));
 		return std::make_shared<ZXRect>(yCoord, size, material->second);
 	} else if(type == "MESH"){
-		return nullptr;
+		if(!hit.contains("path")) throw std::invalid_argument("Mesh doesn't specify a valid path;");
+		std::filesystem::path p = hit.at("path");
+		return parseMesh(p, material->second);
 	} else{
 		throw std::invalid_argument("Hittable doesn't name a valid type");
 	}
