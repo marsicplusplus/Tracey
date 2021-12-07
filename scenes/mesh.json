@@ -1,6 +1,6 @@
 {
 	"camera" : {
-		"position": [0.0, 0.0, 30.5],
+		"position": [0.0, 2.4, 5.5],
 		"dir": [0.0, 0.0, -1.0],
 		"up": [0.0, 1.0, 0.0],
 		"fov": 90
@@ -64,22 +64,40 @@
 	"primitives": [
 		{
 			"type": "PLANE",
-			"normal": [0.0, 0.0, 1.0],
-			"position": [0,0,-20],
-			"material": "Brick"
+			"normal": [0.0, 1.0, 0.0],
+			"position": [0,-3,0],
+			"material": "Checkerboard"
 		},
 		{
 			"type": "MESH",
-			"path": "./obj/teddy.obj",
-			"material": "DiffuseRed"
+			"path": "./obj/cat.obj",
+			"material": "Checkerboard2"
 		}
 	],
 	"lights": [
 		{
+			"type": "DIRECTIONAL",
+			"direction": [0.0, -1.0, -0.5],
+			"color": [1.0, 1.0, 1.0],
+			"intensity": 1.6
+		},
+		{
 			"type": "POINT",
-			"position": [0.0, 15.0, 20.0],
-			"color": [0.8, 0.8, 0.6],
-			"intensity": 200.0
-		}
+			"position": [0.0, 1.0, 0.5],
+			"color": [1.0, 1.0, 1.0],
+			"intensity": 0.8
+		},
+		{
+			"type": "POINT",
+			"position": [1.5, 2.0, -1.5],
+			"color": [1.0, 1.0, 1.0],
+			"intensity": 0.4
+		},
+		{
+			"type": "POINT",
+			"position": [-1.5, 2.0, -1.5],
+			"color": [1.0, 1.0, 1.0],
+			"intensity": 0.4
+		}	
 	]
 }
