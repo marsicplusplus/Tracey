@@ -17,12 +17,12 @@
 #include <iostream>
 #include <fstream>
 
-static glm::dvec3 parseVec3(nlohmann::basic_json<> &arr){
-	return glm::dvec3(arr[0].get<double>(), arr[1].get<double>(),arr[2].get<double>());
+static glm::fvec3 parseVec3(nlohmann::basic_json<> &arr){
+	return glm::fvec3(arr[0].get<float>(), arr[1].get<float>(),arr[2].get<float>());
 }
 
-static glm::dvec4 parseVec4(nlohmann::basic_json<> &arr){
-	return glm::dvec4(arr[0].get<double>(), arr[1].get<double>(),arr[2].get<double>(), arr[3].get<double>());
+static glm::fvec4 parseVec4(nlohmann::basic_json<> &arr){
+	return glm::fvec4(arr[0].get<float>(), arr[1].get<float>(),arr[2].get<float>(), arr[3].get<float>());
 }
 
 
@@ -71,10 +71,10 @@ void Scene::addLight(LightObjectPtr light){
 	this->lights.push_back(light);
 }
 
-bool Scene::traverse(const Ray &ray, double tMin, double tMax, HitRecord &rec) const {
+bool Scene::traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) const {
 	HitRecord tmp;
 	bool hasHit = false;
-	double closest = tMax;
+	float closest = tMax;
 
 	for (const auto& object : this->hittables) {
 		if (object->hit(ray, tMin, closest, tmp)) {
@@ -94,18 +94,18 @@ CameraPtr Scene::getCamera() const {
 	return this->currentCamera;
 }
 
-bool Scene::update(double dt){
+bool Scene::update(float dt){
 	return this->currentCamera->update(dt);
 }
 
 Color Scene::traceLights(HitRecord &rec) const {
 	Color illumination(0.0);
 	for(auto &light : lights){
-		double tMax;
+		float tMax;
 		Ray shadowRay = light->getRay(rec, tMax);
 
 		// Required for Spotlights
-		if (shadowRay.getDirection() == glm::dvec3(0, 0, 0)) {
+		if (shadowRay.getDirection() == glm::fvec3(0, 0, 0)) {
 			continue;
 		}
 
@@ -119,10 +119,10 @@ Color Scene::traceLights(HitRecord &rec) const {
 }
 
 CameraPtr Scene::parseCamera(nlohmann::json &cam) const {
-	glm::dvec3 pos = parseVec3(cam.at("position"));
-	glm::dvec3 dir = parseVec3(cam.at("dir"));
-	glm::dvec3 up = parseVec3(cam.at("up"));
-	double fov = (cam.at("fov"));
+	glm::fvec3 pos = parseVec3(cam.at("position"));
+	glm::fvec3 dir = parseVec3(cam.at("dir"));
+	glm::fvec3 up = parseVec3(cam.at("up"));
+	float fov = (cam.at("fov"));
 	return std::make_shared<Camera>(pos, dir, up, fov);	
 }
 
@@ -133,13 +133,13 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 	auto material = materials.find(hit.at("material"));
 	if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
 	if(type == "PLANE"){
-		glm::dvec3 pos(parseVec3(hit["position"]));
+		glm::fvec3 pos(parseVec3(hit["position"]));
 		if(!hit.contains("normal")) throw std::invalid_argument("Plane doesn't specify a normal");
-		glm::dvec3 norm(parseVec3(hit.at("normal")));
+		glm::fvec3 norm(parseVec3(hit.at("normal")));
 		return (std::make_shared<Plane>(pos, norm, material->second));
 	} else if(type == "SPHERE"){
-		glm::dvec3 pos(parseVec3(hit["position"]));
-		double radius = (hit.contains("radius")) ? hit["radius"].get<double>() : 0.5;
+		glm::fvec3 pos(parseVec3(hit["position"]));
+		float radius = (hit.contains("radius")) ? hit["radius"].get<float>() : 0.5;
 		return (std::make_shared<Sphere>(pos, radius, material->second));
 
 	} else if (type == "TORUS"){
@@ -147,26 +147,26 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 		auto material = materials.find(hit.at("material"));
 		if (material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
 
-		glm::dvec3 pos(parseVec3(hit["position"]));
+		glm::fvec3 pos(parseVec3(hit["position"]));
 
-		double xRot = hit.contains("xRot") ? hit["xRot"].get<double>() : 0.0;
-		double yRot = hit.contains("yRot") ? hit["yRot"].get<double>() : 0.0;
-		double zRot = hit.contains("zRot") ? hit["zRot"].get<double>() : 0.0;
+		float xRot = hit.contains("xRot") ? hit["xRot"].get<float>() : 0.0f;
+		float yRot = hit.contains("yRot") ? hit["yRot"].get<float>() : 0.0f;
+		float zRot = hit.contains("zRot") ? hit["zRot"].get<float>() : 0.0f;
 
-		auto torusTransform(glm::dmat4x4(1));
+		auto torusTransform(glm::fmat4x4(1));
 		torusTransform = glm::translate(torusTransform, pos);
-		torusTransform = glm::rotate(torusTransform, glm::radians(xRot), glm::dvec3(1, 0, 0));
-		torusTransform = glm::rotate(torusTransform, glm::radians(yRot), glm::dvec3(0, 1, 0));
-		torusTransform = glm::rotate(torusTransform, glm::radians(zRot), glm::dvec3(0, 0, 1));
-		double radiusMajor = (hit.contains("radiusMajor")) ? hit["radiusMajor"].get<double>() : 0.5;
-		double radiusMinor = (hit.contains("radiusMinor")) ? hit["radiusMinor"].get<double>() : 0.1;
+		torusTransform = glm::rotate(torusTransform, glm::radians(xRot), glm::fvec3(1, 0, 0));
+		torusTransform = glm::rotate(torusTransform, glm::radians(yRot), glm::fvec3(0, 1, 0));
+		torusTransform = glm::rotate(torusTransform, glm::radians(zRot), glm::fvec3(0, 0, 1));
+		float radiusMajor = (hit.contains("radiusMajor")) ? hit["radiusMajor"].get<float>() : 0.5;
+		float radiusMinor = (hit.contains("radiusMinor")) ? hit["radiusMinor"].get<float>() : 0.1;
 		return (std::make_shared<Torus>(radiusMajor, radiusMinor, torusTransform, material->second));
 
 	} else if(type == "ZXRect"){
 		if(!hit.contains("size")) throw std::invalid_argument("ZXRect doesn't specify a correct size [x0, x1, z0, z1]");
-		glm::dvec4 size(parseVec4(hit.at("size")));
+		glm::fvec4 size(parseVec4(hit.at("size")));
 		if(!hit.contains("y")) throw std::invalid_argument("ZXRect doesn't specify a correct y");
-		double yCoord(hit.at("y"));
+		float yCoord(hit.at("y"));
 		return std::make_shared<ZXRect>(yCoord, size, material->second);
 	} else if(type == "MESH"){
 		return nullptr;
@@ -178,19 +178,19 @@ std::shared_ptr<LightObject> Scene::parseLight(nlohmann::json &l) const{
 	if(!l.contains("type")) throw std::invalid_argument("LightObject doesn't name a type");
 	std::string type = l.at("type");
 	Color color = (l.contains("color")) ? (parseVec3(l["color"])) : Color(1.0);
-	double intensity = (l.contains("intensity")) ? (double)(l.at("intensity")) : 1.0;
+	float intensity = (l.contains("intensity")) ? (float)(l.at("intensity")) : 1.0;
 	if(type == "POINT"){
-		glm::dvec3 pos(parseVec3(l["position"]));
+		glm::fvec3 pos(parseVec3(l["position"]));
 		return (std::make_shared<PointLight>(pos, intensity, color));
 	} else if(type == "DIRECTIONAL"){
-		glm::dvec3 dir(parseVec3(l["direction"]));
+		glm::fvec3 dir(parseVec3(l["direction"]));
 		return (std::make_shared<DirectionalLight>(dir, intensity, color));
 	} else if(type == "AMBIENT"){
 		return (std::make_shared<AmbientLight>(intensity, color));
 	} else if (type == "SPOT") {
-		glm::dvec3 pos(parseVec3(l["position"]));
-		glm::dvec3 dir(parseVec3(l["direction"]));
-		double cutoff = l.contains("cutoffAngle") ? (double)l.at("cutoffAngle") : 45.0;
+		glm::fvec3 pos(parseVec3(l["position"]));
+		glm::fvec3 dir(parseVec3(l["direction"]));
+		float cutoff = l.contains("cutoffAngle") ? (float)l.at("cutoffAngle") : 45.0;
 		return (std::make_shared<SpotLight>(pos, dir, glm::radians(cutoff), intensity, color));
 	} else {
 		throw std::invalid_argument("LightObject doesn't name a valid type");
@@ -210,11 +210,11 @@ std::pair<std::string, std::shared_ptr<Material>> Scene::parseMaterial(nlohmann:
 	if(type == "DIFFUSE"){
 		mat.second = std::make_shared<DiffuseMaterial>(texture->second);
 	} else if(type == "MIRROR") {
-		double ref = m.contains("reflect") ? m["reflect"].get<double>() : 1.0;
+		float ref = m.contains("reflect") ? m["reflect"].get<float>() : 1.0;
 		mat.second = std::make_shared<MirrorMaterial>(texture->second, ref);
 	}
 	else if (type == "DIELECTRIC") {
-		double ior = (m.contains("ior")) ? (double)m.at("ior") : 1.0;
+		float ior = (m.contains("ior")) ? (float)m.at("ior") : 1.0;
 		Color absorption = m.contains("absorption") ? parseVec3(m.at("absorption")) : Color(1.0,1.0,1.0);
 		mat.second = std::make_shared<DielectricMaterial>(texture->second, ior, absorption);
 	}

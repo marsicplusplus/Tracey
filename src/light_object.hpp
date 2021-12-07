@@ -17,17 +17,17 @@ enum class Lights {
 class LightObject {
 
 	public:
-		LightObject(double i, Color c) : intensity{i}, color{c} {}
+		LightObject(float i, Color c) : intensity{i}, color{c} {}
 
 		virtual inline Lights getType() {return Lights::NILL; }
 
-		virtual Ray getRay(const HitRecord &rec, double &tMax) const = 0;
+		virtual Ray getRay(const HitRecord &rec, float &tMax) const = 0;
 
-		virtual Color attenuate(Color color, const glm::dvec3& p) { return color; };
+		virtual Color attenuate(Color color, const glm::fvec3& p) { return color; };
 
 		virtual inline Color getLight(const HitRecord &rec, Ray& ray) const {
-			Color illumination(0.0);
-			double nd = glm::dot(rec.normal,ray.getDirection());
+			Color illumination(0.0f);
+			float nd = glm::dot(rec.normal,ray.getDirection());
 			if(nd > 0){
 				illumination += this->color * this->intensity * nd;
 			}
@@ -35,7 +35,7 @@ class LightObject {
 		};
 
 	protected:
-		double intensity;
+		float intensity;
 		Color color;
 };
 
@@ -45,21 +45,21 @@ class LightObject {
 class PointLight : public LightObject {
 
 	public:
-		PointLight(glm::dvec3 pos, double i, Color c) : LightObject(i, c), position{pos}{}
+		PointLight(glm::fvec3 pos, float i, Color c) : LightObject(i, c), position{pos}{}
 
 		virtual inline Lights getType() override {return Lights::POINT; }
 
-		inline Ray getRay(const HitRecord &rec, double &tMax) const override {
+		inline Ray getRay(const HitRecord &rec, float &tMax) const override {
 			tMax = glm::distance(this->position, rec.p);
 			return Ray(rec.p, this->position - rec.p);
 		}
 
-		inline Color attenuate(Color color, const glm::dvec3 &p) override {
-			return color * 1.0 / glm::distance(this->position, p);
+		inline Color attenuate(Color color, const glm::fvec3 &p) override {
+			return color * 1.0f / glm::distance(this->position, p);
 		}
 
 	private:
-		glm::dvec3 position;
+		glm::fvec3 position;
 };
 
 
@@ -68,30 +68,30 @@ class PointLight : public LightObject {
 class SpotLight : public LightObject {
 
 public:
-	SpotLight(glm::dvec3 pos, glm::dvec3 dir, double cutoff, double i, Color c) : LightObject(i, c), position{pos}, direction{dir}, cutoffAngle{cutoff} {}
+	SpotLight(glm::fvec3 pos, glm::fvec3 dir, float cutoff, float i, Color c) : LightObject(i, c), position{pos}, direction{dir}, cutoffAngle{cutoff} {}
 
 	virtual inline Lights getType() override { return Lights::SPOT; }
 
-	inline Ray getRay(const HitRecord& rec, double& tMax) const override {
+	inline Ray getRay(const HitRecord& rec, float& tMax) const override {
 		tMax = glm::distance(this->position, rec.p);
 		auto hitToLight = Ray(rec.p, this->position - rec.p);
 
 		auto angle = std::acos(glm::dot(direction, glm::normalize(rec.p - this->position)));
 		if (angle > cutoffAngle) {
-			return Ray(rec.p, glm::dvec3(0, 0, 0));
+			return Ray(rec.p, glm::fvec3(0, 0, 0));
 		} else {
 			return hitToLight;
 		}
 	}
 
-	inline Color attenuate(Color color, const glm::dvec3& p) override {
-		return color * 1.0 / glm::distance(this->position, p);
+	inline Color attenuate(Color color, const glm::fvec3& p) override {
+		return color * 1.0f / glm::distance(this->position, p);
 	}
 
 private:
-	glm::dvec3 position;
-	glm::dvec3 direction;
-	double cutoffAngle;
+	glm::fvec3 position;
+	glm::fvec3 direction;
+	float cutoffAngle;
 };
 
 
@@ -100,17 +100,17 @@ private:
 class DirectionalLight : public LightObject {
 
 	public:
-		DirectionalLight(glm::dvec3 dir, double i, Color c) : LightObject(i, c), direction{dir}{}
+		DirectionalLight(glm::fvec3 dir, float i, Color c) : LightObject(i, c), direction{dir}{}
 
 		virtual inline Lights getType() override {return Lights::DIRECTIONAL; }
 
-		inline Ray getRay(const HitRecord &rec, double &tMax) const override {
+		inline Ray getRay(const HitRecord &rec, float &tMax) const override {
 			tMax = INF;
 			return Ray(rec.p, -this->direction);
 		}
 
 	private:
-		glm::dvec3 direction;
+		glm::fvec3 direction;
 };
 
 
@@ -119,11 +119,11 @@ class DirectionalLight : public LightObject {
 class AmbientLight : public LightObject {
 
 	public:
-		AmbientLight(double i, Color c) : LightObject(i,c) {}
+		AmbientLight(float i, Color c) : LightObject(i,c) {}
 
 		virtual inline Lights getType() override {return Lights::AMBIENT; }
 
-		virtual Ray getRay(const HitRecord &rec, double &tMax) const override {
+		virtual Ray getRay(const HitRecord &rec, float &tMax) const override {
 			Ray ray;
 			return ray;
 		}
