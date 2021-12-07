@@ -9,7 +9,7 @@
 class Mesh : public Hittable {
 	public:
 		Mesh(std::string meshPath);
-		inline bool hit(const Ray &ray, double tMin, double tMax, HitRecord &rec) const override;
+		inline bool hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const override;
 
 	private:
 		MaterialPtr mat;
