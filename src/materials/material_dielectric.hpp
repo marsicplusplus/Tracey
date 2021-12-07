@@ -9,50 +9,50 @@
 class DielectricMaterial : public Material {
 
 	public: 
-		DielectricMaterial(Color color, double _ior = 1.0, Color _absorption = Color(0, 0, 0)) : ior{_ior}, absorption{_absorption}{
+		DielectricMaterial(Color color, float _ior = 1.0f, Color _absorption = Color(0, 0, 0)) : ior{_ior}, absorption{_absorption}{
 			albedo = std::make_shared<SolidColor>(color);
 		}
 
-		DielectricMaterial(std::shared_ptr<Texture> t, double _ior = 1.0, Color _absorption = Color(0, 0, 0)) : ior{_ior}, absorption{_absorption}{
+		DielectricMaterial(std::shared_ptr<Texture> t, float _ior = 1.0f, Color _absorption = Color(0, 0, 0)) : ior{_ior}, absorption{_absorption}{
 			albedo = t;
 		}
 
 		inline Materials getType() const override { return Materials::DIELECTRIC; }
 
-		inline bool reflect(const Ray& in, const HitRecord &r, Ray &reflectedRay, double &reflectance) const override {
-			double n1 = (r.frontFace) ? 1.0 : ior;
-			double n2 = (r.frontFace) ? ior : 1.0;
-			double cosThetai = glm::dot(-in.getDirection(), r.normal);
-			double ratio = n1/n2;
-			double k = 1 - (ratio * ratio) * (1 - (cosThetai * cosThetai));
-			if (k < 0){
+		inline bool reflect(const Ray& in, const HitRecord &r, Ray &reflectedRay, float &reflectance) const override {
+			float n1 = (r.frontFace) ? 1.0f : ior;
+			float n2 = (r.frontFace) ? ior : 1.0f;
+			float cosThetai = glm::dot(-in.getDirection(), r.normal);
+			float ratio = n1/n2;
+			float k = 1 - (ratio * ratio) * (1.0f - (cosThetai * cosThetai));
+			if (k < 0.0f){
 				/* TIR */
-				reflectance = 1.0;
+				reflectance = 1.0f;
 			} else {
 				/* Fresnel please help me */
-				double sinThetai = sqrt(1 - (cosThetai * cosThetai));
-				double cosThetat = sqrt(1.0 - ((ratio * sinThetai) * (ratio * sinThetai)));
-				double rs = ((n1 * cosThetai - n2 * cosThetat) / (n1 * cosThetai + n2 * cosThetat));
-				double rp = ((n1 * cosThetat - n2 * cosThetai) / (n1 * cosThetat + n2 * cosThetai));
-				reflectance = (rs*rs+rp*rp)/2.0;
+				float sinThetai = sqrt(1.0f - (cosThetai * cosThetai));
+				float cosThetat = sqrt(1.0f - ((ratio * sinThetai) * (ratio * sinThetai)));
+				float rs = ((n1 * cosThetai - n2 * cosThetat) / (n1 * cosThetai + n2 * cosThetat));
+				float rp = ((n1 * cosThetat - n2 * cosThetai) / (n1 * cosThetat + n2 * cosThetai));
+				reflectance = (rs*rs+rp*rp)/2.0f;
 			}
 			auto reflectDir = glm::reflect(in.getDirection(), r.normal);
-			reflectedRay = Ray(r.p + 0.001 * reflectDir, reflectDir);
+			reflectedRay = Ray(r.p + 0.001f * reflectDir, reflectDir);
 			return true;
 		}
 
-		inline virtual bool refract(const Ray& in, const HitRecord &r, Ray &refractedRay, double &refractance) const override {
-			double cosi = glm::dot(-in.getDirection(), r.normal);
-			double n1 = r.frontFace ? 1.0 : ior;
-			double n2 = r.frontFace ? ior : 1.0;
-			double ratio = n1/n2;
-			double k = 1.0 - ratio * ratio * (1.0 - (cosi * cosi));
-			if(k < 0){
-				refractance = 0;
+		inline virtual bool refract(const Ray& in, const HitRecord &r, Ray &refractedRay, float &refractance) const override {
+			float cosi = glm::dot(-in.getDirection(), r.normal);
+			float n1 = r.frontFace ? 1.0f : ior;
+			float n2 = r.frontFace ? ior : 1.0f;
+			float ratio = n1/n2;
+			float k = 1.0f - ratio * ratio * (1.0f - (cosi * cosi));
+			if(k < 0.0f){
+				refractance = 0.0f;
 				return false;
 			} else {
-				glm::dvec3 refractedDir = ratio * in.getDirection() + (ratio * cosi - sqrt(k)) * r.normal;
-				refractedRay = Ray(r.p + 0.001 * refractedDir, refractedDir);
+				glm::fvec3 refractedDir = ratio * in.getDirection() + (ratio * cosi - sqrtf(k)) * r.normal;
+				refractedRay = Ray(r.p + 0.001f * refractedDir, refractedDir);
 				return true;
 			}
 		}
@@ -67,7 +67,7 @@ class DielectricMaterial : public Material {
 		}
 
 	private: 
-		double ior;
+		float ior;
 		Color absorption;
 };
 

@@ -7,7 +7,7 @@
 #include <random>
 
 struct HitRecord;
-typedef glm::dvec3 Color;
+typedef glm::fvec3 Color;
 
 enum class Materials {
 	NILL,
@@ -18,7 +18,7 @@ enum class Materials {
 
 class Material {
 	public:
-		inline virtual bool reflect(const Ray& in, const HitRecord &r, Ray &reflectedRay, double &reflectance) const {
+		inline virtual bool reflect(const Ray& in, const HitRecord &r, Ray &reflectedRay, float &reflectance) const {
 			return false;
 		};
 
@@ -26,7 +26,7 @@ class Material {
 			return Materials::NILL;
 		}
 
-		inline virtual bool refract(const Ray& in, const HitRecord &r, Ray &refractedRay, double &refractance) const {
+		inline virtual bool refract(const Ray& in, const HitRecord &r, Ray &refractedRay, float &refractance) const {
 			return false;
 		}
 
@@ -34,7 +34,7 @@ class Material {
 			return;
 		}
 
-		inline virtual Color getMaterialColor(double u, double v, glm::dvec3 p) const {
+		inline virtual Color getMaterialColor(float u, float v, glm::fvec3 p) const {
 			return albedo->color(u, v, p);
 		}
 

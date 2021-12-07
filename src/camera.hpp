@@ -14,51 +14,51 @@ enum class CameraType {
 
 class Camera{
 	public:
-		Camera(glm::dvec3 origin, glm::dvec3 dir, glm::dvec3 up, double fov);
-		Ray generateCameraRay(double u, double v);
+		Camera(glm::fvec3 origin, glm::fvec3 dir, glm::fvec3 up, float fov);
+		Ray generateCameraRay(float u, float v);
 
-		void setPosition(glm::dvec3 pos);
-		void setDirection(glm::dvec3 dir, bool update = true);
-		void setFOV(double fov);
+		void setPosition(glm::fvec3 pos);
+		void setDirection(glm::fvec3 dir, bool update = true);
+		void setFOV(float fov);
 		void setCameraType(CameraType type);
-		void setSensitivity(double sensitivity);
+		void setSensitivity(float sensitivity);
 		void setFisheyeAngle(float angle);
-		void setDistortionCoefficients(double k1, double k2);
+		void setDistortionCoefficients(float k1, float k2);
 
-		inline double getFOV() const { return this->fov; };
-		inline double getSensitivity() const { return this->sensitivity; };
-		inline glm::dvec3 getPosition() const { return position; }
-		inline glm::dvec3 getDirection() const { return direction; }
-		bool update(double dt, bool forceUpdate = false);
+		inline float getFOV() const { return this->fov; };
+		inline float getSensitivity() const { return this->sensitivity; };
+		inline glm::fvec3 getPosition() const { return position; }
+		inline glm::fvec3 getDirection() const { return direction; }
+		bool update(float dt, bool forceUpdate = false);
 
-		glm::dvec2 Distort(double u, double v);
-		glm::dvec3 Fisheye(double u, double v);
+		glm::fvec2 Distort(float u, float v);
+		glm::fvec3 Fisheye(float u, float v);
 	private:
 		void updateVectors();
 
 		CameraType cameraType;
 
-		glm::dvec3 up;
-		glm::dvec3 right;
-		glm::dvec3 position;
-		glm::dvec3 direction;
-		glm::dvec3 horizontal;
-		glm::dvec3 vertical;
-		glm::dvec3 llCorner;
+		glm::fvec3 up;
+		glm::fvec3 right;
+		glm::fvec3 position;
+		glm::fvec3 direction;
+		glm::fvec3 horizontal;
+		glm::fvec3 vertical;
+		glm::fvec3 llCorner;
 
 		glm::mat3x3 cameraMatrix;
 
-		double fov;
-		double aspectRatio;
-		double viewportWidth;
-		double viewportHeight;
-		double sensitivity;
-		double k1;
-		double k2;
+		float fov;
+		float aspectRatio;
+		float viewportWidth;
+		float viewportHeight;
+		float sensitivity;
+		float k1;
+		float k2;
 		float fisheyeAngle;
 
-		const double speed = 0.3;
-		const double angleToRads = 0.01745329251994329576923690768489;
+		const float speed = 0.3f;
+		const float angleToRads = 0.01745329251994329576923690768489f;
 };
 
 typedef std::shared_ptr<Camera> CameraPtr;

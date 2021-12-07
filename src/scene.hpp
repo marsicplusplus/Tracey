@@ -16,12 +16,12 @@ class Scene {
 		Scene();
 		~Scene();
 
-		bool traverse(const Ray &ray, double tMin, double tMax, HitRecord &rec) const;
+		bool traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) const;
 		Color traceLights(HitRecord &rec) const;
 		void addHittable(HittablePtr hittable);
 		void setCamera(CameraPtr camera);
 		CameraPtr getCamera() const;
-		bool update(double dt);
+		bool update(float dt);
 		void addLight(LightObjectPtr light);
 
 	private:
