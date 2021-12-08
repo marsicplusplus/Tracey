@@ -48,7 +48,7 @@ bool Renderer::init(){
 	glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	double scaling = OptionsMap::Instance()->getOption(Options::SCALING);
+	float scaling = OptionsMap::Instance()->getOption(Options::SCALING);
 	if(scaling < 1){
 		GLFWmonitor *monitor = glfwGetPrimaryMonitor();
 		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
@@ -66,9 +66,6 @@ bool Renderer::init(){
 		if(key == GLFW_KEY_T && action == GLFW_PRESS){
 			static_cast<Renderer*>(glfwGetWindowUserPointer(w))->toggleGui();
 		}
-	});
-
-	glfwSetCursorPosCallback(this->window, [](GLFWwindow* w, double xpos, double ypos){
 	});
 
 	CHECK_ERROR(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "Failed to initialize GLAD", false);
@@ -146,18 +143,18 @@ void Renderer::initGui() {
 	ImGui_ImplGlfw_InitForOpenGL(this->window, true);
 	ImGui_ImplOpenGL3_Init("#version 450");
 
-	this->showGui = false;
+	this->showGui = true;
 	this->guiK1 = 1;
 	this->guiK2 = 1;
 	this->guiBarrel = false;
 	this->guiFisheye = false;
 	this->guiFisheyeAngle = glm::radians(90.0f);
 	this->guiContinuousRender = false;
-	this->guiCamPos = glm::dvec3(0, 0, 1);
-	this->guiCamDir = glm::dvec3(0, 0, -1);
+	this->guiCamPos = glm::fvec3(0, 0, 1);
+	this->guiCamDir = glm::fvec3(0, 0, -1);
 	this->guiGammaCorrection = false;
 	this->guiAberration = false;
-	this->aberrationOffset = glm::dvec3(0.0, 0.0, 0.0);
+	this->aberrationOffset = glm::fvec3(0.0f, 0.0f, 0.0f);
 	this->guiVignetting = false;
 	this->vignettingSlider = 1.0f;
 	this->fBrowser.SetTitle("Choose a scene");
@@ -178,14 +175,15 @@ bool Renderer::start() {
 
 	const int maxBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
 	const int samples = OptionsMap::Instance()->getOption(Options::SAMPLES);
-	const double fpsLimit = 1.0 / static_cast<double>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
-	double lastUpdateTime = 0;  // number of seconds since the last loop
+	const float fpsLimit = 1.0 / static_cast<float>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
+	float lastUpdateTime = 0;  // number of seconds since the last loop
 
 	const int horizontalTiles = wWidth / tWidth;
 	const int verticalTiles = wHeight / tHeight;
 
+	std::deque<double> averageFrameTime;
 	while(!glfwWindowShouldClose(this->window)){
-		double now = glfwGetTime();
+		float now = glfwGetTime();
 		glfwPollEvents();
 		double xpos, ypos;
 		glfwGetCursorPos(this->window, &xpos, &ypos);
@@ -207,17 +205,17 @@ bool Renderer::start() {
 								int y = row + tHeight * tileRow;
 								if (cam) {
 									for(int s = 0; s < samples; ++s){
-										double u = static_cast<double>(x + randomDouble(gen, 0.0,1.0)) / static_cast<double>(wWidth - 1);
-										double v = static_cast<double>(y + randomDouble(gen, 0.0,1.0)) / static_cast<double>(wHeight - 1);
+										float u = static_cast<float>(x + randomfloat(gen, 0.0,1.0)) / static_cast<float>(wWidth - 1);
+										float v = static_cast<float>(y + randomfloat(gen, 0.0,1.0)) / static_cast<float>(wHeight - 1);
 										Ray ray = cam->generateCameraRay(u, v);
-										if (ray.getDirection() == glm::dvec3(0, 0, 0)) {
+										if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
 											pxColor += Color(0, 0, 0);
 										} else{
 											pxColor += trace(ray, bounces, scene);
 										}
 									}
 								}
-								pxColor = pxColor / static_cast<double>(samples);
+								pxColor = pxColor / static_cast<float>(samples);
 								putPixel(frameBuffer, wWidth * (y) + (x), pxColor);
 							}
 						}
@@ -229,8 +227,16 @@ bool Renderer::start() {
 				f.get();
 
 			lastUpdateTime = glfwGetTime() - now;
+			averageFrameTime.push_back(lastUpdateTime);
+			if (averageFrameTime.size() > 500) {
+				averageFrameTime.pop_front();
+			}
+
 			std::cout << std::endl << "Last frame info:" <<std::endl;
 			std::cout << lastUpdateTime << "s" << std::endl;
+			std::cout << "Average frame info:" << std::endl;
+			auto const count = static_cast<float>(averageFrameTime.size());
+			std::cout << std::reduce(averageFrameTime.begin(), averageFrameTime.end()) / count << "s" << std::endl;
 			std::cout << this->nSamples << " samples per pixel" << std::endl;
 			std::cout << this->nBounces << " maximum number of ray bounces" << std::endl;
 			isBufferInvalid = false;
@@ -256,10 +262,10 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 	HitRecord hr;
 	if(!scene || bounces <= 0)
 		return Color{0,0,0};
-	if (scene->traverse(ray, 0.001, INF, hr)) {
+	if (scene->traverse(ray, 0.001f, INF, hr)) {
 		Ray reflectedRay;
 		Color attenuation = hr.material->getMaterialColor(hr.u, hr.v, hr.p);
-		double reflectance = 1;
+		float reflectance = 1;
 
 		if (hr.material->getType() == Materials::DIFFUSE) {
 
@@ -267,21 +273,21 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 		} else if (hr.material->getType() == Materials::MIRROR) {
 
 			hr.material->reflect(ray, hr, reflectedRay, reflectance);
-			if (reflectance == 1.0)
+			if (reflectance == 1.0f)
 				return attenuation * (trace(reflectedRay, bounces - 1, scene));
 			else
-				return attenuation * (reflectance * trace(reflectedRay, bounces - 1, scene) + (1.0 - reflectance) * scene->traceLights(hr));
+				return attenuation * (reflectance * trace(reflectedRay, bounces - 1, scene) + (1.0f - reflectance) * scene->traceLights(hr));
 		} else if(hr.material->getType() == Materials::DIELECTRIC) {
 
-			Color refractionColor(0.0);
-			Color reflectionColor(0.0);
-			double reflectance;
+			Color refractionColor(0.0f);
+			Color reflectionColor(0.0f);
+			float reflectance;
 			hr.material->reflect(ray, hr, reflectedRay, reflectance);
 			reflectionColor = trace(reflectedRay, bounces - 1, scene);
 
-			if(reflectance < 1.0){
+			if(reflectance < 1.0f){
 				Ray refractedRay;
-				double refractance;
+				float refractance;
 				hr.material->refract(ray, hr, refractedRay, refractance);
 				refractionColor = trace(refractedRay, bounces-1, scene);
 			}
@@ -299,9 +305,9 @@ void Renderer::putPixel(uint32_t fb[], int idx, uint8_t r, uint8_t g, uint8_t b)
 }
 
 void Renderer::putPixel(uint32_t fb[], int idx, Color& color){
-	unsigned char r = static_cast<unsigned char>(std::clamp(color.r, 0.0, 0.999) * 255.999);
-	unsigned char g = static_cast<unsigned char>(std::clamp(color.g, 0.0, 0.999) * 255.999);
-	unsigned char b = static_cast<unsigned char>(std::clamp(color.b, 0.0, 0.999) * 255.999);
+	unsigned char r = static_cast<unsigned char>(std::clamp(color.r, 0.0f, 0.999f) * 255.999f);
+	unsigned char g = static_cast<unsigned char>(std::clamp(color.g, 0.0f, 0.999f) * 255.999f);
+	unsigned char b = static_cast<unsigned char>(std::clamp(color.b, 0.0f, 0.999f) * 255.999f);
 	fb[idx] = r << 16 | g << 8 | b << 0;
 }
 
@@ -323,7 +329,7 @@ void Renderer::renderGUI() {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 	ImGui::SetNextWindowPos(ImVec2(.0f, .0f));
-	ImGui::SetNextWindowSize(ImVec2(OptionsMap::Instance()->getOption(Options::W_WIDTH) / 3, OptionsMap::Instance()->getOption(Options::W_HEIGHT) * OptionsMap::Instance()->getOption(Options::SCALING)));
+	ImGui::SetNextWindowSize(ImVec2((OptionsMap::Instance()->getOption(Options::W_WIDTH)/3) * OptionsMap::Instance()->getOption(Options::SCALING) , OptionsMap::Instance()->getOption(Options::W_HEIGHT) * OptionsMap::Instance()->getOption(Options::SCALING)));
 	{
 		ImGui::Begin("Menu", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 
@@ -431,9 +437,9 @@ void Renderer::renderGUI() {
 			if(ImGui::CollapsingHeader("PostProcessing Effects")){
 				ImGui::Checkbox("Gamma Correction", &guiGammaCorrection);
 				ImGui::Checkbox("Vignetting", &guiVignetting);
-				if(guiVignetting) ImGui::SliderFloat("##VignetteFactor", &vignettingSlider, 0.0, 2.0);
+				if(guiVignetting) ImGui::SliderFloat("##VignetteFactor", &vignettingSlider, 0.0, 2.0f);
 				ImGui::Checkbox("Chromatic Aberration", &guiAberration);
-				if(guiAberration) ImGui::SliderFloat3("##AberrationOffset", &aberrationOffset[0], -10.00, 10.0, "%.3f");
+				if(guiAberration) ImGui::SliderFloat3("##AberrationOffset", &aberrationOffset[0], -10.00f, 10.0f, "%.3f");
 			}
 			ImGui::Spacing();
 			ImGui::Spacing();
@@ -502,24 +508,24 @@ uint32_t* Renderer::applyPostProcessing(){
 	int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
 	int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
 	if(guiGammaCorrection || guiVignetting || guiAberration){
-		glm::dvec2 center(wWidth/2, wHeight/2);
+		glm::fvec2 center(wWidth/2, wHeight/2);
 		for(size_t y = 0; y < wHeight; ++y){
 			for(size_t x = 0; x < wWidth; ++x){
 				int idx = y * wWidth + x;
-				double dist = sqrt((x-center.x)*(x-center.x) + (y-center.y)*(y-center.y)); 
-				double scaledDist = dist / sqrt(wWidth/2*wWidth/2 + wHeight/2*wHeight/2);
+				float dist = sqrt((x-center.x)*(x-center.x) + (y-center.y)*(y-center.y)); 
+				float scaledDist = dist / sqrt(wWidth/2*wWidth/2 + wHeight/2*wHeight/2);
 				uint32_t pixel = frameBuffer[idx];
-				double r = static_cast<uint8_t>(pixel >> 16) / 255.0;
-				double g = static_cast<uint8_t>(pixel >> 8) / 255.0;
-				double b = static_cast<uint8_t>(pixel >> 0) / 255.0;
+				float r = static_cast<uint8_t>(pixel >> 16) / 255.0f;
+				float g = static_cast<uint8_t>(pixel >> 8) / 255.0f;
+				float b = static_cast<uint8_t>(pixel >> 0) / 255.0f;
 				Color c(r,g,b);
 				if(guiAberration){
 					int nX = static_cast<int>(x + scaledDist * aberrationOffset.r) % wWidth;
-					c.r = static_cast<uint8_t>(frameBuffer[y * wWidth + nX] >> 16)/255.0;
+					c.r = static_cast<uint8_t>(frameBuffer[y * wWidth + nX] >> 16)/255.0f;
 					nX = static_cast<int>(x + scaledDist * aberrationOffset.g) % wWidth;
-					c.g = static_cast<uint8_t>(frameBuffer[y * wWidth + nX] >> 8)/255.0;
+					c.g = static_cast<uint8_t>(frameBuffer[y * wWidth + nX] >> 8)/255.0f;
 					nX = static_cast<int>(x + scaledDist * aberrationOffset.b) % wWidth;
-					c.b = static_cast<uint8_t>(frameBuffer[y * wWidth + nX] >> 0)/255.0;
+					c.b = static_cast<uint8_t>(frameBuffer[y * wWidth + nX] >> 0)/255.0f;
 				}
 				if(guiGammaCorrection){
 					c.r = sqrt(c.r);
