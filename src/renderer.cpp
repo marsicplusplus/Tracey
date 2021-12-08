@@ -143,7 +143,7 @@ void Renderer::initGui() {
 	ImGui_ImplGlfw_InitForOpenGL(this->window, true);
 	ImGui_ImplOpenGL3_Init("#version 450");
 
-	this->showGui = false;
+	this->showGui = true;
 	this->guiK1 = 1;
 	this->guiK2 = 1;
 	this->guiBarrel = false;
