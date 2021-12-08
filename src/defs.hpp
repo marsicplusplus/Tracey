@@ -31,7 +31,7 @@ struct HitRecord {
 
 	inline void setFaceNormal(const Ray& r, const glm::fvec3& outNormal) {
 		frontFace = dot(r.getDirection(), outNormal) < 0;
-		normal = frontFace ? outNormal : -outNormal;
+		normal = frontFace ? glm::normalize(outNormal) : glm::normalize(-outNormal);
 	}
 };
 inline float randomfloat(std::mt19937 &gen, float min, float max){

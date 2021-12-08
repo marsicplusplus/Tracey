@@ -177,7 +177,7 @@ bool Scene::update(float dt){
 }
 
 Color Scene::traceLights(HitRecord &rec) const {
-	Color illumination(0.0);
+	Color illumination(0.0f);
 	for(auto &light : lights){
 		float tMax;
 		Ray shadowRay = light->getRay(rec, tMax);
@@ -188,7 +188,7 @@ Color Scene::traceLights(HitRecord &rec) const {
 		}
 
 		HitRecord obstruction;
-		if(!traverse(shadowRay, 0.0001, tMax, obstruction)){
+		if(!traverse(shadowRay, 0.0001f, tMax, obstruction)){
 			auto contribution = light->getLight(rec, shadowRay);
 			illumination += light->attenuate(contribution, rec.p);
 		}
@@ -217,7 +217,7 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 		return (std::make_shared<Plane>(pos, norm, material->second));
 	} else if(type == "SPHERE"){
 		glm::fvec3 pos(parseVec3(hit["position"]));
-		float radius = (hit.contains("radius")) ? hit["radius"].get<float>() : 0.5;
+		float radius = (hit.contains("radius")) ? hit["radius"].get<float>() : 0.5f;
 		return (std::make_shared<Sphere>(pos, radius, material->second));
 
 	} else if (type == "TORUS"){
@@ -236,8 +236,8 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 		torusTransform = glm::rotate(torusTransform, glm::radians(xRot), glm::fvec3(1, 0, 0));
 		torusTransform = glm::rotate(torusTransform, glm::radians(yRot), glm::fvec3(0, 1, 0));
 		torusTransform = glm::rotate(torusTransform, glm::radians(zRot), glm::fvec3(0, 0, 1));
-		float radiusMajor = (hit.contains("radiusMajor")) ? hit["radiusMajor"].get<float>() : 0.5;
-		float radiusMinor = (hit.contains("radiusMinor")) ? hit["radiusMinor"].get<float>() : 0.1;
+		float radiusMajor = (hit.contains("radiusMajor")) ? hit["radiusMajor"].get<float>() : 0.5f;
+		float radiusMinor = (hit.contains("radiusMinor")) ? hit["radiusMinor"].get<float>() : 0.1f;
 		return (std::make_shared<Torus>(radiusMajor, radiusMinor, torusTransform, material->second));
 
 	} else if(type == "ZXRect"){
@@ -257,8 +257,8 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 std::shared_ptr<LightObject> Scene::parseLight(nlohmann::json &l) const{
 	if(!l.contains("type")) throw std::invalid_argument("LightObject doesn't name a type");
 	std::string type = l.at("type");
-	Color color = (l.contains("color")) ? (parseVec3(l["color"])) : Color(1.0);
-	float intensity = (l.contains("intensity")) ? (float)(l.at("intensity")) : 1.0;
+	Color color = (l.contains("color")) ? (parseVec3(l["color"])) : Color(1.0f);
+	float intensity = (l.contains("intensity")) ? (float)(l.at("intensity")) : 1.0f;
 	if(type == "POINT"){
 		glm::fvec3 pos(parseVec3(l["position"]));
 		return (std::make_shared<PointLight>(pos, intensity, color));
@@ -270,7 +270,7 @@ std::shared_ptr<LightObject> Scene::parseLight(nlohmann::json &l) const{
 	} else if (type == "SPOT") {
 		glm::fvec3 pos(parseVec3(l["position"]));
 		glm::fvec3 dir(parseVec3(l["direction"]));
-		float cutoff = l.contains("cutoffAngle") ? (float)l.at("cutoffAngle") : 45.0;
+		float cutoff = l.contains("cutoffAngle") ? (float)l.at("cutoffAngle") : 45.0f;
 		return (std::make_shared<SpotLight>(pos, dir, glm::radians(cutoff), intensity, color));
 	} else {
 		throw std::invalid_argument("LightObject doesn't name a valid type");
@@ -290,7 +290,7 @@ std::pair<std::string, std::shared_ptr<Material>> Scene::parseMaterial(nlohmann:
 	if(type == "DIFFUSE"){
 		mat.second = std::make_shared<DiffuseMaterial>(texture->second);
 	} else if(type == "MIRROR") {
-		float ref = m.contains("reflect") ? m["reflect"].get<float>() : 1.0;
+		float ref = m.contains("reflect") ? m["reflect"].get<float>() : 1.0f;
 		mat.second = std::make_shared<MirrorMaterial>(texture->second, ref);
 	}
 	else if (type == "DIELECTRIC") {
