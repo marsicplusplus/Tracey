@@ -58,7 +58,7 @@ bool Mesh::intersectTri(const Triangle &tri, const Ray &ray, HitRecord &rec, flo
 				const glm::fvec2 &st0 = this->uvs[tri.texture.x];
 				const glm::fvec2 &st1 = this->uvs[tri.texture.y];
 				const glm::fvec2 &st2 = this->uvs[tri.texture.z];
-				uv = u * st0 + v * st1 + (1.0f - u - v) * st2;
+				uv = u * st1 + v * st2 + (1.0f - u - v) * st0;
 			}
 			rec.u = uv.x;
 			rec.v = uv.y;
