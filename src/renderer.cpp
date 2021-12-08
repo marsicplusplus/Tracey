@@ -329,7 +329,7 @@ void Renderer::renderGUI() {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 	ImGui::SetNextWindowPos(ImVec2(.0f, .0f));
-	ImGui::SetNextWindowSize(ImVec2(OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::SCALING) / 3, OptionsMap::Instance()->getOption(Options::W_HEIGHT) * OptionsMap::Instance()->getOption(Options::SCALING)));
+	ImGui::SetNextWindowSize(ImVec2((OptionsMap::Instance()->getOption(Options::W_WIDTH)/3) * OptionsMap::Instance()->getOption(Options::SCALING) , OptionsMap::Instance()->getOption(Options::W_HEIGHT) * OptionsMap::Instance()->getOption(Options::SCALING)));
 	{
 		ImGui::Begin("Menu", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 
