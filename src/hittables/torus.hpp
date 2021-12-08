@@ -79,10 +79,10 @@ public:
 				4.0f * localp.z * (sumSquared - radii)
 			));
 
-			auto transformedNormal = transform * glm::fvec4(normal, 0);
+			auto transformedNormal = glm::transpose(transformInv) * glm::fvec4(normal, 0);
 
 			rec.t = minRealRoot;
-			rec.p = ray.at(minRealRoot);
+			rec.p = transformInv * glm::fvec4(transformedRay.at(minRealRoot), 1);
 			rec.material = mat;
 			rec.setFaceNormal(ray, transformedNormal);
 			getUV(rec);
