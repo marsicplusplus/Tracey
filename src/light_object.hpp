@@ -51,7 +51,8 @@ class PointLight : public LightObject {
 
 		inline Ray getRay(const HitRecord &rec, float &tMax) const override {
 			tMax = glm::distance(this->position, rec.p);
-			return Ray(rec.p, this->position - rec.p);
+			auto dir = this->position - rec.p;
+			return Ray(rec.p + 0.001f * dir, dir);
 		}
 
 		inline Color attenuate(Color color, const glm::fvec3 &p) override {

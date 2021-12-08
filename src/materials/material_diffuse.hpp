@@ -7,15 +7,15 @@
 class DiffuseMaterial : public Material {
 
 	public: 
-		DiffuseMaterial(Color color) {
+		DiffuseMaterial(Color color, std::string name) : Material{name} {
 			albedo = std::make_shared<SolidColor>(color);
 		}
 
-		DiffuseMaterial(std::shared_ptr<Texture> t) {
+		DiffuseMaterial(std::shared_ptr<Texture> t, std::string name) : Material{name} {
 			albedo = t;
 		}
 
-		DiffuseMaterial() {
+		DiffuseMaterial(std::string name) : Material{name} {
 			albedo = std::make_shared<SolidColor>(0.5f, 0.5f, 0.5f);
 		}
 

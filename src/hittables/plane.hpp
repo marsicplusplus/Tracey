@@ -9,7 +9,7 @@
 
 class Plane : public Hittable {
 	public:
-		Plane(glm::fvec3 pos, glm::fvec3 norm, MaterialPtr mat) : pos{pos}, norm{norm}, mat{mat} {
+		Plane(glm::fvec3 pos, glm::fvec3 norm, int mat) : pos{pos}, norm{norm}, mat{mat} {
 			glm::fvec3 a = cross(norm, glm::fvec3(1, 0, 0));
 			glm::fvec3 b = cross(norm, glm::fvec3(0, 1, 0));
 			glm::fvec3 maxAB = glm::dot(a, a) < glm::dot(b, b) ? b : a;
@@ -44,12 +44,12 @@ class Plane : public Hittable {
 		glm::fvec3 uAxis;
 		glm::fvec3 vAxis;
 		glm::fvec3 norm;
-		MaterialPtr mat;
+		int mat;
 };
 
 class ZXRect : public Hittable {
 	public:
-		ZXRect(float y, glm::fvec4 size, MaterialPtr mat) : pos{y}, size{size}, mat{mat} {}
+		ZXRect(float y, glm::fvec4 size, int mat) : pos{y}, size{size}, mat{mat} {}
 		inline bool hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const override {
 			float t = (pos - ray.getOrigin().y)/static_cast<float>(ray.getDirection().y);
 			if(t < tMin || t > tMax) return false;
@@ -72,7 +72,7 @@ class ZXRect : public Hittable {
 	private:
 		float pos;
 		glm::fvec4 size;
-		MaterialPtr mat;
+		int mat;
 };
 
 #endif
