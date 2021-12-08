@@ -11,7 +11,7 @@ class ImageTexture : public Texture {
 	public:
 		ImageTexture(std::string filePath);
 		~ImageTexture();
-		Color color(double u, double v, const glm::dvec3 &p) const override;
+		Color color(float u, float v, const glm::fvec3 &p) const override;
 	private:
 		int width;
 		int height;
@@ -38,12 +38,12 @@ inline ImageTexture::~ImageTexture(){
 	stbi_image_free(img);
 }
 
-inline Color ImageTexture::color(double u, double v, const glm::dvec3 &p) const{
+inline Color ImageTexture::color(float u, float v, const glm::fvec3 &p) const{
 	if(img == nullptr || width == 0 || height == 0) return Color(0.4,0.4,0.4);
 	unsigned int i = static_cast<unsigned int>(u*width) & (width-1);
 	unsigned int j = static_cast<unsigned int>(v*height) & (height-1);
 	unsigned char *pixel = img + j * slice + i * bpp;
-	return Color(pixel[0]/static_cast<double>(255.0),pixel[1]/static_cast<double>(255.0),pixel[2]/static_cast<double>(255.0));
+	return Color(pixel[0]/static_cast<float>(255.0f),pixel[1]/static_cast<float>(255.0f),pixel[2]/static_cast<float>(255.0f));
 }
 
 #endif

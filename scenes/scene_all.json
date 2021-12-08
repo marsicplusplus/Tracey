@@ -143,16 +143,6 @@
 			"material": "Glass"
 		},
 		{
-			"type": "TORUS",
-			"transform":{
-				"rotation": [90, 0, 0],
-				"translation": [ 0.0, 0.4, -1.5 ]
-			},
-			"radiusMajor": 0.3,
-			"radiusMinor": 0.1,
-			"material": "DiffuseBlue"
-		},
-		{
 			"type": "SPHERE",
 			"transform":{
 				"translation": [0.0, -0.3, -0.5]

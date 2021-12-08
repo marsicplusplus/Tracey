@@ -16,12 +16,12 @@ class Scene {
 		Scene();
 		~Scene();
 
-		bool traverse(const Ray &ray, double tMin, double tMax, HitRecord &rec) const;
+		bool traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) const;
 		Color traceLights(HitRecord &rec) const;
 		void addHittable(HittablePtr hittable);
 		void setCamera(CameraPtr camera);
 		CameraPtr getCamera() const;
-		bool update(double dt);
+		bool update(float dt);
 		void addLight(LightObjectPtr light);
 
 	private:
@@ -36,6 +36,7 @@ class Scene {
 		std::pair<std::string, std::shared_ptr<Material>> parseMaterial(nlohmann::json &text) const;
 		std::shared_ptr<Hittable> parseHittable(nlohmann::json &text) const;
 		std::shared_ptr<LightObject> parseLight(nlohmann::json &text) const;
+		std::shared_ptr<Hittable> parseMesh(std::filesystem::path &path, std::shared_ptr<Material> mat) const;
 		void parseTransform(nlohmann::basic_json<> &hit, HittablePtr& primitive) const;
 };
 

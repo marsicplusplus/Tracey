@@ -16,7 +16,7 @@ class DiffuseMaterial : public Material {
 		}
 
 		DiffuseMaterial() {
-			albedo = std::make_shared<SolidColor>(0.5, 0.5, 0.5);
+			albedo = std::make_shared<SolidColor>(0.5f, 0.5f, 0.5f);
 		}
 
 		inline Materials getType() const override { return Materials::DIFFUSE; }

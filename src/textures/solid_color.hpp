@@ -7,8 +7,8 @@ class SolidColor : public Texture {
 	public:
 		SolidColor() : c{Color(0,0,0)} {}
 		SolidColor(Color col) : c{col} {}
-		SolidColor(double r, double g, double b) : c{Color(r, g, b)} {}
-		Color color(double u, double v, const glm::dvec3 &p) const override {
+		SolidColor(float r, float g, float b) : c{Color(r, g, b)} {}
+		Color color(float u, float v, const glm::fvec3 &p) const override {
 			return c;
 		}
 	private:

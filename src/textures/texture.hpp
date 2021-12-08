@@ -4,11 +4,11 @@
 #include "defs.hpp"
 #include "glm/vec3.hpp"
 
-typedef glm::dvec3 Color;
+typedef glm::fvec3 Color;
 
 class Texture {
 	public:
-		virtual Color color(double u, double v, const glm::dvec3 &p) const = 0;
+		virtual Color color(float u, float v, const glm::fvec3 &p) const = 0;
 };
 
 #endif

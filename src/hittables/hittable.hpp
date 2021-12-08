@@ -7,30 +7,30 @@
 
 class Hittable {
 	public:
-		Hittable() : transform{glm::dmat4x4(1.0)}, transformInv{glm::dmat4x4(1.0)} {}
-		virtual bool hit(const Ray &ray, double tMin, double tMax, HitRecord &rec) const = 0;
+		Hittable() : transform{glm::fmat4x4(1.0)}, transformInv{glm::fmat4x4(1.0)} {}
+		virtual bool hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const = 0;
 
-		inline void translate(glm::dvec3 t){
+		inline void translate(glm::fvec3 t){
 			transform = glm::translate(transform, t);
-			transformInv = glm::translate(transformInv, -t);
+			transformInv = glm::inverse(transform);
 		}
-		inline void scale(glm::dvec3 s){
+		inline void scale(glm::fvec3 s){
 			transform = glm::scale(transform, s);
-			transformInv = glm::scale(transformInv, 1.0/s);
+			transformInv = glm::inverse(transform);
 		}
 		inline void scale(float s){
-			transform = glm::scale(transform, glm::dvec3(s,s,s));
-			transformInv = glm::scale(transformInv, glm::dvec3(1.0/s,1.0/s,1.0/s));
+			transform = glm::scale(transform, glm::fvec3(s,s,s));
+			transformInv = glm::inverse(transform);
 		}
-		inline void rotate(double t, glm::dvec3 a){
+		inline void rotate(float t, glm::fvec3 a){
 			transform = glm::rotate(transform, t, a);
-			transformInv = glm::rotate(transformInv, -t, a);
+			transformInv = glm::inverse(transform);
 		}
 
 	protected:
-		glm::dvec3 position;
-		glm::dmat4x4 transformInv;
-		glm::dmat4x4 transform;
+		glm::fvec3 position;
+		glm::fmat4x4 transformInv;
+		glm::fmat4x4 transform;
 
 };
 
