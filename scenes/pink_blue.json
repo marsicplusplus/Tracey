@@ -105,13 +105,17 @@
 		},
 		{
 			"type": "SPHERE",
-			"position": [ -0.4, -0.2, -1.2 ],
+			"transform":{
+				"translation": [ -0.4, -0.2, -1.2 ]
+			},
 			"radius": 0.3,
 			"material": "WhiteMirror"
 		},
 		{
 			"type": "SPHERE",
-			"position": [ 0.45, -0.2, -0.9 ],
+			"transform":{
+				"translation": [ 0.45, -0.2, -0.9 ]
+			},
 			"radius": 0.3,
 			"material": "GlassSurface"
 		}
