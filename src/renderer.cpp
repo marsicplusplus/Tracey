@@ -158,7 +158,7 @@ void Renderer::initGui() {
 	this->guiVignetting = false;
 	this->vignettingSlider = 1.0f;
 	this->fBrowser.SetTitle("Choose a scene");
-	this->fBrowser.SetWindowSize(350, 300);
+	this->fBrowser.SetWindowSize(500, 300);
 	this->fBrowser.SetTypeFilters({".json"});
 }
 
