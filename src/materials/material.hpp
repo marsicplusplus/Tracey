@@ -5,6 +5,7 @@
 #include "textures/texture.hpp"
 #include <memory>
 #include <random>
+#include <string>
 
 struct HitRecord;
 typedef glm::fvec3 Color;
@@ -18,6 +19,8 @@ enum class Materials {
 
 class Material {
 	public:
+		Material(std::string name) : name{name} {}
+
 		inline virtual bool reflect(const Ray& in, const HitRecord &r, Ray &reflectedRay, float &reflectance) const {
 			return false;
 		};
@@ -38,8 +41,13 @@ class Material {
 			return albedo->color(u, v, p);
 		}
 
+		inline const std::string& getName() const {
+			return name;
+		}
+
 	protected:
 		std::shared_ptr<Texture> albedo;
+		std::string name;
 };
 
 typedef std::shared_ptr<Material> MaterialPtr;
