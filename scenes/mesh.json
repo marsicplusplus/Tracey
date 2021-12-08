@@ -77,27 +77,27 @@
 	"lights": [
 		{
 			"type": "DIRECTIONAL",
-			"direction": [0.0, -1.0, -0.5],
-			"color": [1.0, 1.0, 1.0],
+			"direction": [ 0.0, -1.0, -0.5 ],
+			"color": [ 1.0, 1.0, 1.0 ],
 			"intensity": 1.6
 		},
 		{
 			"type": "POINT",
-			"position": [0.0, 1.0, 0.5],
-			"color": [1.0, 1.0, 1.0],
-			"intensity": 0.8
+			"position": [ 0.0, 2.40, 0.87 ],
+			"color": [ 1.0, 1.0, 1.0 ],
+			"intensity": 1
 		},
 		{
 			"type": "POINT",
-			"position": [1.5, 2.0, -1.5],
-			"color": [1.0, 1.0, 1.0],
-			"intensity": 0.4
+			"position": [ -6, 2.40, 0.87 ],
+			"color": [ 1.0, 1.0, 1.0 ],
+			"intensity": 1
 		},
 		{
 			"type": "POINT",
-			"position": [-1.5, 2.0, -1.5],
-			"color": [1.0, 1.0, 1.0],
-			"intensity": 0.4
-		}	
+			"position": [ 6, 2.70, 0.87 ],
+			"color": [ 1.0, 1.0, 1.0 ],
+			"intensity": 1
+		}
 	]
 }

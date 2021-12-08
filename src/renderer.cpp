@@ -181,6 +181,7 @@ bool Renderer::start() {
 	const int horizontalTiles = wWidth / tWidth;
 	const int verticalTiles = wHeight / tHeight;
 
+	std::deque<double> averageFrameTime;
 	while(!glfwWindowShouldClose(this->window)){
 		float now = glfwGetTime();
 		glfwPollEvents();
@@ -226,8 +227,16 @@ bool Renderer::start() {
 				f.get();
 
 			lastUpdateTime = glfwGetTime() - now;
+			averageFrameTime.push_back(lastUpdateTime);
+			if (averageFrameTime.size() > 500) {
+				averageFrameTime.pop_front();
+			}
+
 			std::cout << std::endl << "Last frame info:" <<std::endl;
 			std::cout << lastUpdateTime << "s" << std::endl;
+			std::cout << "Average frame info:" << std::endl;
+			auto const count = static_cast<float>(averageFrameTime.size());
+			std::cout << std::reduce(averageFrameTime.begin(), averageFrameTime.end()) / count << "s" << std::endl;
 			std::cout << this->nSamples << " samples per pixel" << std::endl;
 			std::cout << this->nBounces << " maximum number of ray bounces" << std::endl;
 			isBufferInvalid = false;
@@ -320,7 +329,7 @@ void Renderer::renderGUI() {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 	ImGui::SetNextWindowPos(ImVec2(.0f, .0f));
-	ImGui::SetNextWindowSize(ImVec2(OptionsMap::Instance()->getOption(Options::W_WIDTH) / 3, OptionsMap::Instance()->getOption(Options::W_HEIGHT) * OptionsMap::Instance()->getOption(Options::SCALING)));
+	ImGui::SetNextWindowSize(ImVec2(OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::SCALING) / 3, OptionsMap::Instance()->getOption(Options::W_HEIGHT) * OptionsMap::Instance()->getOption(Options::SCALING)));
 	{
 		ImGui::Begin("Menu", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 

@@ -27,8 +27,8 @@ class LightObject {
 
 		virtual inline Color getLight(const HitRecord &rec, Ray& ray) const {
 			Color illumination(0.0f);
-			float nd = glm::dot(rec.normal,ray.getDirection());
-			if(nd > 0){
+			float nd = glm::dot(rec.normal, ray.getDirection());
+			if(nd > 0.0f){
 				illumination += this->color * this->intensity * nd;
 			}
 			return illumination;
@@ -122,7 +122,8 @@ class AmbientLight : public LightObject {
 		virtual inline Lights getType() override {return Lights::AMBIENT; }
 
 		virtual Ray getRay(const HitRecord &rec, float &tMax) const override {
-			Ray ray;
+			tMax = 0.0001f;
+			Ray ray(rec.p + 0.0001f * rec.normal, rec.normal);
 			return ray;
 		}
 
