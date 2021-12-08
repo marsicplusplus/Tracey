@@ -84,16 +84,16 @@ public:
 			rec.material = mat;
 			auto transformedNormal = glm::transpose(transform) * glm::fvec4(normal, 0);
 			rec.setFaceNormal(ray, glm::normalize(transformedNormal));
-			getUV(rec);
+			getUV(rec,localp);
 			return true;
 		}
 
 		return false;
 	}
 
-	inline void getUV(HitRecord& rec) const {
-		rec.u = 0.5f + atan2(rec.p.z, rec.p.x) / (2.0f*PI);
-  		rec.v = 0.5f + atan2(rec.p.y, (sqrt(rec.p.x * rec.p.x + rec.p.z * rec.p.z) - radiusMajor)) / (2.0f * PI);
+	inline void getUV(HitRecord& rec, glm::fvec3 &p) const {
+		rec.u = 0.5f + atan2(p.z, p.x) / (2.0f*PI);
+  		rec.v = 0.5f + atan2(p.y, (sqrt(p.x * p.x + p.z * p.z) - radiusMajor)) / (2.0f * PI);
 	}
 
 private:
