@@ -65,22 +65,14 @@
 		},
 		{
 			"type": "TORUS",
-			"position": [ 0.0, 0.0, 0.0 ],
+			"position": [ 0.0, 1.0, -1.0 ],
+			"xRot": 0,
+			"yRot": 30,
+			"zRot": 30,
 			"radiusMajor": 0.8,
 			"radiusMinor": 0.2,
 			"material": "Brick"
 		},
-		{
-			"type": "TORUS",
-			"position": [ -2.0, 1.0, -1.0 ],
-			"xRot": 90,
-			"yRot": 0,
-			"zRot": 30,
-			"radiusMajor": 0.4,
-			"radiusMinor": 0.2,
-			"material": "Glass"
-		},
-
 		{
 			"type": "SPHERE",
 			"position": [0.0, 1.0, -1.0],
@@ -90,17 +82,12 @@
 	],
 	"lights": [
 		{
-			"type": "AMBIENT",
-			"color": [ 0.7, 0.7, 1.0 ],
-			"intensity": 1.0
-		},
-		{
 			"type": "SPOT",
 			"position": [ 0.0, 2, -1.5 ],
-			"direction": [ 0.0, -1.0, 0.0 ],
-			"cutoffAngle": 90,
-			"color": [ 0.7, 0.7, 1.0 ],
-			"intensity": 5.0
+			"direction": [ 0.2, -1.0, 0.0 ],
+			"cutoffAngle": 60,
+			"color": [ 1.0, 0.7, 1.0 ],
+			"intensity": 12.0
 		}
 	]
 }

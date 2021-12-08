@@ -1,6 +1,6 @@
 {
 	"camera" : {
-		"position": [0.0, 2.4, 5.5],
+		"position": [0.0, 0.0, 2.0],
 		"dir": [0.0, 0.0, -1.0],
 		"up": [0.0, 1.0, 0.0],
 		"fov": 90
@@ -70,34 +70,18 @@
 		},
 		{
 			"type": "MESH",
-			"path": "./obj/cat.obj",
-			"material": "Checkerboard2"
+			"path": "./obj/suzanne.obj",
+			"material": "Brick"
 		}
 	],
 	"lights": [
 		{
-			"type": "DIRECTIONAL",
-			"direction": [ 0.0, -1.0, -0.5 ],
-			"color": [ 1.0, 1.0, 1.0 ],
-			"intensity": 1.6
-		},
-		{
-			"type": "POINT",
-			"position": [ 0.0, 2.40, 0.87 ],
-			"color": [ 1.0, 1.0, 1.0 ],
-			"intensity": 1
-		},
-		{
-			"type": "POINT",
-			"position": [ -6, 2.40, 0.87 ],
-			"color": [ 1.0, 1.0, 1.0 ],
-			"intensity": 1
-		},
-		{
-			"type": "POINT",
-			"position": [ 6, 2.70, 0.87 ],
-			"color": [ 1.0, 1.0, 1.0 ],
-			"intensity": 1
+			"type": "SPOT",
+			"position": [0.0, 3.0, 2.7],
+			"direction": [ 0.0, -1.0, 0.5 ],
+			"cutoffAngle": 80,
+			"color": [ 0.7, 0.7, 1.0 ],
+			"intensity": 12.0
 		}
 	]
 }
