@@ -228,7 +228,10 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 		float yCoord(hit.at("y"));
 		primitive = std::make_shared<ZXRect>(yCoord, size, material->second);
 	} else if(type == "MESH"){
-		primitive = nullptr;
+		if(hit.contains("path")) {
+			std::filesystem::path p = hit.at("path");
+			primitive = parseMesh(p, material->second);
+		}
 	} else{
 		throw std::invalid_argument("Hittable doesn't name a valid type");
 	}
