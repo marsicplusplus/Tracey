@@ -34,7 +34,7 @@ class Sphere : public Hittable {
 					rec.p = transform * glm::vec4(localp, 1.0f);
 					rec.material = mat;
 					glm::fvec3 normal = (localp) / radius;
-					auto transformedNormal = transform * glm::dvec4(normal, 0);
+					auto transformedNormal = transposeInv * glm::dvec4(normal, 0);
 					rec.setFaceNormal(ray, transformedNormal);
 					getUV(rec);
 					return true;

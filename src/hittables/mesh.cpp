@@ -49,7 +49,7 @@ bool Mesh::intersectTri(const Triangle &tri, const Ray &transformedRay, const Ra
 				const glm::fvec3 &n2 = this->norm[tri.normal.z];
 				hitNormal = u * n1 + v * n2 + (1.0f - u - v) * n0;
 			}
-			hitNormal = glm::transpose(transform) * glm::fvec4(hitNormal, 0.0);
+			hitNormal = transposeInv * glm::fvec4(hitNormal, 0.0);
 			rec.setFaceNormal(ray, hitNormal);
 
 			glm::fvec2 uv;

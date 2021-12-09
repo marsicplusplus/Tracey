@@ -82,7 +82,7 @@ public:
 			rec.t = minRealRoot;
 			rec.p = transform * glm::fvec4(localp, 1);
 			rec.material = mat;
-			auto transformedNormal = transform * glm::fvec4(normal, 0);
+			auto transformedNormal = transposeInv * glm::fvec4(normal, 0);
 			rec.setFaceNormal(ray, glm::normalize(transformedNormal));
 			getUV(rec,localp);
 			return true;
