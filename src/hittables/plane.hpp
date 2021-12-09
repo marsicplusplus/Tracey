@@ -60,7 +60,7 @@ class ZXRect : public Hittable {
 			auto localp = transformedRay.at(t);
 			if(localp.x < -0.5f || localp.x > 0.5f || localp.z < -0.5f || localp.z > 0.5f) return false;
 			rec.t = t;
-			rec.p = transform * glm::fvec4(localp, 1.0);
+			rec.p = transposeInv * glm::fvec4(localp, 1.0);
 			rec.setFaceNormal(ray, glm::normalize(transform * glm::fvec4(0.0f, 1.0f, 0.0f, 0.0f)));
 			rec.material = mat;
 			getUV(rec, localp);
