@@ -54,7 +54,7 @@ class ZXRect : public Hittable {
 			const auto transformedRay = ray.transformRay(transformInv);
 			const auto transformedRayDir = transformedRay.getDirection();
 			const auto transformedOrigin = transformedRay.getOrigin();
-	
+
 			float t = (pos - transformedOrigin.y)/static_cast<float>(transformedRayDir.y);
 			if(t < tMin || t > tMax) return false;
 			auto localp = transformedRay.at(t);

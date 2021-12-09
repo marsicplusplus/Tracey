@@ -29,7 +29,7 @@ class Mesh : public Hittable {
 		std::vector<glm::fvec2> uvs;
 		std::vector<Triangle> tris;
 
-		bool intersectTri(const Triangle &tri, const Ray& ray, HitRecord &rec, float tMin, float tMax) const;
+		bool intersectTri(const Triangle &tri,const Ray& transformedRay, const Ray& ray, HitRecord &rec, float tMin, float tMax) const;
 };
 
 #endif
