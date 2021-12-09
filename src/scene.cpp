@@ -48,8 +48,38 @@ std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, int mat)
 	std::vector<glm::fvec3> norm;
 	std::vector<glm::fvec2> uv;
 	std::vector<Triangle> triangles;
+	
+	float minX = INFINITY, minY = INFINITY, minZ = INFINITY, maxX = -INFINITY, maxY = -INFINITY, maxZ = -INFINITY;
 
 	for(size_t i = 0; i < attrib.vertices.size(); i+=3) {
+		auto xVal = attrib.vertices[i];
+		auto yVal = attrib.vertices[i+1];
+		auto zVal = attrib.vertices[i+2];
+
+		if (xVal < minX) {
+			minX = xVal;
+		}
+
+		if (yVal < minY) {
+			minY = yVal;
+		}
+
+		if (zVal < minZ) {
+			minZ = zVal;
+		}
+
+		if (xVal > maxX) {
+			maxX = xVal;
+		}
+
+		if (yVal > maxY) {
+			maxY = yVal;
+		}
+
+		if (zVal > maxZ) {
+			maxZ = zVal;
+		}
+
 		pos.push_back(glm::fvec3{
 				attrib.vertices[i],
 				attrib.vertices[i+1],
@@ -82,7 +112,9 @@ std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, int mat)
 					));
 		}
 	}
-	return std::make_shared<Mesh>(pos, norm, uv, triangles);
+
+	AABB bbox(minX, minY, minZ, maxX, maxY, maxZ);
+	return std::make_shared<Mesh>(pos, norm, uv, triangles, bbox);
 }
 
 void Scene::parseTransform(nlohmann::basic_json<> &hit, HittablePtr& primitive) const {
@@ -152,7 +184,7 @@ bool Scene::traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) con
 	float closest = tMax;
 
 	for (const auto& object : this->hittables) {
-		if (object->hit(ray, tMin, closest, tmp)) {
+		if (object->hitSelf(ray, tMin, closest, tmp)) {
 			hasHit = true;
 			closest = tmp.t;
 			rec = tmp;
