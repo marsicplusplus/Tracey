@@ -21,11 +21,11 @@ public:
 		bbox = AABB(-xzBounds, -yBound, -xzBounds, xzBounds, yBound, xzBounds);
 	}
 
-	inline bool hitSelf(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override {
+	inline bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override {
 
 		const auto transformedRay = ray.transformRay(transformInv);
 
-		if (!hitAABB(transformedRay, bbox)) {
+		if (!hitAABB(transformedRay)) {
 			return false;
 		}
 
@@ -108,7 +108,6 @@ private:
 	float radiusMajorSquared;// Distance from center of tube to center of torus
 	float radiusMinorSquared;// Radius of the Tube
 	int mat;
-	AABB bbox;
 };
 
 #endif

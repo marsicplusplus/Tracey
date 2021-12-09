@@ -24,66 +24,68 @@ public:
 
 class Hittable {
 public:
-	Hittable() : transform{ glm::fmat4x4(1.0) }, transformInv{ glm::fmat4x4(1.0) }, transposeInv{ glm::fmat4x4(1.0) } {}
+	Hittable(AABB aabb = AABB{0,0,0,0,0,0}) : bbox{aabb}, transform{ glm::fmat4x4(1.0) }, transformInv{ glm::fmat4x4(1.0) }, transposeInv{ glm::fmat4x4(1.0) } {}
 
-		virtual bool hitSelf(const Ray& ray, float tMin, float tMax, HitRecord& rec) const = 0;
-		virtual bool hitAABB(const Ray& ray, AABB bbox) const {
-			float tmin = -INFINITY, tmax = INFINITY;
-			auto origin = ray.getOrigin();
-			auto rayDirInv = ray.getInverseDirection();
+	virtual bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const = 0;
 
-			float tx1 = (bbox.minX - origin.x) * rayDirInv.x;
-			float tx2 = (bbox.maxX - origin.x) * rayDirInv.x;
+	virtual bool hitAABB(const Ray& ray) const {
+		float tmin = -INFINITY, tmax = INFINITY;
+		auto origin = ray.getOrigin();
+		auto rayDirInv = ray.getInverseDirection();
 
-			tmin = max(tmin, min(tx1, tx2));
-			tmax = min(tmax, max(tx1, tx2));
+		float tx1 = (bbox.minX - origin.x) * rayDirInv.x;
+		float tx2 = (bbox.maxX - origin.x) * rayDirInv.x;
 
-			float ty1 = (bbox.minY - origin.y) * rayDirInv.y;
-			float ty2 = (bbox.maxY - origin.y) * rayDirInv.y;
+		tmin = max(tmin, min(tx1, tx2));
+		tmax = min(tmax, max(tx1, tx2));
 
-			tmin = max(tmin, min(ty1, ty2));
-			tmax = min(tmax, max(ty1, ty2));
+		float ty1 = (bbox.minY - origin.y) * rayDirInv.y;
+		float ty2 = (bbox.maxY - origin.y) * rayDirInv.y;
 
-			float tz1 = (bbox.minZ - origin.z) * rayDirInv.z;
-			float tz2 = (bbox.maxZ - origin.z) * rayDirInv.z;
+		tmin = max(tmin, min(ty1, ty2));
+		tmax = min(tmax, max(ty1, ty2));
 
-			tmin = max(tmin, min(tz1, tz2));
-			tmax = min(tmax, max(tz1, tz2));
+		float tz1 = (bbox.minZ - origin.z) * rayDirInv.z;
+		float tz2 = (bbox.maxZ - origin.z) * rayDirInv.z;
 
-			return (tmax > max(tmin, 0.0f));
-		}
+		tmin = max(tmin, min(tz1, tz2));
+		tmax = min(tmax, max(tz1, tz2));
 
-		inline void translate(glm::fvec3 t){
-			transform = glm::translate(transform, t);
-			transformInv = glm::inverse(transform);
-			updateTranspose();
-		}
-		inline void scale(glm::fvec3 s){
-			transform = glm::scale(transform, s);
-			transformInv = glm::inverse(transform);
-			updateTranspose();
-		}
-		inline void scale(float s){
-			transform = glm::scale(transform, glm::fvec3(s,s,s));
-			transformInv = glm::inverse(transform);
-			updateTranspose();
-		}
-		inline void rotate(float t, glm::fvec3 a){
-			transform = glm::rotate(transform, t, a);
-			transformInv = glm::inverse(transform);
-			updateTranspose();
-		}
+		return (tmax > max(tmin, 0.0f));
+	}
+
+	inline void translate(glm::fvec3 t){
+		transform = glm::translate(transform, t);
+		transformInv = glm::inverse(transform);
+		updateTranspose();
+	}
+	inline void scale(glm::fvec3 s){
+		transform = glm::scale(transform, s);
+		transformInv = glm::inverse(transform);
+		updateTranspose();
+	}
+	inline void scale(float s){
+		transform = glm::scale(transform, glm::fvec3(s,s,s));
+		transformInv = glm::inverse(transform);
+		updateTranspose();
+	}
+	inline void rotate(float t, glm::fvec3 a){
+		transform = glm::rotate(transform, t, a);
+		transformInv = glm::inverse(transform);
+		updateTranspose();
+	}
 
 private:
-		inline void updateTranspose() {
-			transposeInv = glm::transpose(transformInv);
-		}
+	inline void updateTranspose() {
+		transposeInv = glm::transpose(transformInv);
+	}
 
-	protected:
-		glm::fvec3 position;
-		glm::fmat4x4 transformInv;
-		glm::fmat4x4 transform;
-		glm::fmat4x4 transposeInv;
+protected:
+	glm::fvec3 position;
+	glm::fmat4x4 transformInv;
+	glm::fmat4x4 transform;
+	glm::fmat4x4 transposeInv;
+	AABB bbox;
 };
 
 typedef std::shared_ptr<Hittable> HittablePtr;

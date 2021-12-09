@@ -8,11 +8,11 @@
 
 class Sphere : public Hittable {
 	public:
-		Sphere(float r, int mat) : radius{r}, radiusSquared{r * r}, mat{mat}, bbox{-radius, -radius, -radius, radius, radius, radius} {}
-		inline bool hitSelf(const Ray &ray, float tMin, float tMax, HitRecord &rec) const override {
+		Sphere(float r, int mat) : Hittable{{-r, -r, -r, r, r, r}}, radius{r}, radiusSquared{r * r}, mat{mat} {}
+		inline bool hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const override {
 			const auto transformedRay = ray.transformRay(transformInv);
 
-			if (!hitAABB(transformedRay, bbox)) {
+			if (!hitAABB(transformedRay)) {
 				return false;
 			}
 
@@ -59,7 +59,6 @@ inline void getUV(HitRecord &rec) const {
 		float radius;
 		float radiusSquared;
 		int mat;
-		AABB bbox;
 };
 
 #endif

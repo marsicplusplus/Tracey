@@ -1,12 +1,12 @@
 #include "hittables/mesh.hpp"
 #include <iostream>
 
-bool Mesh::hitSelf(const Ray &ray, float tMin, float tMax, HitRecord &rec) const {
+bool Mesh::hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const {
 	bool ret = false;
 	float closest = tMax;
 	const Ray transformedRay = ray.transformRay(transformInv);
 
-	if (!hitAABB(transformedRay, bbox)) {
+	if (!hitAABB(transformedRay)) {
 		return false;
 	}
 

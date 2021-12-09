@@ -49,7 +49,7 @@ std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, int mat)
 	std::vector<glm::fvec2> uv;
 	std::vector<Triangle> triangles;
 	
-	float minX = INFINITY, minY = INFINITY, minZ = INFINITY, maxX = -INFINITY, maxY = -INFINITY, maxZ = -INFINITY;
+	float minX = INF, minY = INF, minZ = INF, maxX = -INF, maxY = -INF, maxZ = -INF;
 
 	for(size_t i = 0; i < attrib.vertices.size(); i+=3) {
 		auto xVal = attrib.vertices[i];
@@ -184,7 +184,7 @@ bool Scene::traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) con
 	float closest = tMax;
 
 	for (const auto& object : this->hittables) {
-		if (object->hitSelf(ray, tMin, closest, tmp)) {
+		if (object->hit(ray, tMin, closest, tmp)) {
 			hasHit = true;
 			closest = tmp.t;
 			rec = tmp;
