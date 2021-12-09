@@ -4,8 +4,9 @@
 bool Mesh::hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const {
 	bool ret = false;
 	float closest = tMax;
+	const Ray transformedRay = ray.transformRay(transformInv);
 	for(auto &tri : this->tris){
-		if(intersectTri(tri, ray, rec, tMin, closest)){
+		if(intersectTri(tri, transformedRay, ray, rec, tMin, closest)){
 			closest = rec.t;
 			ret = true;
 		}
@@ -13,31 +14,31 @@ bool Mesh::hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const {
 	return ret;
 }
 
-bool Mesh::intersectTri(const Triangle &tri, const Ray &ray, HitRecord &rec, float tMin, float tMax) const {
+bool Mesh::intersectTri(const Triangle &tri, const Ray &transformedRay, const Ray &ray, HitRecord &rec, float tMin, float tMax) const {
 		const glm::fvec3 &v0 = this->pos[tri.face.x];
 		const glm::fvec3 &v1 = this->pos[tri.face.y];
 		const glm::fvec3 &v2 = this->pos[tri.face.z];
 
 		glm::fvec3 v0v1 = v1 - v0;
 		glm::fvec3 v0v2 = v2 - v0;
-		glm::fvec3 p = glm::cross(ray.getDirection(), v0v2);
+		glm::fvec3 p = glm::cross(transformedRay.getDirection(), v0v2);
 		float det = glm::dot(v0v1, p);
 		if(std::fabs(det) < 0.00001f) return false;
 		float inv = 1.0f/det;
 
-		glm::fvec3 tv = ray.getOrigin() - v0;
+		glm::fvec3 tv = transformedRay.getOrigin() - v0;
 		float u = glm::dot(tv, p) * inv;
 		if(u < 0.0f || u > 1.0f) return false;
 
 		glm::fvec3 q = glm::cross(tv, v0v1);
-		float v = glm::dot(ray.getDirection(), q) * inv;
+		float v = glm::dot(transformedRay.getDirection(), q) * inv;
 		if(v < 0.0f || u + v > 1.0f) return false;
 		float tmp = glm::dot(v0v2, q) * inv;
 		if(tmp < 0.0f) return false;
 
 		if(tmp > tMin && tmp < tMax){
 			rec.t = tmp;
-			rec.p = ray.at(tmp);
+			auto localp = transformedRay.at(tmp);
 
 			glm::fvec3 hitNormal;
 			if(tri.normal.x == -1 || tri.normal.y == -1 || tri.normal.z == -1)
@@ -48,7 +49,8 @@ bool Mesh::intersectTri(const Triangle &tri, const Ray &ray, HitRecord &rec, flo
 				const glm::fvec3 &n2 = this->norm[tri.normal.z];
 				hitNormal = u * n1 + v * n2 + (1.0f - u - v) * n0;
 			}
-			rec.setFaceNormal(ray, (hitNormal));
+			hitNormal = glm::transpose(transform) * glm::fvec4(hitNormal, 0.0);
+			rec.setFaceNormal(ray, hitNormal);
 
 			glm::fvec2 uv;
 			if(tri.texture.x == -1 || tri.texture.y == -1 || tri.texture.z == -1){
@@ -63,6 +65,7 @@ bool Mesh::intersectTri(const Triangle &tri, const Ray &ray, HitRecord &rec, flo
 			rec.u = uv.x;
 			rec.v = uv.y;
 			rec.material = tri.mat;
+			rec.p = transform * glm::fvec4(localp, 1.0);
 
 			return true;
 		}

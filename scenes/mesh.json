@@ -1,6 +1,6 @@
 {
 	"camera" : {
-		"position": [0.0, 0.0, 2.0],
+		"position": [0.0, 0.0, 4.0],
 		"dir": [0.0, 0.0, -1.0],
 		"up": [0.0, 1.0, 0.0],
 		"fov": 90
@@ -71,7 +71,10 @@
 		{
 			"type": "MESH",
 			"path": "./obj/suzanne.obj",
-			"material": "Brick"
+			"transform": {
+				"scale": 2
+			},
+			"material": "Glass"
 		}
 	],
 	"lights": [
