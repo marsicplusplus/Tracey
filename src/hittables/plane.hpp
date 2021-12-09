@@ -17,7 +17,7 @@ class Plane : public Hittable {
 			uAxis = (glm::dot(maxAB, maxAB) < glm::dot(c, c)) ? c : maxAB;
 			vAxis  = glm::cross(norm, uAxis);
 		}
-		inline bool hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const override {
+		inline bool hitSelf(const Ray &ray, float tMin, float tMax, HitRecord &rec) const override {
 			float d = glm::dot(this->norm, ray.getDirection());
 			if(std::abs(d) > 1e-6){
 				glm::fvec3 p = pos - ray.getOrigin();
@@ -50,7 +50,7 @@ class Plane : public Hittable {
 class ZXRect : public Hittable {
 	public:
 		ZXRect(int mat) : mat{mat} {}
-		inline bool hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const override {
+		inline bool hitSelf(const Ray &ray, float tMin, float tMax, HitRecord &rec) const override {
 			const auto transformedRay = ray.transformRay(transformInv);
 			const auto transformedRayDir = transformedRay.getDirection();
 			const auto transformedOrigin = transformedRay.getOrigin();

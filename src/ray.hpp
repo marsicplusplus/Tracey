@@ -13,10 +13,12 @@ class Ray{
 			}
 
 			direction = _direction;
+			directionInv = 1.0f / direction;
 		};
 
 		inline glm::fvec3 getOrigin() const {return origin; }
-		inline glm::fvec3 getDirection() const {return direction; }
+		inline glm::fvec3 getDirection() const { return direction; }
+		inline glm::fvec3 getInverseDirection() const {return directionInv; }
 		inline glm::fvec3 at(float t) const {
 			return this->origin + t * this->direction;
 		};
@@ -35,6 +37,7 @@ class Ray{
 	private:
 		glm::fvec3 origin;
 		glm::fvec3 direction;
+		glm::fvec3 directionInv;
 		float currentRefraction;
 };
 

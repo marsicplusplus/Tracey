@@ -11,20 +11,27 @@
 class Torus : public Hittable {
 public:
 	Torus(float _radiusMajor, float _radiusMinor, int mat) : Hittable(), mat{mat} {
-		//if (_radiusMinor > _radiusMajor) {
-		//	auto tmp = _radiusMajor;
-		//	_radiusMajor = _radiusMinor;
-		//	_radiusMinor = tmp;
-		//}
+
 		radiusMajor = _radiusMajor;
 		radiusMajorSquared = _radiusMajor * _radiusMajor;
 		radiusMinorSquared = _radiusMinor * _radiusMinor;
+
+		auto xzBounds = _radiusMinor + _radiusMajor;
+		auto yBound = 2.0f * _radiusMinor;
+		bbox = AABB(-xzBounds, -yBound, -xzBounds, xzBounds, yBound, xzBounds);
 	}
 
-	inline bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override {
+	inline bool hitSelf(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override {
+
 		const auto transformedRay = ray.transformRay(transformInv);
+
+		if (!hitAABB(transformedRay, bbox)) {
+			return false;
+		}
+
 		const auto transformedRayDir = transformedRay.getDirection();
 		const auto transformedOrigin = transformedRay.getOrigin();
+
 
 		float rayDirDot = glm::dot(transformedRayDir, transformedRayDir);
 		float originDot = glm::dot(transformedOrigin, transformedOrigin);
@@ -101,6 +108,7 @@ private:
 	float radiusMajorSquared;// Distance from center of tube to center of torus
 	float radiusMinorSquared;// Radius of the Tube
 	int mat;
+	AABB bbox;
 };
 
 #endif
