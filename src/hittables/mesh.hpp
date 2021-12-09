@@ -20,15 +20,14 @@ struct Triangle {
 
 class Mesh : public Hittable {
 	public:
-		Mesh(std::vector<glm::fvec3> &p, std::vector<glm::fvec3> &n, std::vector<glm::fvec2> &t, std::vector<Triangle> &triangles, AABB box) : pos{p}, norm{n}, uvs{t}, tris{triangles}, bbox{box} {};
-		bool hitSelf(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
+		Mesh(std::vector<glm::fvec3> &p, std::vector<glm::fvec3> &n, std::vector<glm::fvec2> &t, std::vector<Triangle> &triangles, AABB box) : Hittable{box}, pos{p}, norm{n}, uvs{t}, tris{triangles} {};
+		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
 
 	private:
 		std::vector<glm::fvec3> pos;
 		std::vector<glm::fvec3> norm;
 		std::vector<glm::fvec2> uvs;
 		std::vector<Triangle> tris;
-		AABB bbox;
 
 		bool intersectTri(const Triangle &tri,const Ray& transformedRay, const Ray& ray, HitRecord &rec, float tMin, float tMax) const;
 };
