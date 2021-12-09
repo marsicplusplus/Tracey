@@ -66,7 +66,10 @@ class OptionsMap{
 			opts[Options::THREADS] = 1;
 		};
 
-		~OptionsMap(){};
+		~OptionsMap(){
+			opts.clear();
+			delete instance;
+		};
 
 		static OptionsMap* instance;
 };

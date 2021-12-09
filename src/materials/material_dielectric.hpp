@@ -9,11 +9,11 @@
 class DielectricMaterial : public Material {
 
 	public: 
-		DielectricMaterial(Color color, float _ior = 1.0f, Color _absorption = Color(0, 0, 0)) : ior{_ior}, absorption{_absorption}{
+		DielectricMaterial(Color color, std::string name, float _ior = 1.0f, Color _absorption = Color(0, 0, 0)) : Material{name}, ior{_ior}, absorption{_absorption}{
 			albedo = std::make_shared<SolidColor>(color);
 		}
 
-		DielectricMaterial(std::shared_ptr<Texture> t, float _ior = 1.0f, Color _absorption = Color(0, 0, 0)) : ior{_ior}, absorption{_absorption}{
+		DielectricMaterial(std::shared_ptr<Texture> t, std::string name, float _ior = 1.0f, Color _absorption = Color(0, 0, 0)) : Material{name}, ior{_ior}, absorption{_absorption}{
 			albedo = t;
 		}
 

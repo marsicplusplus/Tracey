@@ -10,7 +10,7 @@
 
 class Torus : public Hittable {
 public:
-	Torus(float _radiusMajor, float _radiusMinor, MaterialPtr mat) : mat{mat} {
+	Torus(float _radiusMajor, float _radiusMinor, int mat) : Hittable(), mat{mat} {
 		//if (_radiusMinor > _radiusMajor) {
 		//	auto tmp = _radiusMajor;
 		//	_radiusMajor = _radiusMinor;
@@ -82,7 +82,7 @@ public:
 			rec.t = minRealRoot;
 			rec.p = transform * glm::fvec4(localp, 1);
 			rec.material = mat;
-			auto transformedNormal = glm::transpose(transform) * glm::fvec4(normal, 0);
+			auto transformedNormal = transform * glm::fvec4(normal, 0);
 			rec.setFaceNormal(ray, glm::normalize(transformedNormal));
 			getUV(rec,localp);
 			return true;
@@ -100,7 +100,7 @@ private:
 	float radiusMajor;// Distance from center of tube to center of torus
 	float radiusMajorSquared;// Distance from center of tube to center of torus
 	float radiusMinorSquared;// Radius of the Tube
-	MaterialPtr mat;
+	int mat;
 };
 
 #endif

@@ -21,13 +21,13 @@ typedef glm::fvec3 Color;
 class Material;
 
 struct HitRecord {
-	glm::fvec3 p;
-	glm::fvec3 normal;
-	float t;
 	bool frontFace;
-	std::shared_ptr<Material> material;
+	int material;
 	float u;
 	float v;
+	float t;
+	glm::fvec3 p;
+	glm::fvec3 normal;
 
 	inline void setFaceNormal(const Ray& r, const glm::fvec3& outNormal) {
 		frontFace = dot(r.getDirection(), outNormal) < 0;

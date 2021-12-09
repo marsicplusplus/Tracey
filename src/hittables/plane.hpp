@@ -9,7 +9,7 @@
 
 class Plane : public Hittable {
 	public:
-		Plane(glm::fvec3 pos, glm::fvec3 norm, MaterialPtr mat) : pos{pos}, norm{norm}, mat{mat} {
+		Plane(glm::fvec3 pos, glm::fvec3 norm, int mat) : pos{pos}, norm{norm}, mat{mat} {
 			glm::fvec3 a = cross(norm, glm::fvec3(1, 0, 0));
 			glm::fvec3 b = cross(norm, glm::fvec3(0, 1, 0));
 			glm::fvec3 maxAB = glm::dot(a, a) < glm::dot(b, b) ? b : a;
@@ -44,35 +44,37 @@ class Plane : public Hittable {
 		glm::fvec3 uAxis;
 		glm::fvec3 vAxis;
 		glm::fvec3 norm;
-		MaterialPtr mat;
+		int mat;
 };
 
 class ZXRect : public Hittable {
 	public:
-		ZXRect(float y, glm::fvec4 size, MaterialPtr mat) : pos{y}, size{size}, mat{mat} {}
+		ZXRect(int mat) : mat{mat} {}
 		inline bool hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const override {
-			float t = (pos - ray.getOrigin().y)/static_cast<float>(ray.getDirection().y);
+			const auto transformedRay = ray.transformRay(transformInv);
+			const auto transformedRayDir = transformedRay.getDirection();
+			const auto transformedOrigin = transformedRay.getOrigin();
+	
+			float t = (pos - transformedOrigin.y)/static_cast<float>(transformedRayDir.y);
 			if(t < tMin || t > tMax) return false;
-			float x = ray.getOrigin().x + t * ray.getDirection().x;
-			float z = ray.getOrigin().z + t * ray.getDirection().z;
-			if(x < size.x || x > size.y || z < size.z || z > size.w) return false;
+			auto localp = transformedRay.at(t);
+			if(localp.x < -0.5f || localp.x > 0.5f || localp.z < -0.5f || localp.z > 0.5f) return false;
 			rec.t = t;
-			rec.setFaceNormal(ray, glm::fvec3(0.0f, 1.0f, 0.0f));
+			rec.p = transform * glm::fvec4(localp, 1.0);
+			rec.setFaceNormal(ray, glm::normalize(transform * glm::fvec4(0.0f, 1.0f, 0.0f, 0.0f)));
 			rec.material = mat;
-			rec.p = ray.at(t);
-			getUV(rec);
+			getUV(rec, localp);
 			return true;
 		}
 
-		inline void getUV(HitRecord &rec) const {
-			rec.u = (rec.p.x - size.x)/static_cast<float>(size.y - size.x);
-			rec.v = (rec.p.z - size.z)/static_cast<float>(size.z - size.w);
+		inline void getUV(HitRecord &rec, glm::fvec3 p) const {
+			rec.u = (p.x + 0.5f);
+			rec.v = -(p.z + 0.5);
 		}
 
 	private:
 		float pos;
-		glm::fvec4 size;
-		MaterialPtr mat;
+		int mat;
 };
 
 #endif
