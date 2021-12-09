@@ -29,7 +29,7 @@ static glm::fvec4 parseVec4(nlohmann::basic_json<> &arr){
 	return glm::fvec4(arr[0].get<float>(), arr[1].get<float>(),arr[2].get<float>(), arr[3].get<float>());
 }
 
-std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, std::shared_ptr<Material> mat) const {
+std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, int mat) const {
 	tinyobj::ObjReaderConfig reader_config;
 	reader_config.triangulate = true;
 	reader_config.mtl_search_path = path.parent_path().string(); // Path to material files
@@ -120,8 +120,8 @@ Scene::Scene(std::filesystem::path sceneFile){
 	}
 	for(auto m : j["materials"]){
 		auto mat = parseMaterial(m);
-		if (mat.second){
-			materials.insert(mat);
+		if (mat){
+			materials.push_back(mat);
 		}
 	}
 	for(auto p : j["primitives"]){
@@ -165,7 +165,7 @@ void Scene::setCamera(CameraPtr camera){
 	this->currentCamera = camera;
 }
 
-CameraPtr Scene::getCamera() const {
+const CameraPtr Scene::getCamera() const {
 	return this->currentCamera;
 }
 
@@ -204,33 +204,30 @@ CameraPtr Scene::parseCamera(nlohmann::json &cam) const {
 std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 	if(!hit.contains("type")) throw std::invalid_argument("Hittable doesn't name a type");
 	std::string type = hit.at("type");
-	if(!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
-	auto material = materials.find(hit.at("material"));
-	if(material == materials.end()) throw std::invalid_argument("Hittable doesn't name a valid material");
-	std::shared_ptr<Hittable> primitive = nullptr;
+	if (!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
+	std::string matName = hit.at("material");
+	int materialIdx = findMaterial(matName);
+	if (materialIdx == -1) throw std::invalid_argument("Hittable doesn't name a valid material");
+	std::shared_ptr<Hittable> primitive;
 	if(type == "PLANE"){
 		glm::fvec3 pos(parseVec3(hit["position"]));
 		if(!hit.contains("normal")) throw std::invalid_argument("Plane doesn't specify a normal");
 		glm::fvec3 norm(parseVec3(hit.at("normal")));
-		primitive = (std::make_shared<Plane>(pos, norm, material->second));
+		primitive = (std::make_shared<Plane>(pos, norm, materialIdx));
 	} else if(type == "SPHERE"){
 		float radius = (hit.contains("radius")) ? hit["radius"].get<float>() : 0.5;
-		primitive = (std::make_shared<Sphere>(radius, material->second));
+		primitive = (std::make_shared<Sphere>(radius, materialIdx));
 
 	} else if (type == "TORUS"){
 		float radiusMajor = (hit.contains("radiusMajor")) ? hit["radiusMajor"].get<float>() : 0.5;
 		float radiusMinor = (hit.contains("radiusMinor")) ? hit["radiusMinor"].get<float>() : 0.1;
-		primitive = (std::make_shared<Torus>(radiusMajor, radiusMinor, material->second));
+		primitive = (std::make_shared<Torus>(radiusMajor, radiusMinor, materialIdx));
 	} else if(type == "ZXRect"){
-		if(!hit.contains("size")) throw std::invalid_argument("ZXRect doesn't specify a correct size [x0, x1, z0, z1]");
-		glm::dvec4 size(parseVec4(hit.at("size")));
-		if(!hit.contains("y")) throw std::invalid_argument("ZXRect doesn't specify a correct y");
-		float yCoord(hit.at("y"));
-		primitive = std::make_shared<ZXRect>(yCoord, size, material->second);
+		primitive = std::make_shared<ZXRect>(materialIdx);
 	} else if(type == "MESH"){
 		if(hit.contains("path")) {
 			std::filesystem::path p = hit.at("path");
-			primitive = parseMesh(p, material->second);
+			primitive = parseMesh(p, materialIdx);
 		}
 	} else{
 		throw std::invalid_argument("Hittable doesn't name a valid type");
@@ -261,10 +258,10 @@ std::shared_ptr<LightObject> Scene::parseLight(nlohmann::json &l) const{
 	}
 }
 
-std::pair<std::string, std::shared_ptr<Material>> Scene::parseMaterial(nlohmann::json &m) const {
-	std::pair<std::string, std::shared_ptr<Material>> mat;
+std::shared_ptr<Material> Scene::parseMaterial(nlohmann::json &m) const {
+	std::shared_ptr<Material> mat;
 	if(!m.contains("name")) throw std::invalid_argument("Material is missing name");
-	mat.first = m.at("name");
+	std::string name = m.at("name");
 	if(!m.contains("type")) throw std::invalid_argument("Material is missing type");
 	std::string type = m.at("type");
 	if(!m.contains("texture")) throw std::invalid_argument("Material is missing texture");
@@ -272,15 +269,15 @@ std::pair<std::string, std::shared_ptr<Material>> Scene::parseMaterial(nlohmann:
 	auto texture = textures.find(textname);
 	if(texture == textures.end()) throw std::invalid_argument("Material doesn't name a valid texture");
 	if(type == "DIFFUSE"){
-		mat.second = std::make_shared<DiffuseMaterial>(texture->second);
+		mat = std::make_shared<DiffuseMaterial>(texture->second, name);
 	} else if(type == "MIRROR") {
 		float ref = m.contains("reflect") ? m["reflect"].get<float>() : 1.0f;
-		mat.second = std::make_shared<MirrorMaterial>(texture->second, ref);
+		mat = std::make_shared<MirrorMaterial>(texture->second, name, ref);
 	}
 	else if (type == "DIELECTRIC") {
 		float ior = (m.contains("ior")) ? (float)m.at("ior") : 1.0;
 		Color absorption = m.contains("absorption") ? parseVec3(m.at("absorption")) : Color(1.0,1.0,1.0);
-		mat.second = std::make_shared<DielectricMaterial>(texture->second, ior, absorption);
+		mat = std::make_shared<DielectricMaterial>(texture->second, name, ior, absorption);
 	}
 	return mat;
 }
@@ -311,4 +308,19 @@ std::pair<std::string, std::shared_ptr<Texture>> Scene::parseTexture(nlohmann::j
 			throw std::invalid_argument("Image Texture doesn't contains a valid path");
 	}
 	return texture;
+}
+
+int Scene::findMaterial(std::string &name) const {
+	size_t i = 0;
+	while(i < materials.size()){
+		if(materials[i]->getName() == name) return i;
+		++i;
+	}
+	return -1;
+}
+
+const MaterialPtr Scene::getMaterial(int idx) const {
+	if(idx > materials.size())
+		return nullptr;
+	else return materials[idx];
 }

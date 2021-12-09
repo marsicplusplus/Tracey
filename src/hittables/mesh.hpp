@@ -9,12 +9,12 @@
 
 struct Triangle {
 	public:
-		Triangle(glm::ivec3 fIdx, glm::ivec3 nIdx, glm::ivec3 tIdx, MaterialPtr m) : face{fIdx}, normal{nIdx}, texture{tIdx}, mat{m} {}
+		Triangle(glm::ivec3 fIdx, glm::ivec3 nIdx, glm::ivec3 tIdx, int m) : face{fIdx}, normal{nIdx}, texture{tIdx}, mat{m} {}
 
 		glm::ivec3 face;
 		glm::ivec3 normal;
 		glm::ivec3 texture;
-		MaterialPtr mat;
+		int mat;
 };
 
 

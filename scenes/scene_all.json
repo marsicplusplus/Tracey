@@ -130,22 +130,25 @@
 		},
 		{
 			"type": "ZXRect",
-			"y": 0.5,
-			"size": [-0.3, 0.3, -0.2, 0.2],
-			"material": "WhiteMirror"
+			"transform": {
+				"rotation": [90, 0, 0],
+				"translation": [0.0, 0.5, -1.6],
+				"scale": [1.2, 1, 1]
+			},
+			"material": "BrickSurface"
 		},
 		{
 			"type": "SPHERE",
 			"transform":{
 				"translation": [-1.0, 0.0, -0.6]
 			},
-			"radius": 0.4,
+			"radius": 0.5,
 			"material": "Glass"
 		},
 		{
 			"type": "SPHERE",
 			"transform":{
-				"translation": [0.0, -0.3, -0.5]
+				"translation": [0.0, 0.0, -0.5]
 			},
 			"radius": 0.2,
 			"material": "EarthSurface"
