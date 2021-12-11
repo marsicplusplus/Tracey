@@ -14,7 +14,7 @@ struct BVHNode {
 
 class BVH {
 	public:
-		BVH(std::vector<Hittable> &h);
+		BVH(std::vector<HittablePtr> &h);
 		~BVH();
 
 		void construct();
@@ -23,7 +23,7 @@ class BVH {
 		bool subdivide(BVHNode *node);
 		bool computeBounding(BVHNode *node);
 
-		std::vector<Hittable> &hittables;
+		std::vector<HittablePtr> &hittables;
 		std::vector<int> hittableIdxs;
 
 		BVHNode *nodePool;
