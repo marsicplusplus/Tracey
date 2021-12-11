@@ -1,8 +1,8 @@
 #include "bvh.hpp"
+#include "defs.hpp"
 
-BVH::BVH(std::vector<Hittable> &h) : hittables(h) {
-	this->nodePool = new BVHNode[h.size() * 2 - 1];
-	this->poolPtr = 0;
+BVH::BVH(std::vector<HittablePtr> &h) : hittables(h) {
+	this->nodePool = new BVHNode[h.size() * 2];
 }
 
 BVH::~BVH(){
@@ -14,15 +14,27 @@ void BVH::construct(){
 		this->hittableIdxs.push_back(i);
 	}
 	
-	this->root = &this->nodePool[poolPtr++];
+	this->root = &this->nodePool[0];
+	this->root->leftFirst = 0;
 	this->root->count = this->hittableIdxs.size();
+	this->poolPtr = 2;
 	computeBounding(root);
 	subdivide(root);
 }
 
 bool BVH::computeBounding(BVHNode *node) {
 	if(node == nullptr) return false;
-
+	node->aabb = AABB{INF,INF,INF,-INF,-INF,-INF};
+	for(size_t i = node->leftFirst; i < node->leftFirst + node->count; ++i){
+		auto prim = hittables[hittableIdxs[i]];
+		AABB aabb = prim->getAABB();
+		node->aabb.minX = min(aabb.minX, node->aabb.minX);
+		node->aabb.minY = min(aabb.minY, node->aabb.minY);
+		node->aabb.minZ = min(aabb.minZ, node->aabb.minZ);
+		node->aabb.maxX = max(aabb.maxX, node->aabb.maxX);
+		node->aabb.maxY = max(aabb.maxY, node->aabb.maxY);
+		node->aabb.maxZ = max(aabb.maxZ, node->aabb.maxZ);
+	}
 	return true;
 }
 

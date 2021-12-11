@@ -6,14 +6,7 @@
 #include <memory>
 #include <algorithm>
 
-template<typename T> T max(T a, T b) { return (a > b) ? a : b; }
-template<typename T> T min(T a, T b) { return (a < b) ? a : b; }
-
 struct AABB {
-public:
-	AABB() {};
-	AABB(float _minX, float _minY, float _minZ, float _maxX, float _maxY, float _maxZ) : minX{_minX}, minY{_minY}, minZ{_minZ}, maxX{_maxX}, maxY{_maxY}, maxZ{_maxZ} {}
-
 	float minX;
 	float minY;
 	float minZ;
@@ -73,6 +66,9 @@ public:
 		transform = glm::rotate(transform, t, a);
 		transformInv = glm::inverse(transform);
 		updateTranspose();
+	}
+	inline AABB getAABB() const {
+		return bbox;
 	}
 
 private:
