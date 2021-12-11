@@ -42,6 +42,7 @@ set( SRC
 	 src/options_manager.cpp
 	 src/input_manager.cpp
 	 src/quartic.cpp
+	 src/bvh.cpp
 )
 
 if (UNIX)
