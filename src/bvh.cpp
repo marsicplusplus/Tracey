@@ -115,12 +115,7 @@ void BVH::partition(BVHNode* node) {
 	glm::fvec3 minBBox = glm::fvec3(centroidBBox.minX, centroidBBox.minY, centroidBBox.minZ);
 	glm::fvec3 maxBBox = glm::fvec3(centroidBBox.maxX, centroidBBox.maxY, centroidBBox.maxZ);
 
-	// This should work but it doesn't....
-	// 	float k1 = numOfBins * (1.0f - FLT_EPSILON) / (maxBBox[longestAxisIdx] - minBBox[longestAxisIdx]);
-	// 
-	// When loading Suzzane, ont the first partition there are two bins that both have thier minX to 0.00 which doesn't seem right
-	// Also then changing FLOT_EPSILON to 0.1 or 0.2, etc it changes the render which it shouldn't be doing
-	float k1 = numOfBins * (1.0f - 0.1f) / (maxBBox[longestAxisIdx] - minBBox[longestAxisIdx]);
+	float k1 = numOfBins * (1.0f - FLT_EPSILON) / (maxBBox[longestAxisIdx] - minBBox[longestAxisIdx]);
 	float k0 = minBBox[longestAxisIdx];
 
 	for (size_t i = node->leftFirst; i < node->leftFirst + node->count; ++i) {
@@ -199,12 +194,12 @@ void BVH::partition(BVHNode* node) {
 		auto leftPrim = hittables[hittableIdxs[i]];
 		int leftBinID = calculateBinID(leftPrim->getWorldAABB(), k1, k0, longestAxisIdx);
 
-		if (leftBinID > optimalSplitIdx) {
+		if (leftBinID >= optimalSplitIdx) {
 			for (size_t j = maxj; j > i; --j) {
 				auto rightPrim = hittables[hittableIdxs[j]];
 				int rightBinID = calculateBinID(rightPrim->getWorldAABB(), k1, k0, longestAxisIdx);
 
-				if (rightBinID <= optimalSplitIdx) {
+				if (rightBinID < optimalSplitIdx) {
 					std::swap(hittableIdxs[i], hittableIdxs[j]);
 					maxj = j - 1;
 					break;
@@ -240,7 +235,7 @@ float BVH::calculateSurfaceArea(AABB bbox) {
 }
 
 float BVH::calculateBinID(AABB primAABB, float k1, float k0, int longestAxisIdx) {
-	glm::vec3 centroid = glm::fvec3((primAABB.minX + primAABB.maxX) / 2.0f, (primAABB.minY + primAABB.maxY) / 2.0f, (primAABB.minZ + primAABB.maxZ) / 2.0f);
+	glm::fvec3 centroid = glm::fvec3((primAABB.minX + primAABB.maxX) / 2.0f, (primAABB.minY + primAABB.maxY) / 2.0f, (primAABB.minZ + primAABB.maxZ) / 2.0f);
 	return k1 * (centroid[longestAxisIdx] - k0);
 }
 
