@@ -5,6 +5,7 @@
 #include "light_object.hpp"
 #include "hittables/hittable.hpp"
 #include "json.hpp"
+#include "bvh.hpp"
 
 #include <vector>
 #include <string>

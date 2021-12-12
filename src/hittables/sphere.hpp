@@ -12,7 +12,7 @@ class Sphere : public Hittable {
 		inline bool hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const override {
 			const auto transformedRay = ray.transformRay(transformInv);
 
-			if (!hitAABB(transformedRay)) {
+			if (!hitAABB(transformedRay, localBBox)) {
 				return false;
 			}
 

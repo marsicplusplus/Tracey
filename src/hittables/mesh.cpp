@@ -6,17 +6,17 @@ bool Mesh::hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const {
 	float closest = tMax;
 	const Ray transformedRay = ray.transformRay(transformInv);
 
-	if (!hitAABB(transformedRay)) {
-		return false;
-	}
+	//if (!hitAABB(transformedRay, localBBox)) {
+	//	return false;
+	//}
 
-	for(auto &tri : this->tris){
-		if(intersectTri(tri, transformedRay, ray, rec, tMin, closest)){
-			closest = rec.t;
-			ret = true;
-		}
-	}
-	return ret;
+	//for(auto &tri : this->tris){
+	//	if(intersectTri(tri, transformedRay, ray, rec, tMin, closest)){
+	//		closest = rec.t;
+	//		ret = true;
+	//	}
+	//}
+	return meshBVH->traverse(ray, tMin, tMax, rec);
 }
 
 bool Mesh::intersectTri(const Triangle &tri, const Ray &transformedRay, const Ray &ray, HitRecord &rec, float tMin, float tMax) const {

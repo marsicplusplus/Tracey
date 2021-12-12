@@ -20,6 +20,15 @@ const float INF = std::numeric_limits<float>::infinity();
 typedef glm::fvec3 Color;
 class Material;
 
+struct AABB {
+	float minX;
+	float minY;
+	float minZ;
+	float maxX;
+	float maxY;
+	float maxZ;
+};
+
 struct HitRecord {
 	bool frontFace;
 	int material;
@@ -41,5 +50,31 @@ inline float randomfloat(std::mt19937 &gen, float min, float max){
 
 template<typename T> T max(T a, T b) { return (a > b) ? a : b; }
 template<typename T> T min(T a, T b) { return (a < b) ? a : b; }
+
+inline bool hitAABB(const Ray& ray, const AABB& bbox) {
+	float tmin = -INFINITY, tmax = INFINITY;
+	auto origin = ray.getOrigin();
+	auto rayDirInv = ray.getInverseDirection();
+
+	float tx1 = (bbox.minX - origin.x) * rayDirInv.x;
+	float tx2 = (bbox.maxX - origin.x) * rayDirInv.x;
+
+	tmin = max(tmin, min(tx1, tx2));
+	tmax = min(tmax, max(tx1, tx2));
+
+	float ty1 = (bbox.minY - origin.y) * rayDirInv.y;
+	float ty2 = (bbox.maxY - origin.y) * rayDirInv.y;
+
+	tmin = max(tmin, min(ty1, ty2));
+	tmax = min(tmax, max(ty1, ty2));
+
+	float tz1 = (bbox.minZ - origin.z) * rayDirInv.z;
+	float tz2 = (bbox.maxZ - origin.z) * rayDirInv.z;
+
+	tmin = max(tmin, min(tz1, tz2));
+	tmax = min(tmax, max(tz1, tz2));
+
+	return (tmax > max(tmin, 0.0f));
+}
 
 #endif
