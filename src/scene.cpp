@@ -47,7 +47,7 @@ std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, int mat)
 	std::vector<glm::fvec3> pos;
 	std::vector<glm::fvec3> norm;
 	std::vector<glm::fvec2> uv;
-	std::vector<Triangle> triangles;
+	std::vector<HittablePtr> triangles;
 	
 	float minX = INF, minY = INF, minZ = INF, maxX = -INF, maxY = -INF, maxZ = -INF;
 
@@ -104,16 +104,21 @@ std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, int mat)
 		const std::vector<tinyobj::index_t> idx = shape.mesh.indices;
 		const std::vector<int> & mat_ids = shape.mesh.material_ids;
 		for(size_t face_ind = 0; face_ind < mat_ids.size(); face_ind++) {
-			triangles.push_back(Triangle(
-						glm::ivec3{idx[3*face_ind].vertex_index, 	idx[3*face_ind+1].vertex_index, 	idx[3*face_ind+2].vertex_index},
-						glm::ivec3{idx[3*face_ind].normal_index, 	idx[3*face_ind+1].normal_index, 	idx[3*face_ind+2].normal_index},
-						glm::ivec3{idx[3*face_ind].texcoord_index, 	idx[3*face_ind+1].texcoord_index, 	idx[3*face_ind+2].texcoord_index},
-						mat
-					));
+			triangles.push_back(
+				std::make_shared<Triangle>(
+					glm::ivec3{idx[3*face_ind].vertex_index, 	idx[3*face_ind+1].vertex_index, 	idx[3*face_ind+2].vertex_index},
+					glm::ivec3{idx[3*face_ind].normal_index, 	idx[3*face_ind+1].normal_index, 	idx[3*face_ind+2].normal_index},
+					glm::ivec3{idx[3*face_ind].texcoord_index, 	idx[3*face_ind+1].texcoord_index, 	idx[3*face_ind+2].texcoord_index},
+					mat,
+					pos,
+					norm, 
+					uv
+				)
+			);
 		}
 	}
 
-	AABB bbox(minX, minY, minZ, maxX, maxY, maxZ);
+	AABB bbox{minX, minY, minZ, maxX, maxY, maxZ};
 	return std::make_shared<Mesh>(pos, norm, uv, triangles, bbox);
 }
 
@@ -166,6 +171,7 @@ Scene::Scene(std::filesystem::path sceneFile){
 		if(light)
 			lights.push_back(light);
 	}
+
 	std::filesystem::current_path(currPath);
 }
 Scene::~Scene(){}
@@ -190,6 +196,14 @@ bool Scene::traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) con
 			rec = tmp;
 		}
 	}
+
+	//for (auto& bvh : this->BVHs) {
+	//	if (bvh->traverse(ray, tMin, closest, tmp)) {
+	//		hasHit = true;
+	//		closest = tmp.t;
+	//		rec = tmp;
+	//	}
+	//}
 	return hasHit;
 }
 

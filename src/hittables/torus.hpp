@@ -18,14 +18,14 @@ public:
 
 		auto xzBounds = _radiusMinor + _radiusMajor;
 		auto yBound = 2.0f * _radiusMinor;
-		bbox = AABB(-xzBounds, -yBound, -xzBounds, xzBounds, yBound, xzBounds);
+		localBBox = AABB{-xzBounds, -yBound, -xzBounds, xzBounds, yBound, xzBounds};
 	}
 
 	inline bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override {
 
 		const auto transformedRay = ray.transformRay(transformInv);
 
-		if (!hitAABB(transformedRay)) {
+		if (!hitAABB(transformedRay, localBBox)) {
 			return false;
 		}
 

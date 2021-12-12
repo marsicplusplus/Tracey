@@ -71,10 +71,7 @@
 		{
 			"type": "MESH",
 			"path": "./obj/suzanne.obj",
-			"transform": {
-				"scale": 2
-			},
-			"material": "Glass"
+			"material": "DiffuseRed"
 		}
 	],
 	"lights": [
