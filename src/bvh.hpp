@@ -4,11 +4,12 @@
 #include "hittables/hittable.hpp"
 
 struct BVHNode {
-	AABB aabb;
+
 	// If this is a leaf, we want to know the first hittable in the array;
-	// Otherwise we want to know the index of the left child. The right child will be left + 1;
-	int leftFirst;
-	int count;
+// Otherwise we want to know the index of the left child. The right child will be left + 1;
+
+	glm::fvec4 minAABBLeftFirst;
+	glm::fvec4 maxAABBCount;
 };
 /* We could also combine the first 3 floats with the first int and the second set of 3 floats with the second int to use SIMD operations and gain more STONKS */
 

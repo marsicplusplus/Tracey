@@ -32,13 +32,26 @@ struct Triangle : Hittable {
 			const glm::fvec3& yVal = {v0.y, v1.y, v2.y};
 			const glm::fvec3& zVal = {v0.z, v1.z, v2.z};
 
-			n0 = norm[normal.x];
-			n1 = norm[normal.y];
-			n2 = norm[normal.z];
+			if (normal.x == -1 || normal.y == -1 || normal.z == -1) {
+				n0 = { 0.0f, 0.0f, 0.0f };
+				n1 = { 0.0f, 0.0f, 0.0f };
+				n2 = { 0.0f, 0.0f, 0.0f };
+			} else {
+				n0 = norm[normal.x];
+				n1 = norm[normal.y];
+				n2 = norm[normal.z];
+			}
 
-			st0 = uvs[texture.x];
-			st1 = uvs[texture.y];
-			st2 = uvs[texture.z];
+			if (texture.x == -1 || texture.y == -1 || texture.z == -1) {
+				st0 = { 0.0f, 0.0f };
+				st1 = { 0.0f, 0.0f };
+				st2 = { 0.0f, 0.0f };
+			}
+			else {
+				st0 = uvs[texture.x];
+				st1 = uvs[texture.y];
+				st2 = uvs[texture.z];
+			}
 
 			localBBox.minX = min(min(xVal.x, xVal.y), xVal.z);
 			localBBox.minY = min(min(yVal.x, yVal.y), yVal.z);
