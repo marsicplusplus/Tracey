@@ -51,7 +51,7 @@ inline float randomfloat(std::mt19937 &gen, float min, float max){
 template<typename T> T max(T a, T b) { return (a > b) ? a : b; }
 template<typename T> T min(T a, T b) { return (a < b) ? a : b; }
 
-inline bool hitAABB(const Ray& ray, const AABB& bbox) {
+inline bool hitAABB(const Ray& ray, const AABB& bbox, float& distance) {
 	float tmin = -INFINITY, tmax = INFINITY;
 	auto origin = ray.getOrigin();
 	auto rayDirInv = ray.getInverseDirection();
@@ -74,7 +74,18 @@ inline bool hitAABB(const Ray& ray, const AABB& bbox) {
 	tmin = max(tmin, min(tz1, tz2));
 	tmax = min(tmax, max(tz1, tz2));
 
-	return (tmax > max(tmin, 0.0f));
+	distance = max(tmin, 0.0f);
+	return (tmax > distance);
 }
+
+inline bool hitAABB(const Ray& ray, const glm::fvec4& minAABB, const glm ::fvec4& maxAABB, float& distance) {
+	return hitAABB(ray, { minAABB.x, minAABB.y, minAABB.z, maxAABB.x, maxAABB.y, maxAABB.z }, distance);
+}
+
+inline bool hitAABB(const Ray& ray, const AABB& bbox) {
+	float distance = 0.0f;
+	return hitAABB(ray, bbox, distance);
+}
+
 
 #endif

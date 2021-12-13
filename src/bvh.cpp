@@ -1,9 +1,15 @@
 #include "bvh.hpp"
 #include "defs.hpp"
+#include <chrono>
+#include <iostream>
 
 BVH::BVH(std::vector<HittablePtr> &h) : hittables(h) {
 	this->nodePool = new BVHNode[h.size() * 2];
+	auto t1 = std::chrono::high_resolution_clock::now();
 	construct();
+	auto t2 = std::chrono::high_resolution_clock::now();
+	auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
+	std::cout << "BVH Construction for mesh containing " << h.size() << " primitives: " << ms_int.count() << "ms" << std::endl;
 }
 
 BVH::~BVH(){
@@ -16,8 +22,8 @@ void BVH::construct(){
 	}
 	
 	this->root = &this->nodePool[0];
-	this->root->leftFirst = 0;
-	this->root->count = this->hittableIdxs.size();
+	this->root->minAABBLeftFirst.w = 0;
+	this->root->maxAABBCount.w = this->hittableIdxs.size();
 	this->poolPtr = 2;
 	computeBounding(root);
 	subdivide(root);
@@ -25,31 +31,33 @@ void BVH::construct(){
 
 bool BVH::computeBounding(BVHNode *node) {
 	if(node == nullptr) return false;
-	node->aabb = AABB{INF,INF,INF,-INF,-INF,-INF};
-	for(size_t i = node->leftFirst; i < node->leftFirst + node->count; ++i){
+	node->minAABBLeftFirst = { INF,INF,INF, node->minAABBLeftFirst.w };
+	node->maxAABBCount = { -INF,-INF,-INF , node->maxAABBCount.w };
+
+	for(size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i){
 		auto prim = hittables[hittableIdxs[i]];
 		AABB aabb = prim->getWorldAABB();
-		node->aabb.minX = min(aabb.minX, node->aabb.minX);
-		node->aabb.minY = min(aabb.minY, node->aabb.minY);
-		node->aabb.minZ = min(aabb.minZ, node->aabb.minZ);
-		node->aabb.maxX = max(aabb.maxX, node->aabb.maxX);
-		node->aabb.maxY = max(aabb.maxY, node->aabb.maxY);
-		node->aabb.maxZ = max(aabb.maxZ, node->aabb.maxZ);
+		node->minAABBLeftFirst.x = min(aabb.minX, node->minAABBLeftFirst.x);
+		node->minAABBLeftFirst.y = min(aabb.minY, node->minAABBLeftFirst.y);
+		node->minAABBLeftFirst.z = min(aabb.minZ, node->minAABBLeftFirst.z);
+		node->maxAABBCount.x = max(aabb.maxX, node->maxAABBCount.x);
+		node->maxAABBCount.y = max(aabb.maxY, node->maxAABBCount.y);
+		node->maxAABBCount.z = max(aabb.maxZ, node->maxAABBCount.z);
 	}
 	return true;
 }
 
 void BVH::subdivide(BVHNode* node) {
 	if (node == nullptr) return;
-	if (node->count < 3) {
+	if (node->maxAABBCount.w < 3) {
 		computeBounding(node);
 		return; // Jacco said this was wrong (or not efficient). Why?
 	}
 
 	partition(node);
 	// Then subdivide again 
-	subdivide(&this->nodePool[node->leftFirst]);
-	subdivide(&this->nodePool[node->leftFirst+1]);
+	subdivide(&this->nodePool[(int)node->minAABBLeftFirst.w]);
+	subdivide(&this->nodePool[(int)node->minAABBLeftFirst.w + 1]);
 	
 	return;
 }
@@ -61,30 +69,9 @@ void BVH::partition(BVHNode* node) {
 	float numOfBins = 16.0f;
 	std::vector<Bin> bins(numOfBins);
 
-	float longestAxisLength = 0.0f;
-	int longestAxisIdx = -1;
-
-	float length = node->aabb.maxX - node->aabb.minX;
-	if (length > longestAxisLength) {
-		longestAxisLength = length;
-		longestAxisIdx = 0;
-	}
-
-	length = node->aabb.maxY - node->aabb.minY;
-	if (length > longestAxisLength) {
-		longestAxisLength = length;
-		longestAxisIdx = 1;
-	}
-
-	length = node->aabb.maxZ - node->aabb.minZ;
-	if (length > longestAxisLength) {
-		longestAxisLength = length;
-		longestAxisIdx = 2;
-	}
-
 	// Compute the centroid bounds (the bounds defined by the centroids of all triangles within the node)
 	AABB centroidBBox = AABB{ INF,INF,INF,-INF,-INF,-INF };
-	for (size_t i = node->leftFirst; i < node->leftFirst + node->count; ++i) {
+	for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
 		auto prim = hittables[hittableIdxs[i]];
 		AABB aabb = prim->getWorldAABB();
 		float cx = (aabb.minX + aabb.maxX) / 2.0f;
@@ -100,25 +87,34 @@ void BVH::partition(BVHNode* node) {
 	}
 
 	// For each triangle located within our node, we assign a bin ID (using centroid of triangle and centroid bounds)
-	if (centroidBBox.minX == centroidBBox.maxX) {
-		centroidBBox.maxX += FLT_EPSILON;
+	float longestAxisLength = 0.0f;
+	int longestAxisIdx = -1;
+
+	float length = centroidBBox.maxX - centroidBBox.minX;
+	if (length > longestAxisLength) {
+		longestAxisLength = length;
+		longestAxisIdx = 0;
 	}
 
-	if (centroidBBox.minY == centroidBBox.maxY) {
-		centroidBBox.maxY += FLT_EPSILON;
+	length = centroidBBox.maxY - centroidBBox.minY;
+	if (length > longestAxisLength) {
+		longestAxisLength = length;
+		longestAxisIdx = 1;
 	}
 
-	if (centroidBBox.minZ == centroidBBox.maxZ) {
-		centroidBBox.maxZ += FLT_EPSILON;
+	length = centroidBBox.maxZ - centroidBBox.minZ;
+	if (length > longestAxisLength) {
+		longestAxisLength = length;
+		longestAxisIdx = 2;
 	}
 
 	glm::fvec3 minBBox = glm::fvec3(centroidBBox.minX, centroidBBox.minY, centroidBBox.minZ);
 	glm::fvec3 maxBBox = glm::fvec3(centroidBBox.maxX, centroidBBox.maxY, centroidBBox.maxZ);
 
-	float k1 = numOfBins * (1.0f - FLT_EPSILON) / (maxBBox[longestAxisIdx] - minBBox[longestAxisIdx]);
+	float k1 = numOfBins * (1.0f - 0.00001f) / (maxBBox[longestAxisIdx] - minBBox[longestAxisIdx]);
 	float k0 = minBBox[longestAxisIdx];
 
-	for (size_t i = node->leftFirst; i < node->leftFirst + node->count; ++i) {
+	for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
 		auto prim = hittables[hittableIdxs[i]];
 		auto primAABB = prim->getWorldAABB();
 		int binID = calculateBinID(primAABB, k1, k0, longestAxisIdx);
@@ -189,8 +185,8 @@ void BVH::partition(BVHNode* node) {
 	}
 
 	// Quicksort our hittableIdx 
-	int maxj = node->leftFirst + node->count - 1;
-	for (size_t i = node->leftFirst; i < node->leftFirst + node->count; ++i) {
+	int maxj = node->minAABBLeftFirst.w + node->maxAABBCount.w - 1;
+	for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
 		auto leftPrim = hittables[hittableIdxs[i]];
 		int leftBinID = calculateBinID(leftPrim->getWorldAABB(), k1, k0, longestAxisIdx);
 
@@ -209,20 +205,33 @@ void BVH::partition(BVHNode* node) {
 	}
 
 	// Change this node to be an interior node by setting its count to 0 and setting leftFirst to the poolPtr index
-	auto first = node->leftFirst;
-	node->count = 0;
-	node->leftFirst = poolPtr;
+	auto first = node->minAABBLeftFirst.w;
+	node->maxAABBCount.w = 0;
+	node->minAABBLeftFirst.w = poolPtr;
 	auto leftNode = &this->nodePool[poolPtr++];
 	auto rightNode = &this->nodePool[poolPtr++];
 
 	// Asign leftFirst and count to our left and right nodes
-	leftNode->count = optimalLeftCount;
-	leftNode->leftFirst = first;
-	leftNode->aabb = optimalLeftBBox;
+	leftNode->minAABBLeftFirst.x = optimalLeftBBox.minX;
+	leftNode->minAABBLeftFirst.y = optimalLeftBBox.minY;
+	leftNode->minAABBLeftFirst.z = optimalLeftBBox.minZ;
+	leftNode->minAABBLeftFirst.w = first;
 
-	rightNode->leftFirst = first + optimalLeftCount;
-	rightNode->count = optimalRightCount;
-	rightNode->aabb = optimalRightBBox;
+	leftNode->maxAABBCount.x = optimalLeftBBox.maxX;
+	leftNode->maxAABBCount.y = optimalLeftBBox.maxY;
+	leftNode->maxAABBCount.z = optimalLeftBBox.maxZ;
+	leftNode->maxAABBCount.w = optimalLeftCount;
+
+
+	rightNode->minAABBLeftFirst.x = optimalRightBBox.minX;
+	rightNode->minAABBLeftFirst.y = optimalRightBBox.minY;
+	rightNode->minAABBLeftFirst.z = optimalRightBBox.minZ;
+	rightNode->minAABBLeftFirst.w = first + optimalLeftCount;
+
+	rightNode->maxAABBCount.x = optimalRightBBox.maxX;
+	rightNode->maxAABBCount.y = optimalRightBBox.maxY;
+	rightNode->maxAABBCount.z = optimalRightBBox.maxZ;
+	rightNode->maxAABBCount.w = optimalRightCount;
 }
 
 float BVH::calculateSurfaceArea(AABB bbox) {
@@ -243,17 +252,25 @@ bool BVH::traverse(const Ray& ray, float tMin, float tMax, HitRecord& rec) {
 	return traverseInternal(ray, this->root, tMin, tMax, rec);
 }
 
+float distance(const Ray& ray, glm::fvec4& minAABB, glm::fvec4& maxAABB) {
+	auto O = ray.getOrigin();
+	float dx = max(max(minAABB.x - O.x, 0.0f), O.x - maxAABB.x);
+	float dy = max(max(minAABB.y - O.y, 0.0f), O.y - maxAABB.y);
+	float dz = max(max(minAABB.z - O.z, 0.0f), O.z - maxAABB.z);
+	return std::sqrt(dx * dx + dy * dy);
+}
 bool BVH::traverseInternal(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitRecord& rec) {
 	HitRecord tmp;
 	bool hasHit = false;
 	float closest = tMax;
 
-	if (!hitAABB(ray, node->aabb)) return false;
+	float distance = 0.0f; // Don't worry bout this
+	if (!hitAABB(ray, node->minAABBLeftFirst, node->maxAABBCount, distance)) return false;
 
-	if (node->count != 0) {
+	if (node->maxAABBCount.w != 0) {
 		// We are a leaf
 		// Intersect the primitives
-		for (size_t i = node->leftFirst; i < node->leftFirst + node->count; ++i) {
+		for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
 			auto prim = hittables[hittableIdxs[i]];
 			if (prim->hit(ray, tMin, closest, tmp)) {
 				rec = tmp;
@@ -265,8 +282,38 @@ bool BVH::traverseInternal(const Ray& ray, BVHNode* node, float& tMin, float& tM
 		tMax = closest;
 		return hasHit;
 	} else {
-		bool hitLeft = traverseInternal(ray, &this->nodePool[node->leftFirst], tMin, tMax, rec);
-		bool hitRight = traverseInternal(ray, &this->nodePool[node->leftFirst + 1], tMin, tMax, rec);
+		bool hitLeft = traverseInternal(ray, &this->nodePool[(int)node->minAABBLeftFirst.w], tMin, tMax, rec);
+		bool hitRight = traverseInternal(ray, &this->nodePool[(int)node->minAABBLeftFirst.w + 1], tMin, tMax, rec);
 		return hitLeft || hitRight;
+		//auto leftNode = &this->nodePool[(int)node->minAABBLeftFirst.w];
+		//auto rightNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 1];
+
+		//float leftDistance = 0.0f;
+		//float rightDistance = 0.0f;
+
+		//bool hitLeft = hitAABB(ray, leftNode->minAABBLeftFirst, leftNode->maxAABBCount, leftDistance);
+		//bool hitRight = hitAABB(ray, rightNode->minAABBLeftFirst, rightNode->maxAABBCount, rightDistance);
+
+		//auto firstNode = leftNode;
+		//auto secondNode = rightNode;
+
+		//if (hitLeft && hitRight) {
+		//	if (rightDistance < leftDistance) {
+		//		firstNode = rightNode;
+		//		secondNode = leftNode;
+		//	}
+
+		//	if (traverseInternal(ray, firstNode, tMin, tMax, rec)) {
+		//		return true;
+		//	}
+
+		//	return traverseInternal(ray, secondNode, tMin, tMax, rec);
+		//} else if (hitLeft) {
+		//	return traverseInternal(ray, leftNode, tMin, tMax, rec);
+		//} else if (hitRight) {
+		//	return traverseInternal(ray, rightNode, tMin, tMax, rec);
+		//} else {
+		//	return false;
+		//}
 	}
 }
