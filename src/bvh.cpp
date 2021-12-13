@@ -264,9 +264,6 @@ bool BVH::traverseInternal(const Ray& ray, BVHNode* node, float& tMin, float& tM
 	bool hasHit = false;
 	float closest = tMax;
 
-	float distance = 0.0f; // Don't worry bout this
-	if (!hitAABB(ray, node->minAABBLeftFirst, node->maxAABBCount, distance)) return false;
-
 	if (node->maxAABBCount.w != 0) {
 		// We are a leaf
 		// Intersect the primitives
@@ -282,38 +279,43 @@ bool BVH::traverseInternal(const Ray& ray, BVHNode* node, float& tMin, float& tM
 		tMax = closest;
 		return hasHit;
 	} else {
-		bool hitLeft = traverseInternal(ray, &this->nodePool[(int)node->minAABBLeftFirst.w], tMin, tMax, rec);
-		bool hitRight = traverseInternal(ray, &this->nodePool[(int)node->minAABBLeftFirst.w + 1], tMin, tMax, rec);
-		return hitLeft || hitRight;
-		//auto leftNode = &this->nodePool[(int)node->minAABBLeftFirst.w];
-		//auto rightNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 1];
 
-		//float leftDistance = 0.0f;
-		//float rightDistance = 0.0f;
+		auto firstNode = &this->nodePool[(int)node->minAABBLeftFirst.w];
+		auto secondNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 1];
 
-		//bool hitLeft = hitAABB(ray, leftNode->minAABBLeftFirst, leftNode->maxAABBCount, leftDistance);
-		//bool hitRight = hitAABB(ray, rightNode->minAABBLeftFirst, rightNode->maxAABBCount, rightDistance);
+		float firstDistance = 0.0f;
+		float secondDistance = 0.0f;
 
-		//auto firstNode = leftNode;
-		//auto secondNode = rightNode;
+		bool hitAABBFirst = hitAABB(ray, firstNode->minAABBLeftFirst, firstNode->maxAABBCount, firstDistance);
+		bool hitAABBSecond = hitAABB(ray, secondNode->minAABBLeftFirst, secondNode->maxAABBCount, secondDistance);
 
-		//if (hitLeft && hitRight) {
-		//	if (rightDistance < leftDistance) {
-		//		firstNode = rightNode;
-		//		secondNode = leftNode;
-		//	}
+		if (hitAABBFirst && hitAABBSecond) {
+			if (firstDistance > secondDistance) {
+				auto tempNode = firstNode;
+				firstNode = secondNode;
+				secondNode = tempNode;
 
-		//	if (traverseInternal(ray, firstNode, tMin, tMax, rec)) {
-		//		return true;
-		//	}
+				auto tempDist = firstDistance;
+				firstDistance = secondDistance;
+				secondDistance = tempDist;
+			}
 
-		//	return traverseInternal(ray, secondNode, tMin, tMax, rec);
-		//} else if (hitLeft) {
-		//	return traverseInternal(ray, leftNode, tMin, tMax, rec);
-		//} else if (hitRight) {
-		//	return traverseInternal(ray, rightNode, tMin, tMax, rec);
-		//} else {
-		//	return false;
-		//}
+			if (firstDistance < tMax) {
+				bool hitFirst = false;
+				bool hitSecond = false;
+				hitFirst = traverseInternal(ray, firstNode, tMin, tMax, rec);
+				if (secondDistance < tMax)
+					hitSecond = traverseInternal(ray, secondNode, tMin, tMax, rec);
+				return hitFirst || hitSecond;
+			}
+
+			return false;
+		} else if (hitAABBFirst && firstDistance < tMax) {
+			return traverseInternal(ray, firstNode, tMin, tMax, rec);
+		} else if (hitAABBSecond && secondDistance < tMax) {
+			return traverseInternal(ray, secondNode, tMin, tMax, rec);
+		} else {
+			return false;
+		}
 	}
 }
