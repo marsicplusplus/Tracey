@@ -1,5 +1,5 @@
-#ifndef __MESH_HPP__
-#define __MESH_HPP__
+#ifndef __TRIANGLE_HPP__
+#define __TRIANGLE_HPP__
 
 #include "defs.hpp"
 #include "bvh.hpp"
@@ -91,7 +91,7 @@ struct Triangle : Hittable {
 				else {
 					hitNormal = u * n1 + v * n2 + (1.0f - u - v) * n0;
 				}
-				hitNormal = transposeInv * glm::fvec4(hitNormal, 0.0);
+
 				rec.setFaceNormal(ray, hitNormal);
 
 				glm::fvec2 uv;
@@ -104,7 +104,7 @@ struct Triangle : Hittable {
 				rec.u = uv.x;
 				rec.v = uv.y;
 				rec.material = mat;
-				rec.p = transform * glm::fvec4(localp, 1.0);
+				rec.p = localp;
 
 				return true;
 			}
@@ -129,24 +129,6 @@ struct Triangle : Hittable {
 		glm::fvec2 st2;
 
 		int mat;
-};
-
-class Mesh : public Hittable {
-	public:
-		Mesh(std::vector<glm::fvec3> &p, std::vector<glm::fvec3> &n, std::vector<glm::fvec2> &t, std::vector<HittablePtr> &triangles, AABB box) : Hittable{box}, pos{p}, norm{n}, uvs{t}, tris{triangles} {
-			meshBVH = std::make_shared<BVH>(tris);
-		}
-		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
-
-	private:
-		std::vector<glm::fvec3> pos;
-		std::vector<glm::fvec3> norm;
-		std::vector<glm::fvec2> uvs;
-		std::vector<HittablePtr> tris;
-
-		std::shared_ptr<BVH> meshBVH;
-
-		bool intersectTri(const Triangle &tri,const Ray& transformedRay, const Ray& ray, HitRecord &rec, float tMin, float tMax) const;
 };
 
 #endif

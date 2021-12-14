@@ -38,7 +38,6 @@ set( SRC
 	 src/renderer.cpp
 	 src/camera.cpp
 	 src/scene.cpp
-	 src/hittables/mesh.cpp
 	 src/options_manager.cpp
 	 src/input_manager.cpp
 	 src/quartic.cpp

@@ -3,7 +3,7 @@
 #include <chrono>
 #include <iostream>
 
-BVH::BVH(std::vector<HittablePtr> &h) : hittables(h) {
+BVH::BVH(std::vector<HittablePtr> h) : hittables(h) {
 	this->nodePool = new BVHNode[h.size() * 2];
 	auto t1 = std::chrono::high_resolution_clock::now();
 	construct();
@@ -16,17 +16,25 @@ BVH::~BVH(){
 	delete[] this->nodePool;
 }
 
-void BVH::construct(){
-	for(int i = 0; i < hittables.size();++i){
+void BVH::construct() {
+	for (int i = 0; i < hittables.size(); ++i) {
 		this->hittableIdxs.push_back(i);
 	}
-	
+
 	this->root = &this->nodePool[0];
 	this->root->minAABBLeftFirst.w = 0;
 	this->root->maxAABBCount.w = this->hittableIdxs.size();
 	this->poolPtr = 2;
 	computeBounding(root);
 	subdivide(root);
+	setLocalAABB({
+		this->root->minAABBLeftFirst.x,
+		this->root->minAABBLeftFirst.y,
+		this->root->minAABBLeftFirst.z,
+		this->root->maxAABBCount.x,
+		this->root->maxAABBCount.y,
+		this->root->maxAABBCount.z
+	});
 }
 
 bool BVH::computeBounding(BVHNode *node) {
@@ -36,7 +44,7 @@ bool BVH::computeBounding(BVHNode *node) {
 
 	for(size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i){
 		auto prim = hittables[hittableIdxs[i]];
-		AABB aabb = prim->getWorldAABB();
+		AABB aabb = prim->getLocalAABB();
 		node->minAABBLeftFirst.x = min(aabb.minX, node->minAABBLeftFirst.x);
 		node->minAABBLeftFirst.y = min(aabb.minY, node->minAABBLeftFirst.y);
 		node->minAABBLeftFirst.z = min(aabb.minZ, node->minAABBLeftFirst.z);
@@ -73,7 +81,7 @@ void BVH::partition(BVHNode* node) {
 	AABB centroidBBox = AABB{ INF,INF,INF,-INF,-INF,-INF };
 	for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
 		auto prim = hittables[hittableIdxs[i]];
-		AABB aabb = prim->getWorldAABB();
+		AABB aabb = prim->getLocalAABB();
 		float cx = (aabb.minX + aabb.maxX) / 2.0f;
 		float cy = (aabb.minY + aabb.maxY) / 2.0f;
 		float cz = (aabb.minZ + aabb.maxZ) / 2.0f;
@@ -116,7 +124,7 @@ void BVH::partition(BVHNode* node) {
 
 	for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
 		auto prim = hittables[hittableIdxs[i]];
-		auto primAABB = prim->getWorldAABB();
+		auto primAABB = prim->getLocalAABB();
 		int binID = calculateBinID(primAABB, k1, k0, longestAxisIdx);
 
 		// For each bin we keep track of the number of triangles as well as the bins bounds
@@ -188,12 +196,12 @@ void BVH::partition(BVHNode* node) {
 	int maxj = node->minAABBLeftFirst.w + node->maxAABBCount.w - 1;
 	for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
 		auto leftPrim = hittables[hittableIdxs[i]];
-		int leftBinID = calculateBinID(leftPrim->getWorldAABB(), k1, k0, longestAxisIdx);
+		int leftBinID = calculateBinID(leftPrim->getLocalAABB(), k1, k0, longestAxisIdx);
 
 		if (leftBinID >= optimalSplitIdx) {
 			for (size_t j = maxj; j > i; --j) {
 				auto rightPrim = hittables[hittableIdxs[j]];
-				int rightBinID = calculateBinID(rightPrim->getWorldAABB(), k1, k0, longestAxisIdx);
+				int rightBinID = calculateBinID(rightPrim->getLocalAABB(), k1, k0, longestAxisIdx);
 
 				if (rightBinID < optimalSplitIdx) {
 					std::swap(hittableIdxs[i], hittableIdxs[j]);
@@ -248,18 +256,18 @@ float BVH::calculateBinID(AABB primAABB, float k1, float k0, int longestAxisIdx)
 	return k1 * (centroid[longestAxisIdx] - k0);
 }
 
-bool BVH::traverse(const Ray& ray, float tMin, float tMax, HitRecord& rec) {
-	return traverseInternal(ray, this->root, tMin, tMax, rec);
+bool BVH::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
+	const Ray transformedRay = ray.transformRay(transformInv);
+	if (traverse(transformedRay, this->root, tMin, tMax, rec)) {
+		rec.p = transform * glm::fvec4(rec.p, 1.0);
+		rec.setFaceNormal(ray, transposeInv * glm::fvec4(rec.normal, 0.0));
+		rec.t = glm::distance(rec.p, ray.getOrigin());
+		return true;
+	}
+	return false;
 }
 
-float distance(const Ray& ray, glm::fvec4& minAABB, glm::fvec4& maxAABB) {
-	auto O = ray.getOrigin();
-	float dx = max(max(minAABB.x - O.x, 0.0f), O.x - maxAABB.x);
-	float dy = max(max(minAABB.y - O.y, 0.0f), O.y - maxAABB.y);
-	float dz = max(max(minAABB.z - O.z, 0.0f), O.z - maxAABB.z);
-	return std::sqrt(dx * dx + dy * dy);
-}
-bool BVH::traverseInternal(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitRecord& rec) {
+bool BVH::traverse(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitRecord& rec) const {
 	HitRecord tmp;
 	bool hasHit = false;
 	float closest = tMax;
@@ -271,7 +279,7 @@ bool BVH::traverseInternal(const Ray& ray, BVHNode* node, float& tMin, float& tM
 			auto prim = hittables[hittableIdxs[i]];
 			if (prim->hit(ray, tMin, closest, tmp)) {
 				rec = tmp;
-				closest = tmp.t;
+				closest = rec.t;
 				hasHit = true;
 			}
 		}
@@ -303,17 +311,17 @@ bool BVH::traverseInternal(const Ray& ray, BVHNode* node, float& tMin, float& tM
 			if (firstDistance < tMax) {
 				bool hitFirst = false;
 				bool hitSecond = false;
-				hitFirst = traverseInternal(ray, firstNode, tMin, tMax, rec);
+				hitFirst = traverse(ray, firstNode, tMin, tMax, rec);
 				if (secondDistance < tMax)
-					hitSecond = traverseInternal(ray, secondNode, tMin, tMax, rec);
+					hitSecond = traverse(ray, secondNode, tMin, tMax, rec);
 				return hitFirst || hitSecond;
 			}
 
 			return false;
 		} else if (hitAABBFirst && firstDistance < tMax) {
-			return traverseInternal(ray, firstNode, tMin, tMax, rec);
+			return traverse(ray, firstNode, tMin, tMax, rec);
 		} else if (hitAABBSecond && secondDistance < tMax) {
-			return traverseInternal(ray, secondNode, tMin, tMax, rec);
+			return traverse(ray, secondNode, tMin, tMax, rec);
 		} else {
 			return false;
 		}

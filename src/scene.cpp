@@ -8,7 +8,7 @@
 #include "textures/image_texture.hpp"
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
-#include "hittables/mesh.hpp"
+#include "hittables/triangle.hpp"
 #include "hittables/torus.hpp"
 #include "materials/material.hpp"
 #include "materials/material_dielectric.hpp"
@@ -29,7 +29,7 @@ static glm::fvec4 parseVec4(nlohmann::basic_json<> &arr){
 	return glm::fvec4(arr[0].get<float>(), arr[1].get<float>(),arr[2].get<float>(), arr[3].get<float>());
 }
 
-std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, int mat) const {
+std::shared_ptr<BVH> Scene::parseMesh(std::filesystem::path &path, int mat) const {
 	tinyobj::ObjReaderConfig reader_config;
 	reader_config.triangulate = true;
 	reader_config.mtl_search_path = path.parent_path().string(); // Path to material files
@@ -49,37 +49,7 @@ std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, int mat)
 	std::vector<glm::fvec2> uv;
 	std::vector<HittablePtr> triangles;
 	
-	float minX = INF, minY = INF, minZ = INF, maxX = -INF, maxY = -INF, maxZ = -INF;
-
 	for(size_t i = 0; i < attrib.vertices.size(); i+=3) {
-		auto xVal = attrib.vertices[i];
-		auto yVal = attrib.vertices[i+1];
-		auto zVal = attrib.vertices[i+2];
-
-		if (xVal < minX) {
-			minX = xVal;
-		}
-
-		if (yVal < minY) {
-			minY = yVal;
-		}
-
-		if (zVal < minZ) {
-			minZ = zVal;
-		}
-
-		if (xVal > maxX) {
-			maxX = xVal;
-		}
-
-		if (yVal > maxY) {
-			maxY = yVal;
-		}
-
-		if (zVal > maxZ) {
-			maxZ = zVal;
-		}
-
 		pos.push_back(glm::fvec3{
 				attrib.vertices[i],
 				attrib.vertices[i+1],
@@ -118,8 +88,7 @@ std::shared_ptr<Hittable> Scene::parseMesh(std::filesystem::path &path, int mat)
 		}
 	}
 
-	AABB bbox{minX, minY, minZ, maxX, maxY, maxZ};
-	return std::make_shared<Mesh>(pos, norm, uv, triangles, bbox);
+	return std::make_shared<BVH>(triangles);
 }
 
 void Scene::parseTransform(nlohmann::basic_json<> &hit, HittablePtr& primitive) const {
@@ -162,8 +131,13 @@ Scene::Scene(std::filesystem::path sceneFile){
 		}
 	}
 	for(auto p : j["primitives"]){
-		auto hit=parseHittable(p);
+		auto hit=parsePrimitive(p);
 		if(hit)
+			hittables.push_back(hit);
+	}
+	for (auto m : j["meshes"]) {
+		auto hit = getMeshBVH(m);
+		if (hit)
 			hittables.push_back(hit);
 	}
 	for(auto l : j["lights"]){
@@ -197,13 +171,6 @@ bool Scene::traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) con
 		}
 	}
 
-	//for (auto& bvh : this->BVHs) {
-	//	if (bvh->traverse(ray, tMin, closest, tmp)) {
-	//		hasHit = true;
-	//		closest = tmp.t;
-	//		rec = tmp;
-	//	}
-	//}
 	return hasHit;
 }
 
@@ -247,7 +214,7 @@ CameraPtr Scene::parseCamera(nlohmann::json &cam) const {
 	return std::make_shared<Camera>(pos, dir, up, fov);	
 }
 
-std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
+std::shared_ptr<Hittable> Scene::parsePrimitive(nlohmann::json &hit) const {
 	if(!hit.contains("type")) throw std::invalid_argument("Hittable doesn't name a type");
 	std::string type = hit.at("type");
 	if (!hit.contains("material")) throw std::invalid_argument("Hittable doesn't name a material");
@@ -281,6 +248,36 @@ std::shared_ptr<Hittable> Scene::parseHittable(nlohmann::json &hit) const {
 	parseTransform(hit, primitive);
 	return primitive;
 }
+
+std::shared_ptr<BVH> Scene::getMeshBVH(nlohmann::json& hit) const {
+	if (!hit.contains("material")) throw std::invalid_argument("Mesh doesn't name a material");
+	std::string matName = hit.at("material");
+	int materialIdx = findMaterial(matName);
+	if (materialIdx == -1) throw std::invalid_argument("Mesh doesn't name a valid material");
+	std::shared_ptr<BVH> meshBVH;
+	if (hit.contains("path")) {
+		std::filesystem::path p = hit.at("path");
+		meshBVH = parseMesh(p, materialIdx);
+	}
+
+	if (hit.contains("transform")) {
+		auto trans = hit.at("transform");
+		if (trans.contains("translation")) meshBVH->translate(parseVec3(trans.at("translation")));
+		if (trans.contains("scale")) {
+			if (trans.at("scale").is_array()) meshBVH->scale(parseVec3(trans.at("scale")));
+			else meshBVH->scale((float)(trans.at("scale")));
+		}
+		if (trans.contains("rotation")) {
+			auto rot = parseVec3(trans.at("rotation"));
+			if (rot.x != 0) meshBVH->rotate(glm::radians(rot.x), glm::fvec3(1.0, 0.0, 0.0));
+			if (rot.y != 0) meshBVH->rotate(glm::radians(rot.y), glm::fvec3(0.0, 1.0, 0.0));
+			if (rot.z != 0) meshBVH->rotate(glm::radians(rot.z), glm::fvec3(0.0, 0.0, 1.0));
+		}
+	}
+
+	return meshBVH;
+}
+
 std::shared_ptr<LightObject> Scene::parseLight(nlohmann::json &l) const{
 	if(!l.contains("type")) throw std::invalid_argument("LightObject doesn't name a type");
 	std::string type = l.at("type");

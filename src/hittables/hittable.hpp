@@ -42,6 +42,10 @@ public:
 	inline AABB getWorldAABB() const {
 		return worldBBox;
 	}
+	inline void setLocalAABB(AABB local) {
+		localBBox = local;
+		updateWorldBBox();
+	}
 
 protected:
 	inline void updateTranspose() {
