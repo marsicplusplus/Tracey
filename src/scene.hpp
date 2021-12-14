@@ -39,9 +39,10 @@ class Scene {
 		CameraPtr parseCamera(nlohmann::json &cam) const;
 		std::pair<std::string, std::shared_ptr<Texture>> parseTexture(nlohmann::json &text) const;
 		std::shared_ptr<Material> parseMaterial(nlohmann::json &text) const;
-		std::shared_ptr<Hittable> parseHittable(nlohmann::json &text) const;
+		std::shared_ptr<Hittable> parsePrimitive(nlohmann::json& text) const;
 		std::shared_ptr<LightObject> parseLight(nlohmann::json &text) const;
-		std::shared_ptr<Hittable> parseMesh(std::filesystem::path &path, int mat) const;
+		std::shared_ptr<BVH> getMeshBVH(nlohmann::json& hit) const;
+		std::shared_ptr<BVH> parseMesh(std::filesystem::path &path, int mat) const;
 		
 		void parseTransform(nlohmann::basic_json<> &hit, HittablePtr& primitive) const;
 		

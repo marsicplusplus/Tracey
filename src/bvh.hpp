@@ -19,12 +19,12 @@ struct Bin {
 	int count = 0;
 };
 
-class BVH {
+class BVH : public Hittable {
 	public:
-		BVH(std::vector<HittablePtr> &h);
+		BVH(std::vector<HittablePtr> h);
 		~BVH();
 
-		bool traverse(const Ray& ray, float tMin, float tMax, HitRecord& rec);
+		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const;
 
 	private:
 		void construct();
@@ -33,15 +33,16 @@ class BVH {
 		bool computeBounding(BVHNode *node);
 		float calculateSurfaceArea(AABB bbox);
 		float calculateBinID(AABB primAABB, float k1, float k0, int longestAxisIdx);
-		bool traverseInternal(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitRecord& rec);
+		bool traverse(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitRecord& rec) const;
 
-		std::vector<HittablePtr> &hittables;
+		std::vector<HittablePtr> hittables;
 		std::vector<int> hittableIdxs;
 		
 		BVHNode* nodePool;
-		BVHNode *root;
+		BVHNode* root;
 		size_t poolPtr;
 };
 
+typedef std::shared_ptr<BVH> BVHPtr;
 
 #endif
