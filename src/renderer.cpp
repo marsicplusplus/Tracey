@@ -260,6 +260,7 @@ bool Renderer::start() {
 
 Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 	HitRecord hr;
+	hr.p = {INF, INF, INF};
 	if(!scene || bounces <= 0)
 		return Color{0,0,0};
 	if (scene->traverse(ray, 0.001f, INF, hr)) {

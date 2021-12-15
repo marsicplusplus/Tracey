@@ -180,6 +180,7 @@ void Scene::addLight(LightObjectPtr light){
 
 bool Scene::traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) const {
 	HitRecord tmp;
+	tmp.p = {INF, INF, INF};
 	bool hasHit = false;
 	float closest = tMax;
 

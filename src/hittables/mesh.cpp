@@ -6,6 +6,10 @@ bool Mesh::hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const {
 	float closest = tMax;
 	const Ray transformedRay = ray.transformRay(transformInv);
 
+	if (rec.p != glm::fvec3{INF, INF, INF}) {
+		tMax = glm::distance(transformedRay.getOrigin(), glm::fvec3(transformInv * glm::fvec4(rec.p, 1.0f)));
+	}
+
 	if (!hitAABB(transformedRay)) {
 		return false;
 	}
@@ -42,7 +46,6 @@ bool Mesh::intersectTri(const Triangle &tri, const Ray &transformedRay, const Ra
 		if(tmp < 0.0f) return false;
 
 		if(tmp > tMin && tmp < tMax){
-			rec.t = tmp;
 			auto localp = transformedRay.at(tmp);
 
 			glm::fvec3 hitNormal;
@@ -71,6 +74,7 @@ bool Mesh::intersectTri(const Triangle &tri, const Ray &transformedRay, const Ra
 			rec.v = uv.y;
 			rec.material = tri.mat;
 			rec.p = transform * glm::fvec4(localp, 1.0);
+			rec.t = glm::distance(rec.p, ray.getOrigin());
 
 			return true;
 		}

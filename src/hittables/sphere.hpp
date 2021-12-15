@@ -12,6 +12,10 @@ class Sphere : public Hittable {
 		inline bool hit(const Ray &ray, float tMin, float tMax, HitRecord &rec) const override {
 			const auto transformedRay = ray.transformRay(transformInv);
 
+			if (rec.p != glm::fvec3{INF, INF, INF}) {
+				tMax = glm::distance(transformedRay.getOrigin(), glm::fvec3(transformInv * glm::fvec4(rec.p, 1.0f)));
+			}
+
 			if (!hitAABB(transformedRay)) {
 				return false;
 			}
@@ -35,8 +39,8 @@ class Sphere : public Hittable {
 				else return false;
 				if(cT < tMax && cT > tMin){
 					auto localp = transformedRay.at(cT);
-					rec.t = cT;
 					rec.p = transform * glm::vec4(localp, 1.0f);
+					rec.t = glm::distance(rec.p, ray.getOrigin());
 					rec.material = mat;
 					glm::fvec3 normal = (localp) / radius;
 					auto transformedNormal = transposeInv * glm::dvec4(normal, 0);
