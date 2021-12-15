@@ -22,8 +22,10 @@ public:
 	}
 
 	inline bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override {
-
 		const auto transformedRay = ray.transformRay(transformInv);
+		if (rec.p != glm::fvec3{INF, INF, INF}) {
+			tMax = glm::distance(transformedRay.getOrigin(), glm::fvec3(transformInv * glm::fvec4(rec.p, 1.0f)));
+		}
 
 		if (!hitAABB(transformedRay)) {
 			return false;
@@ -86,8 +88,8 @@ public:
 				4.0f * localp.z * (sumSquared - radii)
 			));
 
-			rec.t = minRealRoot;
 			rec.p = transform * glm::fvec4(localp, 1);
+			rec.t = glm::distance(rec.p, ray.getOrigin());
 			rec.material = mat;
 			auto transformedNormal = transposeInv * glm::fvec4(normal, 0);
 			rec.setFaceNormal(ray, glm::normalize(transformedNormal));
