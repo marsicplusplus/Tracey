@@ -82,7 +82,7 @@
 					"material": "DiffuseRed",
 					"transform": {
 						"translation": [ -3, -1, -5 ],
-						"scale": 1.0,
+						"scale": 0.3,
 						"rotation": [ 0, 45, 0 ]
 					}
 				},
@@ -91,7 +91,7 @@
 					"material": "DiffuseRed",
 					"transform": {
 						"translation": [ 6, -1, -5 ],
-						"scale": 1.0,
+						"scale": 0.2,
 						"rotation": [ 0, 45, 0 ]
 					}
 				}
@@ -100,9 +100,10 @@
 				{
 					"type": "SPHERE",
 					"transform": {
-						"translation": [ -0.4, -2, 0 ]
+						"translation": [ -0.4, -2.5, 0 ],
+						"scale": 0.7
 					},
-					"radius": 0.7,
+					"radius": 0.1,
 					"material": "Checkerboard2"
 				},
 				{

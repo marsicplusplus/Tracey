@@ -45,42 +45,44 @@ void BVH::constructTopLevelBVH() {
 	computeBounding(root);
 
 	auto nodeA = nodeList.front();
-	auto nodeB = findBestMatch(nodeA, nodeList);
-	auto nodeC = findBestMatch(nodeB, nodeList);
-	while (nodeList.size() > 1) {
-		if (nodeA == nodeC) {
+	if (nodeList.size() > 1) {
+		auto nodeB = findBestMatch(nodeA, nodeList);
+		auto nodeC = findBestMatch(nodeB, nodeList);
+		while (nodeList.size() > 1) {
+			if (nodeA == nodeC) {
 
-			auto rightIndex = index--;
-			auto leftIndex = index--;
-			auto A = &this->nodePool[leftIndex];
-			auto B = &this->nodePool[rightIndex];
+				auto rightIndex = index--;
+				auto leftIndex = index--;
+				auto A = &this->nodePool[leftIndex];
+				auto B = &this->nodePool[rightIndex];
 
-			A->maxAABBCount = nodeA->maxAABBCount;
-			A->minAABBLeftFirst = nodeA->minAABBLeftFirst;
-			B->maxAABBCount = nodeB->maxAABBCount;
-			B->minAABBLeftFirst = nodeB->minAABBLeftFirst;
+				A->maxAABBCount = nodeA->maxAABBCount;
+				A->minAABBLeftFirst = nodeA->minAABBLeftFirst;
+				B->maxAABBCount = nodeB->maxAABBCount;
+				B->minAABBLeftFirst = nodeB->minAABBLeftFirst;
 
-			nodeList.remove(nodeA);
-			nodeList.remove(nodeB);
-			
-			nodeA->minAABBLeftFirst.x = min(nodeB->minAABBLeftFirst.x, nodeA->minAABBLeftFirst.x);
-			nodeA->minAABBLeftFirst.y = min(nodeB->minAABBLeftFirst.y, nodeA->minAABBLeftFirst.y);
-			nodeA->minAABBLeftFirst.z = min(nodeB->minAABBLeftFirst.z, nodeA->minAABBLeftFirst.z);
-			nodeA->minAABBLeftFirst.w = leftIndex;
-			nodeA->maxAABBCount.x = max(nodeB->maxAABBCount.x, nodeA->maxAABBCount.x);
-			nodeA->maxAABBCount.y = max(nodeB->maxAABBCount.y, nodeA->maxAABBCount.y);
-			nodeA->maxAABBCount.z = max(nodeB->maxAABBCount.z, nodeA->maxAABBCount.z);
-			nodeA->maxAABBCount.w = 0;
-			nodeList.push_back(nodeA);
-			
-			if (nodeList.size() > 1)
-				nodeB = findBestMatch(nodeA, nodeList);
+				nodeList.remove(nodeA);
+				nodeList.remove(nodeB);
+
+				nodeA->minAABBLeftFirst.x = min(nodeB->minAABBLeftFirst.x, nodeA->minAABBLeftFirst.x);
+				nodeA->minAABBLeftFirst.y = min(nodeB->minAABBLeftFirst.y, nodeA->minAABBLeftFirst.y);
+				nodeA->minAABBLeftFirst.z = min(nodeB->minAABBLeftFirst.z, nodeA->minAABBLeftFirst.z);
+				nodeA->minAABBLeftFirst.w = leftIndex;
+				nodeA->maxAABBCount.x = max(nodeB->maxAABBCount.x, nodeA->maxAABBCount.x);
+				nodeA->maxAABBCount.y = max(nodeB->maxAABBCount.y, nodeA->maxAABBCount.y);
+				nodeA->maxAABBCount.z = max(nodeB->maxAABBCount.z, nodeA->maxAABBCount.z);
+				nodeA->maxAABBCount.w = 0;
+				nodeList.push_back(nodeA);
+
+				if (nodeList.size() > 1)
+					nodeB = findBestMatch(nodeA, nodeList);
+			}
+			else {
+				nodeA = nodeB;
+				nodeB = nodeC;
+			}
+			nodeC = findBestMatch(nodeB, nodeList);
 		}
-		else {
-			nodeA = nodeB;
-			nodeB = nodeC;
-		}
-		nodeC = findBestMatch(nodeB, nodeList);
 	}
 
 	this->root = nodeA;
@@ -107,7 +109,7 @@ void BVH::constructSubBVH() {
 	this->root->maxAABBCount.w = this->hittableIdxs.size();
 	this->poolPtr = 2;
 	computeBounding(root);
-	subdivide(root);
+	subdivideBin(root);
 	setLocalAABB({
 		this->root->minAABBLeftFirst.x,
 		this->root->minAABBLeftFirst.y,
@@ -137,22 +139,37 @@ bool BVH::computeBounding(BVHNode *node) {
 	return true;
 }
 
-void BVH::subdivide(BVHNode* node) {
+void BVH::subdivideBin(BVHNode* node) {
 	if (node == nullptr) return;
 	if (node->maxAABBCount.w < 3) {
 		computeBounding(node);
 		return; // Jacco said this was wrong (or not efficient). Why?
 	}
 
-	partition(node);
+	partitionBin(node);
 	// Then subdivide again 
-	subdivide(&this->nodePool[(int)node->minAABBLeftFirst.w]);
-	subdivide(&this->nodePool[(int)node->minAABBLeftFirst.w + 1]);
+	subdivideBin(&this->nodePool[(int)node->minAABBLeftFirst.w]);
+	subdivideBin(&this->nodePool[(int)node->minAABBLeftFirst.w + 1]);
 	
 	return;
 }
 
-void BVH::partition(BVHNode* node) {
+void BVH::subdivideHQ(BVHNode* node) {
+	if (node == nullptr) return;
+	if (node->maxAABBCount.w < 3) {
+		computeBounding(node);
+		return; // Jacco said this was wrong (or not efficient). Why?
+	}
+
+	partitionHQ(node);
+	// Then subdivide again 
+	subdivideHQ(&this->nodePool[(int)node->minAABBLeftFirst.w]);
+	subdivideHQ(&this->nodePool[(int)node->minAABBLeftFirst.w + 1]);
+
+	return;
+}
+
+void BVH::partitionBin(BVHNode* node) {
 
 	// For a partition of a node
 	// Divide the node into k bins vertically along its longest AABB axis.
@@ -286,6 +303,150 @@ void BVH::partition(BVHNode* node) {
 				int rightBinID = calculateBinID(rightPrim->getWorldAABB(), k1, k0, longestAxisIdx);
 
 				if (rightBinID < optimalSplitIdx) {
+					std::swap(hittableIdxs[i], hittableIdxs[j]);
+					maxj = j - 1;
+					break;
+				}
+			}
+		}
+	}
+
+	// Change this node to be an interior node by setting its count to 0 and setting leftFirst to the poolPtr index
+	auto first = node->minAABBLeftFirst.w;
+	node->maxAABBCount.w = 0;
+	node->minAABBLeftFirst.w = poolPtr;
+	auto leftNode = &this->nodePool[poolPtr++];
+	auto rightNode = &this->nodePool[poolPtr++];
+
+	// Asign leftFirst and count to our left and right nodes
+	leftNode->minAABBLeftFirst.x = optimalLeftBBox.minX;
+	leftNode->minAABBLeftFirst.y = optimalLeftBBox.minY;
+	leftNode->minAABBLeftFirst.z = optimalLeftBBox.minZ;
+	leftNode->minAABBLeftFirst.w = first;
+
+	leftNode->maxAABBCount.x = optimalLeftBBox.maxX;
+	leftNode->maxAABBCount.y = optimalLeftBBox.maxY;
+	leftNode->maxAABBCount.z = optimalLeftBBox.maxZ;
+	leftNode->maxAABBCount.w = optimalLeftCount;
+
+
+	rightNode->minAABBLeftFirst.x = optimalRightBBox.minX;
+	rightNode->minAABBLeftFirst.y = optimalRightBBox.minY;
+	rightNode->minAABBLeftFirst.z = optimalRightBBox.minZ;
+	rightNode->minAABBLeftFirst.w = first + optimalLeftCount;
+
+	rightNode->maxAABBCount.x = optimalRightBBox.maxX;
+	rightNode->maxAABBCount.y = optimalRightBBox.maxY;
+	rightNode->maxAABBCount.z = optimalRightBBox.maxZ;
+	rightNode->maxAABBCount.w = optimalRightCount;
+}
+
+
+void BVH::partitionHQ(BVHNode* node) {
+
+	// For a high quality partition of a node
+	// Find all possible partitions using the centroids across all 3 axes. 
+	// Find optimal cost which is our pivot point
+	int optimalSplitIdx = -1;
+	int optimalLeftCount = 0;
+	int optimalRightCount = 0;
+	float optimalSplitPos = INF;
+
+	AABB parentNodeAABB = AABB{
+		node->minAABBLeftFirst.x,
+		node->minAABBLeftFirst.y,
+		node->minAABBLeftFirst.z,
+		node->maxAABBCount.x,
+		node->maxAABBCount.y,
+		node->maxAABBCount.z
+	};
+
+	float parentCost = calculateSurfaceArea(parentNodeAABB) * node->maxAABBCount.w;
+	auto lowestCost = parentCost;
+
+	AABB optimalLeftBBox = AABB{ INF,INF,INF,-INF,-INF,-INF };
+	AABB optimalRightBBox = AABB{ INF,INF,INF,-INF,-INF,-INF };
+
+	for (int axis = 0; axis < 3; ++axis) {
+		for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
+			int leftCount = 0;
+			int rightCount = 0;
+
+			AABB leftBBox = AABB{ INF,INF,INF,-INF,-INF,-INF };
+			AABB rightBBox = AABB{ INF,INF,INF,-INF,-INF,-INF };
+
+			auto prim = hittables[hittableIdxs[i]];
+			AABB splitAABB = prim->getWorldAABB();
+			float splitCX = (splitAABB.minX + splitAABB.maxX) / 2.0f;
+			float splitCY = (splitAABB.minY + splitAABB.maxY) / 2.0f;
+			float splitCZ = (splitAABB.minZ + splitAABB.maxZ) / 2.0f;
+			auto splitCentroid = glm::fvec3(splitCX, splitCY, splitCZ);
+			auto splitPos = splitCentroid[axis];
+
+			for (size_t j = node->minAABBLeftFirst.w; j < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++j) {
+				auto prim = hittables[hittableIdxs[j]];
+				AABB aabb = prim->getWorldAABB();
+				float cx = (aabb.minX + aabb.maxX) / 2.0f;
+				float cy = (aabb.minY + aabb.maxY) / 2.0f;
+				float cz = (aabb.minZ + aabb.maxZ) / 2.0f;
+				auto centroid = glm::fvec3(cx, cy, cz);
+				auto pos = centroid[axis];
+
+				if (pos <= splitPos) {
+					leftBBox.minX = min(leftBBox.minX, aabb.minX);
+					leftBBox.minY = min(leftBBox.minY, aabb.minY);
+					leftBBox.minZ = min(leftBBox.minZ, aabb.minZ);
+					leftBBox.maxX = max(leftBBox.maxX, aabb.maxX);
+					leftBBox.maxY = max(leftBBox.maxY, aabb.maxY);
+					leftBBox.maxZ = max(leftBBox.maxZ, aabb.maxZ);
+					leftCount++;
+				}
+				else {
+					rightBBox.minX = min(rightBBox.minX, aabb.minX);
+					rightBBox.minY = min(rightBBox.minY, aabb.minY);
+					rightBBox.minZ = min(rightBBox.minZ, aabb.minZ);
+					rightBBox.maxX = max(rightBBox.maxX, aabb.maxX);
+					rightBBox.maxY = max(rightBBox.maxY, aabb.maxY);
+					rightBBox.maxZ = max(rightBBox.maxZ, aabb.maxZ);
+					rightCount++;
+				}
+			}
+
+			auto splitCost = calculateSurfaceArea(leftBBox) * leftCount + calculateSurfaceArea(rightBBox) * rightCount;
+			if (splitCost < lowestCost) {
+				lowestCost = splitCost;
+				optimalSplitIdx = axis;
+				optimalSplitPos = splitPos;
+				optimalLeftCount = leftCount;
+				optimalRightCount = rightCount;
+				optimalLeftBBox = leftBBox;
+				optimalRightBBox = rightBBox;
+			}
+		}
+	}
+
+	// Quicksort our hittableIdx 
+	int maxj = node->minAABBLeftFirst.w + node->maxAABBCount.w - 1;
+	for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
+		auto leftPrim = hittables[hittableIdxs[i]];
+		AABB leftAABB = leftPrim->getWorldAABB();
+		float leftCX = (leftAABB.minX + leftAABB.maxX) / 2.0f;
+		float leftCY = (leftAABB.minY + leftAABB.maxY) / 2.0f;
+		float leftCZ = (leftAABB.minZ + leftAABB.maxZ) / 2.0f;
+		auto leftCentroid = glm::fvec3(leftCX, leftCY, leftCZ);
+		auto leftPos = leftCentroid[optimalSplitIdx];
+
+		if (leftPos > optimalSplitPos) {
+			for (size_t j = maxj; j > i; --j) {
+				auto rightPrim = hittables[hittableIdxs[j]];
+				AABB rightAABB = rightPrim->getWorldAABB();
+				float rightCX = (rightAABB.minX + rightAABB.maxX) / 2.0f;
+				float rightCY = (rightAABB.minY + rightAABB.maxY) / 2.0f;
+				float rightCZ = (rightAABB.minZ + rightAABB.maxZ) / 2.0f;
+				auto rightCentroid = glm::fvec3(rightCX, rightCY, rightCZ);
+				auto rightPos = rightCentroid[optimalSplitIdx];
+
+				if (rightPos <= optimalSplitPos) {
 					std::swap(hittableIdxs[i], hittableIdxs[j]);
 					maxj = j - 1;
 					break;

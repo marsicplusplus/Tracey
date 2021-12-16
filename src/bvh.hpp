@@ -29,8 +29,12 @@ class BVH : public Hittable {
 	private:
 		void constructTopLevelBVH();
 		void constructSubBVH();
-		void subdivide(BVHNode *node);
-		void partition(BVHNode* node);
+		void subdivideBin(BVHNode* node);
+		void partitionBin(BVHNode* node);
+
+		void subdivideHQ(BVHNode* node);
+		void partitionHQ(BVHNode* node);
+
 		bool computeBounding(BVHNode *node);
 		float calculateSurfaceArea(AABB bbox);
 		float calculateBinID(AABB primAABB, float k1, float k0, int longestAxisIdx);
