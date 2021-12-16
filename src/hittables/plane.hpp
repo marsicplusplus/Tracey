@@ -56,11 +56,15 @@ class ZXRect : public Hittable {
 			const auto transformedRayDir = transformedRay.getDirection();
 			const auto transformedOrigin = transformedRay.getOrigin();
 
+			if (rec.p != glm::fvec3{ INF, INF, INF }) {
+				tMax = glm::distance(transformedRay.getOrigin(), glm::fvec3(transformInv * glm::fvec4(rec.p, 1.0f)));
+			}
+
 			float t = (pos - transformedOrigin.y)/static_cast<float>(transformedRayDir.y);
 			if(t < tMin || t > tMax) return false;
 			auto localp = transformedRay.at(t);
 			if(localp.x < -0.5f || localp.x > 0.5f || localp.z < -0.5f || localp.z > 0.5f) return false;
-			rec.t = t;
+			rec.t = glm::distance(rec.p, ray.getOrigin());
 			rec.p = transposeInv * glm::fvec4(localp, 1.0);
 			rec.setFaceNormal(ray, glm::normalize(transform * glm::fvec4(0.0f, 1.0f, 0.0f, 0.0f)));
 			rec.material = mat;
