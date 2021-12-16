@@ -35,7 +35,7 @@ struct HitRecord {
 	float u;
 	float v;
 	float t;
-	glm::fvec3 p;
+	glm::fvec3 p = glm::fvec3(INF, INF, INF);
 	glm::fvec3 normal;
 
 	inline void setFaceNormal(const Ray& r, const glm::fvec3& outNormal) {

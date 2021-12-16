@@ -114,7 +114,8 @@
 		{
 			"type": "SPHERE",
 			"transform":{
-				"translation": [ 0.45, -0.2, -0.9 ]
+				"translation": [ 0.45, -0.2, -0.9 ],
+				"scale":  0.3
 			},
 			"radius": 0.3,
 			"material": "GlassSurface"

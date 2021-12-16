@@ -5,6 +5,7 @@
 #include "hittables/sphere.hpp"
 #include "hittables/plane.hpp"
 #include "input_manager.hpp"
+#include "scene_parser.hpp"
 #include "options_manager.hpp"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"

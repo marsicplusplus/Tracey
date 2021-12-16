@@ -17,7 +17,6 @@ class Scene {
 		Scene();
 		~Scene();
 
-		const MaterialPtr getMaterial(int idx) const;
 		const CameraPtr getCamera() const;
 		void setCamera(CameraPtr camera);
 
@@ -28,25 +27,21 @@ class Scene {
 		void addLight(LightObjectPtr light);
 		void addHittable(HittablePtr hittable);
 
+		inline const MaterialPtr getMaterial(int idx) {
+			if (idx > materials.size())
+				return nullptr;
+			else return materials[idx];
+		}
+
 	private:
 		CameraPtr currentCamera;
 		std::vector<HittablePtr> hittables;
+		std::vector<BVHPtr> BVHs;
 		std::vector<LightObjectPtr> lights;
 		std::vector<MaterialPtr> materials;
 		std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
+		BVHPtr topLevelBVH;
 
-
-		CameraPtr parseCamera(nlohmann::json &cam) const;
-		std::pair<std::string, std::shared_ptr<Texture>> parseTexture(nlohmann::json &text) const;
-		std::shared_ptr<Material> parseMaterial(nlohmann::json &text) const;
-		std::shared_ptr<Hittable> parsePrimitive(nlohmann::json& text) const;
-		std::shared_ptr<LightObject> parseLight(nlohmann::json &text) const;
-		std::shared_ptr<BVH> getMeshBVH(nlohmann::json& hit) const;
-		std::shared_ptr<BVH> parseMesh(std::filesystem::path &path, int mat) const;
-		
-		void parseTransform(nlohmann::basic_json<> &hit, HittablePtr& primitive) const;
-		
-		int findMaterial(std::string &name) const;
 };
 
 typedef std::shared_ptr<Scene> ScenePtr;

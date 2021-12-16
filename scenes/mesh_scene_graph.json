@@ -59,9 +59,66 @@
 			"type": "DIFFUSE",
 			"name": "Brick",
 			"texture": "BrickTexture"
+		},
+		{
+			"type": "DIELECTRIC",
+			"name": "GlassSurface",
+			"texture": "SolidWhite",
+			"ior": 1.52
+		},
+		{
+			"type": "MIRROR",
+			"name": "WhiteMirror",
+			"texture": "SolidWhite",
+			"reflect": 1.0
 		}
 	],
-	"primitives": [
+	"scenegraph": 
+	[
+		{
+			"meshes": [
+				{
+					"path": "./obj/Dragon.obj",
+					"material": "DiffuseRed",
+					"transform": {
+						"translation": [ -3, -1, -5 ],
+						"scale": 1.0,
+						"rotation": [ 0, 45, 0 ]
+					}
+				},
+				{
+					"path": "./obj/Dragon.obj",
+					"material": "DiffuseRed",
+					"transform": {
+						"translation": [ 6, -1, -5 ],
+						"scale": 1.0,
+						"rotation": [ 0, 45, 0 ]
+					}
+				}
+			],
+			"primitives": [
+				{
+					"type": "SPHERE",
+					"transform": {
+						"translation": [ -0.4, -2, 0 ]
+					},
+					"radius": 0.7,
+					"material": "Checkerboard2"
+				},
+				{
+					"type": "TORUS",
+					"transform": {
+						"translation": [ -2, 0, 0 ]
+					},
+					"radiusMajor": 0.7,
+					"radiusMinor": 0.2,
+					"material": "Checkerboard2"
+				}
+			]
+		}
+	],
+	"primitives": 
+	[
 		{
 			"type": "PLANE",
 			"normal": [ 0.0, 1.0, 0.0 ],
@@ -69,27 +126,8 @@
 			"material": "Checkerboard"
 		}
 	],
-	"meshes": [
-		{
-			"path": "./obj/Dragon.obj",
-			"material": "DiffuseRed",
-			"transform": {
-				"translation": [ 10, -1, -5 ],
-				"scale": [ 4, 1, 1 ],
-				"rotation": [ 45, 0, 0 ]
-			}
-		},
-		{
-			"path": "./obj/Dragon.obj",
-			"material": "DiffuseRed",
-			"transform": {
-				"translation": [ -2, -1, -5 ],
-				"scale": [ 1, 1.3, 1 ],
-				"rotation": [ 0, 45, 0 ]
-			}
-		}
-	],
-	"lights": [
+	"lights":
+	[
 		{
 			"type": "SPOT",
 			"position": [ 0.0, 3.0, 2.7 ],
