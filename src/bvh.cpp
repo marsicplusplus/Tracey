@@ -502,14 +502,9 @@ float BVH::calculateBinID(AABB primAABB, float k1, float k0, int longestAxisIdx)
 bool BVH::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
 	const Ray transformedRay = ray.transformRay(transformInv);
 
-	if (rec.p != glm::fvec3{ INF, INF, INF }) {
-		tMax = glm::distance(transformedRay.getOrigin(), glm::fvec3(transformInv * glm::fvec4(rec.p, 1.0f)));
-	}
-
 	if (traverse(transformedRay, this->root, tMin, tMax, rec)) {
 		rec.p = transform * glm::fvec4(rec.p, 1.0);
 		rec.setFaceNormal(ray, transposeInv * glm::fvec4(rec.normal, 0.0));
-		rec.t = glm::distance(rec.p, ray.getOrigin());
 		return true;
 	}
 	return false;
