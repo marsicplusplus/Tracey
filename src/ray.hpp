@@ -30,7 +30,13 @@ class Ray{
 		}
 
 		inline Ray transformRay(glm::fmat4x4 transform) const {
-			return Ray(transform * glm::fvec4(origin, 1), transform * glm::fvec4(direction, 0));
+			auto newDir = transform * glm::fvec4(direction, 0);
+			auto newOg = transform * glm::fvec4(origin, 1);
+			Ray ret;
+			ret.origin = newOg;
+			ret.direction = newDir;
+			ret.directionInv = 1.0f/ret.direction;
+			return ret;
 		}
 
 
