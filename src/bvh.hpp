@@ -39,7 +39,7 @@ class BVH : public Hittable {
 		float calculateSurfaceArea(AABB bbox);
 		float calculateBinID(AABB primAABB, float k1, float k0, int longestAxisIdx);
 		bool traverse(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitRecord& rec) const;
-		BVHNode* BVH::findBestMatch(BVHNode* target, std::list<BVHNode*> nodes);
+		BVHNode* findBestMatch(BVHNode* target, std::list<BVHNode*> nodes);
 
 		std::vector<HittablePtr> hittables;
 		std::vector<int> hittableIdxs;
