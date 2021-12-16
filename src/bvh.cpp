@@ -2,21 +2,102 @@
 #include "defs.hpp"
 #include <chrono>
 #include <iostream>
+#include <list>
 
-BVH::BVH(std::vector<HittablePtr> h) : hittables(h) {
+BVH::BVH(std::vector<HittablePtr> h, bool makeTopLevel) : hittables(h) {
 	this->nodePool = new BVHNode[h.size() * 2];
 	auto t1 = std::chrono::high_resolution_clock::now();
-	construct();
+	if (makeTopLevel) {
+		constructTopLevelBVH();
+	} else {
+		constructSubBVH();
+	}
 	auto t2 = std::chrono::high_resolution_clock::now();
 	auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-	std::cout << "BVH Construction for mesh containing " << h.size() << " primitives: " << ms_int.count() << "ms" << std::endl;
+	std::cout << "BVH Construction for " << h.size() << " hittables: " << ms_int.count() << "ms" << std::endl;
 }
 
 BVH::~BVH(){
 	delete[] this->nodePool;
 }
 
-void BVH::construct() {
+void BVH::constructTopLevelBVH() {
+	for (int i = 0; i < hittables.size(); ++i) {
+		this->hittableIdxs.push_back(i);
+	}
+
+	auto nodeList = std::list<BVHNode*>();
+	for (int i = 0; i < hittables.size(); ++i) {
+		BVHNode* node = new BVHNode;
+		auto hittable = hittables[i];
+		auto aabb = hittable->getWorldAABB();
+		node->minAABBLeftFirst = { aabb.minX, aabb.minY, aabb.minZ, i };
+		node->maxAABBCount = { aabb.maxX, aabb.maxY, aabb.maxZ, 1 };
+		nodeList.push_back(node);
+	}
+
+	auto index = 2 * hittables.size() - 1;
+
+	this->root = &this->nodePool[0];
+	this->root->minAABBLeftFirst.w = 0;
+	this->root->maxAABBCount.w = this->hittableIdxs.size();
+	this->poolPtr = 2;
+	computeBounding(root);
+
+	auto nodeA = nodeList.front();
+	auto nodeB = findBestMatch(nodeA, nodeList);
+	auto nodeC = findBestMatch(nodeB, nodeList);
+	while (nodeList.size() > 1) {
+		if (nodeA == nodeC) {
+
+			auto rightIndex = index--;
+			auto leftIndex = index--;
+			auto A = &this->nodePool[leftIndex];
+			auto B = &this->nodePool[rightIndex];
+
+			A->maxAABBCount = nodeA->maxAABBCount;
+			A->minAABBLeftFirst = nodeA->minAABBLeftFirst;
+			B->maxAABBCount = nodeB->maxAABBCount;
+			B->minAABBLeftFirst = nodeB->minAABBLeftFirst;
+
+			nodeList.remove(nodeA);
+			nodeList.remove(nodeB);
+			
+			nodeA->minAABBLeftFirst.x = min(nodeB->minAABBLeftFirst.x, nodeA->minAABBLeftFirst.x);
+			nodeA->minAABBLeftFirst.y = min(nodeB->minAABBLeftFirst.y, nodeA->minAABBLeftFirst.y);
+			nodeA->minAABBLeftFirst.z = min(nodeB->minAABBLeftFirst.z, nodeA->minAABBLeftFirst.z);
+			nodeA->minAABBLeftFirst.w = leftIndex;
+			nodeA->maxAABBCount.x = max(nodeB->maxAABBCount.x, nodeA->maxAABBCount.x);
+			nodeA->maxAABBCount.y = max(nodeB->maxAABBCount.y, nodeA->maxAABBCount.y);
+			nodeA->maxAABBCount.z = max(nodeB->maxAABBCount.z, nodeA->maxAABBCount.z);
+			nodeA->maxAABBCount.w = 0;
+			nodeList.push_back(nodeA);
+			
+			if (nodeList.size() > 1)
+				nodeB = findBestMatch(nodeA, nodeList);
+		}
+		else {
+			nodeA = nodeB;
+			nodeB = nodeC;
+		}
+		nodeC = findBestMatch(nodeB, nodeList);
+	}
+
+	this->root = nodeA;
+	nodeList.clear();
+
+	setLocalAABB({
+		this->root->minAABBLeftFirst.x,
+		this->root->minAABBLeftFirst.y,
+		this->root->minAABBLeftFirst.z,
+		this->root->maxAABBCount.x,
+		this->root->maxAABBCount.y,
+		this->root->maxAABBCount.z
+		});
+	this->surfaceArea = calculateSurfaceArea(worldBBox);
+}
+
+void BVH::constructSubBVH() {
 	for (int i = 0; i < hittables.size(); ++i) {
 		this->hittableIdxs.push_back(i);
 	}
@@ -35,6 +116,7 @@ void BVH::construct() {
 		this->root->maxAABBCount.y,
 		this->root->maxAABBCount.z
 	});
+	this->surfaceArea = calculateSurfaceArea(worldBBox);
 }
 
 bool BVH::computeBounding(BVHNode *node) {
@@ -43,8 +125,8 @@ bool BVH::computeBounding(BVHNode *node) {
 	node->maxAABBCount = { -INF,-INF,-INF , node->maxAABBCount.w };
 
 	for(size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i){
-		auto prim = hittables[hittableIdxs[i]];
-		AABB aabb = prim->getLocalAABB();
+		auto hit = hittables[hittableIdxs[i]];
+		AABB aabb = hit->getWorldAABB();
 		node->minAABBLeftFirst.x = min(aabb.minX, node->minAABBLeftFirst.x);
 		node->minAABBLeftFirst.y = min(aabb.minY, node->minAABBLeftFirst.y);
 		node->minAABBLeftFirst.z = min(aabb.minZ, node->minAABBLeftFirst.z);
@@ -81,7 +163,7 @@ void BVH::partition(BVHNode* node) {
 	AABB centroidBBox = AABB{ INF,INF,INF,-INF,-INF,-INF };
 	for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
 		auto prim = hittables[hittableIdxs[i]];
-		AABB aabb = prim->getLocalAABB();
+		AABB aabb = prim->getWorldAABB();
 		float cx = (aabb.minX + aabb.maxX) / 2.0f;
 		float cy = (aabb.minY + aabb.maxY) / 2.0f;
 		float cz = (aabb.minZ + aabb.maxZ) / 2.0f;
@@ -124,7 +206,7 @@ void BVH::partition(BVHNode* node) {
 
 	for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
 		auto prim = hittables[hittableIdxs[i]];
-		auto primAABB = prim->getLocalAABB();
+		auto primAABB = prim->getWorldAABB();
 		int binID = calculateBinID(primAABB, k1, k0, longestAxisIdx);
 
 		// For each bin we keep track of the number of triangles as well as the bins bounds
@@ -196,12 +278,12 @@ void BVH::partition(BVHNode* node) {
 	int maxj = node->minAABBLeftFirst.w + node->maxAABBCount.w - 1;
 	for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
 		auto leftPrim = hittables[hittableIdxs[i]];
-		int leftBinID = calculateBinID(leftPrim->getLocalAABB(), k1, k0, longestAxisIdx);
+		int leftBinID = calculateBinID(leftPrim->getWorldAABB(), k1, k0, longestAxisIdx);
 
 		if (leftBinID >= optimalSplitIdx) {
 			for (size_t j = maxj; j > i; --j) {
 				auto rightPrim = hittables[hittableIdxs[j]];
-				int rightBinID = calculateBinID(rightPrim->getLocalAABB(), k1, k0, longestAxisIdx);
+				int rightBinID = calculateBinID(rightPrim->getWorldAABB(), k1, k0, longestAxisIdx);
 
 				if (rightBinID < optimalSplitIdx) {
 					std::swap(hittableIdxs[i], hittableIdxs[j]);
@@ -258,6 +340,11 @@ float BVH::calculateBinID(AABB primAABB, float k1, float k0, int longestAxisIdx)
 
 bool BVH::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
 	const Ray transformedRay = ray.transformRay(transformInv);
+
+	if (rec.p != glm::fvec3{ INF, INF, INF }) {
+		tMax = glm::distance(transformedRay.getOrigin(), glm::fvec3(transformInv * glm::fvec4(rec.p, 1.0f)));
+	}
+
 	if (traverse(transformedRay, this->root, tMin, tMax, rec)) {
 		rec.p = transform * glm::fvec4(rec.p, 1.0);
 		rec.setFaceNormal(ray, transposeInv * glm::fvec4(rec.normal, 0.0));
@@ -273,6 +360,7 @@ bool BVH::traverse(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitR
 	float closest = tMax;
 
 	if (node->maxAABBCount.w != 0) {
+
 		// We are a leaf
 		// Intersect the primitives
 		for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
@@ -326,4 +414,22 @@ bool BVH::traverse(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitR
 			return false;
 		}
 	}
+}
+
+
+BVHNode* BVH::findBestMatch(BVHNode* target, std::list<BVHNode*> nodes) {
+	BVHNode* bestMatch;
+	float bestSurfaceArea = INF;
+	for (auto &node: nodes) {
+		if (node != target) {
+			AABB aabb = { node->minAABBLeftFirst.x, node->minAABBLeftFirst.y, node->minAABBLeftFirst.z, node->maxAABBCount.x, node->maxAABBCount.y, node->maxAABBCount.z };
+			float surfaceArea = calculateSurfaceArea(aabb);
+			if (surfaceArea < bestSurfaceArea) {
+				bestMatch = node;
+				bestSurfaceArea = surfaceArea;
+			}
+		}
+	}
+
+	return bestMatch;
 }

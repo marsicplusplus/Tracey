@@ -38,6 +38,7 @@ set( SRC
 	 src/renderer.cpp
 	 src/camera.cpp
 	 src/scene.cpp
+     src/scene_parser.cpp
 	 src/options_manager.cpp
 	 src/input_manager.cpp
 	 src/quartic.cpp

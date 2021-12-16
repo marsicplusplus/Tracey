@@ -2,7 +2,7 @@
 #define __BVH_HPP__
 
 #include "hittables/hittable.hpp"
-
+#include <list>
 struct BVHNode {
 
 	// If this is a leaf, we want to know the first hittable in the array;
@@ -21,19 +21,21 @@ struct Bin {
 
 class BVH : public Hittable {
 	public:
-		BVH(std::vector<HittablePtr> h);
+		BVH(std::vector<HittablePtr> h, bool makeTopLevel = false);
 		~BVH();
 
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const;
 
 	private:
-		void construct();
+		void constructTopLevelBVH();
+		void constructSubBVH();
 		void subdivide(BVHNode *node);
 		void partition(BVHNode* node);
 		bool computeBounding(BVHNode *node);
 		float calculateSurfaceArea(AABB bbox);
 		float calculateBinID(AABB primAABB, float k1, float k0, int longestAxisIdx);
 		bool traverse(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitRecord& rec) const;
+		BVHNode* BVH::findBestMatch(BVHNode* target, std::list<BVHNode*> nodes);
 
 		std::vector<HittablePtr> hittables;
 		std::vector<int> hittableIdxs;
@@ -41,6 +43,7 @@ class BVH : public Hittable {
 		BVHNode* nodePool;
 		BVHNode* root;
 		size_t poolPtr;
+		float surfaceArea;
 };
 
 typedef std::shared_ptr<BVH> BVHPtr;
