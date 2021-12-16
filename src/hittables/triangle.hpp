@@ -66,10 +66,6 @@ struct Triangle : Hittable {
 
 			const auto transformedRay = ray.transformRay(transformInv);
 
-			if (rec.p != glm::fvec3{ INF, INF, INF }) {
-				tMax = glm::distance(transformedRay.getOrigin(), glm::fvec3(transformInv * glm::fvec4(rec.p, 1.0f)));
-			}
-
 			glm::fvec3 v0v1 = v1 - v0;
 			glm::fvec3 v0v2 = v2 - v0;
 			glm::fvec3 p = glm::cross(transformedRay.getDirection(), v0v2);
@@ -111,7 +107,7 @@ struct Triangle : Hittable {
 				rec.v = uv.y;
 				rec.material = mat;
 				rec.p = transform * glm::fvec4(localp, 1.0);
-				rec.t = glm::distance(rec.p, ray.getOrigin());
+				rec.t = tmp;
 
 				return true;
 			}

@@ -22,7 +22,6 @@ public:
 	}
 
 	inline bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override {
-
 		const auto transformedRay = ray.transformRay(transformInv);
 
 		if (!hitAABB(transformedRay, localBBox)) {
