@@ -1,0 +1,49 @@
+{
+	"camera" : {
+		"position": [0.0, 0.0, 4.0],
+		"dir": [0.0, 0.0, -1.0],
+		"up": [0.0, 1.0, 0.0],
+		"fov": 90
+	},
+	"textures" : [
+		{
+			"type": "IMAGE",
+			"name": "MarbleTexture",
+			"path": "Textures/MarbleFloor.jpg"
+		}
+	],
+	"materials": [
+		{
+			"type": "MIRROR",
+			"name": "MarbleSurface",
+			"texture": "MarbleTexture",
+			"reflect": 0.3
+		},
+		{
+			"type": "MIRROR",
+			"name": "TileSurface",
+			"texture": "MarbleTexture",
+			"reflect": 0.15
+		}
+	],
+	"primitives": [
+		{
+			"type": "PLANE",
+			"normal": [0.0, 1.0, 0.0],
+			"position": [0,-1,0],
+			"material": "TileSurface"
+		},
+		{
+			"type": "MESH",
+			"path": "obj/pillar.obj",
+			"material": "TileSurface"
+		}
+	],
+	"lights": [
+		{
+			"type": "AMBIENT",
+			"color": [ 0.7, 0.7, 1.0 ],
+			"intensity": 1.0
+		}
+	]
+}
