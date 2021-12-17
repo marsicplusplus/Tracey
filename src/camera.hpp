@@ -57,7 +57,7 @@ class Camera{
 		float k2;
 		float fisheyeAngle;
 
-		const float speed = 0.3f;
+		const float speed = 0.8f;
 		const float angleToRads = 0.01745329251994329576923690768489f;
 };
 
