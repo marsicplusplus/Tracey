@@ -26,17 +26,25 @@
 			"reflect": 0.15
 		}
 	],
-	"primitives": [
+	"scenegraph": 
+	[
 		{
-			"type": "PLANE",
-			"normal": [0.0, 1.0, 0.0],
-			"position": [0,-1,0],
-			"material": "TileSurface"
-		},
-		{
-			"type": "MESH",
-			"path": "obj/pillar.obj",
-			"material": "TileSurface"
+			"meshes": [
+				{
+					"path": "./obj/plane.obj",
+					"material": "MarbleSurface",
+					"transform": {
+						"scale": [1,0.3,1]
+					}
+				},
+				{
+					"path": "./obj/pillar.obj",
+					"material": "MarbleSurface",
+					"transform": {
+						"scale": 0.4
+					}
+				}
+			]
 		}
 	],
 	"lights": [
