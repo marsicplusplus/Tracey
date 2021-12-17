@@ -66,17 +66,6 @@ target_link_libraries( Tracey ${LIBS})
 target_compile_options( Tracey PRIVATE ${CXX_OPTIONS})
 set_property(TARGET Tracey PROPERTY CXX_STANDARD 17)
 
-if( UNIX )
-    add_custom_command(
-		TARGET Tracey
-        POST_BUILD COMMAND ${CMAKE_COMMAND} -E
-        create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/Textures ${CMAKE_BINARY_DIR}/Textures)
-else()
-    file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}/Textures _dstDir)
-    file(TO_NATIVE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Textures _srcDir)
-    execute_process(COMMAND cmd.exe /c mklink /J "${_dstDir}" "${_srcDir}")
-endif()
-
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.txt ${CMAKE_CURRENT_BINARY_DIR}/config.txt COPYONLY)
 
 if( MSVC )

@@ -4,7 +4,6 @@
 #include "materials/material.hpp"
 #include "glm/vec3.hpp"
 #include "ray.hpp"
-#include <random>
 #include <cmath>
 #include <limits>
 #include <memory>
@@ -87,5 +86,16 @@ inline bool hitAABB(const Ray& ray, const AABB& bbox) {
 	return hitAABB(ray, bbox, distance);
 }
 
+namespace Random {
+	inline uint32_t xorshift32( uint32_t& state ){
+		state ^= state << 13;
+		state ^= state >> 17;
+		state ^= state << 5;
+		return state;
+	}
+
+	inline float RandomFloat( uint32_t& s ) 
+	{ return xorshift32(s) * 2.3283064365387e-10f; }
+}
 
 #endif
