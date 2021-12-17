@@ -197,7 +197,7 @@ bool Renderer::start() {
 					/* Launch thread */
 					int samples = this->nSamples;
 					int bounces = this->nBounces;
-					futures.push_back(pool.queue([&, tileRow, tileCol, samples, bounces](std::mt19937& gen){
+					futures.push_back(pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
 						CameraPtr cam = scene->getCamera();
 						for (int row = 0; row < tHeight; ++row) {
 							for (int col = 0; col < tWidth; ++col) {
@@ -206,8 +206,8 @@ bool Renderer::start() {
 								int y = row + tHeight * tileRow;
 								if (cam) {
 									for(int s = 0; s < samples; ++s){
-										float u = static_cast<float>(x + randomfloat(gen, 0.0,1.0)) / static_cast<float>(wWidth - 1);
-										float v = static_cast<float>(y + randomfloat(gen, 0.0,1.0)) / static_cast<float>(wHeight - 1);
+										float u = static_cast<float>(x + Random::RandomFloat(rng)) / static_cast<float>(wWidth - 1);
+										float v = static_cast<float>(y + Random::RandomFloat(rng)) / static_cast<float>(wHeight - 1);
 										Ray ray = cam->generateCameraRay(u, v);
 										if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
 											pxColor += Color(0, 0, 0);

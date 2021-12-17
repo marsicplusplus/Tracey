@@ -7,14 +7,13 @@
 #include <deque>
 #include <condition_variable>
 #include <thread>
-#include <random>
 
 class ThreadPool {
 	public:
 		ThreadPool(size_t threads);
 		~ThreadPool();
 		
-		std::future<void> queue(std::function<void(std::mt19937&)>&& f);
+		std::future<void> queue(std::function<void(uint32_t&)>&& f);
 
 		inline void cancel_pending() {
 			std::unique_lock<std::mutex> l(mutex);
@@ -26,12 +25,12 @@ class ThreadPool {
 	std::condition_variable cond;
 	bool stop;
 
-	std::deque<std::packaged_task<void(std::mt19937&)>> tasks;
+	std::deque<std::packaged_task<void(uint32_t&)>> tasks;
 	std::vector<std::thread> workers;
 };
 
-inline std::future<void> ThreadPool::queue(std::function<void(std::mt19937&)>&& f) {
-	std::packaged_task<void(std::mt19937&)> p(f);
+inline std::future<void> ThreadPool::queue(std::function<void(uint32_t&)>&& f) {
+	std::packaged_task<void(uint32_t&)> p(f);
 
 	auto r=p.get_future(); 
 	{
@@ -46,9 +45,9 @@ inline std::future<void> ThreadPool::queue(std::function<void(std::mt19937&)>&& 
 inline ThreadPool::ThreadPool(std::size_t n) : stop(false){
 	for (std::size_t i = 0; i < n; ++i){
 		workers.emplace_back([this] {
-				std::mt19937 gen32;
+				uint32_t gen32 = uint32_t(time(NULL));
 				for(;;) {
-					std::packaged_task<void(std::mt19937&)> task;
+					std::packaged_task<void(uint32_t&)> task;
 					{
 						std::unique_lock<std::mutex> lock(this->mutex);
 						this->cond.wait(lock,

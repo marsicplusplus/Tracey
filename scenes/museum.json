@@ -10,6 +10,11 @@
 			"type": "IMAGE",
 			"name": "MarbleTexture",
 			"path": "Textures/MarbleFloor.jpg"
+		},
+		{
+			"type": "IMAGE",
+			"name": "StoneTexture",
+			"path": "Textures/StonePillar.jpg"
 		}
 	],
 	"materials": [
@@ -20,10 +25,9 @@
 			"reflect": 0.3
 		},
 		{
-			"type": "MIRROR",
-			"name": "TileSurface",
-			"texture": "MarbleTexture",
-			"reflect": 0.15
+			"type": "DIFFUSE",
+			"name": "PillarMaterial",
+			"texture": "StoneTexture"
 		}
 	],
 	"scenegraph": 
@@ -34,14 +38,14 @@
 					"path": "./obj/plane.obj",
 					"material": "MarbleSurface",
 					"transform": {
-						"scale": [1,0.3,1]
 					}
 				},
 				{
 					"path": "./obj/pillar.obj",
-					"material": "MarbleSurface",
+					"material": "PillarMaterial",
 					"transform": {
-						"scale": 0.4
+						"scale": 0.5,
+						"translation": [0,0.7,0]
 					}
 				}
 			]
