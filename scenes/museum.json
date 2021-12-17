@@ -150,11 +150,17 @@
 	],
 	"lights": [
 		{
+			"type": "DIRECTIONAL",
+			"direction": [0.0, -0.5, -0.5],
+			"intensity": 1.0,
+			"color": [ 1.0, 1.0, 1.0 ]
+		},
+		{
 			"type": "SPOT",
 			"position":[-2.457003116607666,5.096845269203186,-4.133850574493408],
 			"direction": [ 0.0, -1.0, 0.0 ],
 			"cutoffAngle": 80,
-			"color": [ 0.7, 0.7, 1.0 ],
+			"color": [ 1.0, 1.0, 1.0 ],
 			"intensity": 1.0
 		},
 		{
