@@ -136,7 +136,7 @@ namespace SceneParser {
 		return std::make_shared<Mesh>(pos, norm, uv, triangles, bbox);
 	}
 
-	std::shared_ptr<Instance> parseInstance(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<Mesh>> meshes) {
+	std::shared_ptr<Hittable> parseInstance(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<BVH>> meshes) {
 		if (!mesh.contains("name")) throw std::invalid_argument("Mesh doesn't name an instance");
 		std::string name = mesh.at("name");
 		auto m = meshes.find(name);
@@ -398,7 +398,7 @@ namespace SceneParser {
 		return texture;
 	}
 
-	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<Mesh>> meshes) {
+	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<BVH>> meshes) {
 		std::shared_ptr<BVH> topLevelBVH;
 		std::vector<HittablePtr> BVHs;
 		std::vector<HittablePtr> primitives;
@@ -414,12 +414,12 @@ namespace SceneParser {
 
 			if (obj.contains("meshes")) {
 				for (auto& m : obj["meshes"]) {
+					std::cout << "Parsing " << m.at("name") << std::endl;
 					auto instance = SceneParser::parseInstance(m, materials, meshes);
 					if (instance) {
-						auto tris = instance->getTri();
-						auto bvh = std::make_shared<BVH>(tris);
+						std::cout << "Instance found" << std::endl;
+						auto bvh = std::make_shared<BVH>(instance);
 						parseTransform(m, bvh);
-						nPrimitives += tris.size();
 						BVHs.push_back(bvh);
 					}
 				}

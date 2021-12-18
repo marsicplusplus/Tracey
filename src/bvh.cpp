@@ -4,6 +4,25 @@
 #include <iostream>
 #include <list>
 
+BVH::BVH(std::shared_ptr<Hittable> hittable, bool makeTopLevel) {
+	hittables.push_back(hittable);
+	this->nodePool = new BVHNode[1];
+	this->root = &this->nodePool[0];
+	this->root->minAABBLeftFirst.w = 0;
+	this->root->maxAABBCount.w = 1;
+	this->hittableIdxs.push_back(0);
+	computeBounding(root);
+	setLocalAABB({
+		this->root->minAABBLeftFirst.x,
+		this->root->minAABBLeftFirst.y,
+		this->root->minAABBLeftFirst.z,
+		this->root->maxAABBCount.x,
+		this->root->maxAABBCount.y,
+		this->root->maxAABBCount.z
+	});
+	this->surfaceArea = calculateSurfaceArea(worldBBox);
+}
+
 BVH::BVH(std::vector<HittablePtr> h, bool makeTopLevel) : hittables(h) {
 	this->nodePool = new BVHNode[h.size() * 2];
 	auto t1 = std::chrono::high_resolution_clock::now();
@@ -503,9 +522,9 @@ float BVH::calculateBinID(AABB primAABB, float k1, float k0, int longestAxisIdx)
 bool BVH::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
 	const Ray transformedRay = ray.transformRay(transformInv);
 
-	if (traverse(transformedRay, this->root, tMin, tMax, rec)) {
-		rec.p = transform * glm::fvec4(rec.p, 1.0);
-		rec.setFaceNormal(ray, transposeInv * glm::fvec4(rec.normal, 0.0));
+	HitRecord tmp;
+	if (traverse(transformedRay, this->root, tMin, tMax, tmp)) {
+		rec = tmp;
 		return true;
 	}
 	return false;

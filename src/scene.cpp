@@ -33,7 +33,7 @@ Scene::Scene(std::filesystem::path sceneFile){
 			std::string name;
 			auto mesh = SceneParser::parseMeshInstance(m, materials, name);
 			if (mesh)
-				meshes[name] = mesh;
+				meshes[name] = std::make_shared<BVH>(mesh->tris);
 		}
 	}
 
