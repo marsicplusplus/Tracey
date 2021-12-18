@@ -3,3 +3,6 @@ build/
 .vs
 .vim
 .zip
+*.py
+.gitignore
+scenes/

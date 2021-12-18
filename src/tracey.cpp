@@ -74,8 +74,10 @@ int main(int argc, char *args[]){
 
 	OptionsMap::Instance()->printOptions();
 
-	Renderer renderer("TraceyGL", OptionsMap::Instance()->getOption(Options::THREADS));
+	pool.init(OptionsMap::Instance()->getOption(Options::THREADS));
+	Renderer renderer("TraceyGL");
 	if(scene) renderer.setScene(scene);
 	renderer.init();
 	renderer.start();
+	pool.cancel_pending();
 }

@@ -171,7 +171,7 @@ bool Renderer::start() {
 	if(wWidth % tWidth != 0 || wHeight % tHeight != 0){
 		throw new std::invalid_argument("Window width and height must be multiples of tiles size!");
 	}
-
+	
 	glClearColor(0,0,0,0);
 
 	const int maxBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
@@ -500,7 +500,6 @@ Renderer::~Renderer() {
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 	glfwDestroyWindow(this->window);
-	pool.cancel_pending();
 	glDeleteShader(this->shader);
 	glDeleteBuffers(1, &this->VBO);
 	glDeleteVertexArrays(1, &this->VAO);
