@@ -5,7 +5,7 @@
 
 class Instance : public Hittable {
 	public:
-		Instance(std::shared_ptr<Mesh> hit) : Hittable(hit->getLocalAABB()), hittable{hit} {};
+		Instance(std::shared_ptr<Hittable> hit) : Hittable(hit->getLocalAABB()), hittable{hit} {};
 
 		inline bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override {
 			const auto transformedRay = ray.transformRay(transformInv);
@@ -19,12 +19,8 @@ class Instance : public Hittable {
 			return false;
 		}
 
-		inline const std::vector<HittablePtr>& getTri() const {
-			return hittable->tris;
-		}
-
 	private:
-		std::shared_ptr<Mesh> hittable;
+		std::shared_ptr<Hittable> hittable;
 };
 
 #endif
