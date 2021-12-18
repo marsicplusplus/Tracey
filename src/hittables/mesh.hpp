@@ -1,7 +1,7 @@
+#ifndef __MESH_HPP__
+#define __MESH_HPP__
 #include "hittables/hittable.hpp"
 #include <iostream>
-
-
 
 class Mesh : public Hittable {
 public:
@@ -32,3 +32,4 @@ private:
 	std::vector<glm::fvec2> uvs;
 
 };
+#endif

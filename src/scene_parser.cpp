@@ -3,6 +3,7 @@
 #include "textures/checkered.hpp"
 #include "textures/image_texture.hpp"
 #include "hittables/sphere.hpp"
+#include "hittables/instance.hpp"
 #include "hittables/plane.hpp"
 #include "hittables/triangle.hpp"
 #include "hittables/torus.hpp"
@@ -27,6 +28,125 @@ namespace SceneParser {
 	glm::fvec4 parseVec4(nlohmann::basic_json<>& arr) {
 		return glm::fvec4(arr[0].get<float>(), arr[1].get<float>(), arr[2].get<float>(), arr[3].get<float>());
 	}
+
+	std::shared_ptr<Mesh> parseMeshInstance(nlohmann::json& hit, const std::vector<MaterialPtr>& materials, std::string &name) {
+		name = hit.at("name");
+
+		if (!hit.contains("material")) throw std::invalid_argument("Mesh doesn't name a material");
+		std::string matName = hit.at("material");
+		int materialIdx = findMaterial(matName, materials);
+		if (materialIdx == -1) throw std::invalid_argument("Mesh doesn't name a valid material");
+
+		if (!hit.contains("path")) {
+			throw std::invalid_argument("Mesh doesn't have a valid path");
+		}
+	
+		std::filesystem::path meshPath = hit.at("path");
+
+		tinyobj::ObjReaderConfig reader_config;
+		reader_config.triangulate = true;
+		reader_config.mtl_search_path = meshPath.parent_path().string(); // Path to material files
+
+		tinyobj::ObjReader reader;
+		if (!reader.ParseFromFile(meshPath.string(), reader_config)) {
+			if (!reader.Error().empty()) std::cerr << "TinyObjReader: " << reader.Error();
+			return nullptr;
+		}
+		if (!reader.Warning().empty()) std::cout << "TinyObjReader: " << reader.Warning();
+
+		auto& attrib = reader.GetAttrib();
+		auto& shapes = reader.GetShapes();
+
+		std::vector<glm::fvec3> pos;
+		std::vector<glm::fvec3> norm;
+		std::vector<glm::fvec2> uv;
+		std::vector<HittablePtr> triangles;
+
+		float minX = INF, minY = INF, minZ = INF, maxX = -INF, maxY = -INF, maxZ = -INF;
+
+		for (size_t i = 0; i < attrib.vertices.size(); i += 3) {
+			auto xVal = attrib.vertices[i];
+			auto yVal = attrib.vertices[i + 1];
+			auto zVal = attrib.vertices[i + 2];
+
+			if (xVal < minX) {
+				minX = xVal;
+			}
+
+			if (yVal < minY) {
+				minY = yVal;
+			}
+
+			if (zVal < minZ) {
+				minZ = zVal;
+			}
+
+			if (xVal > maxX) {
+				maxX = xVal;
+			}
+
+			if (yVal > maxY) {
+				maxY = yVal;
+			}
+
+			if (zVal > maxZ) {
+				maxZ = zVal;
+			}
+
+			pos.push_back(glm::fvec3{
+				attrib.vertices[i],
+				attrib.vertices[i + 1],
+				attrib.vertices[i + 2]
+			});
+		}
+
+		for (size_t i = 0; i < attrib.normals.size(); i += 3) {
+			norm.push_back(glm::fvec3{
+				attrib.normals[i],
+				attrib.normals[i + 1],
+				attrib.normals[i + 2]
+			});
+		}
+		for (size_t i = 0; i < attrib.texcoords.size(); i += 2) {
+			uv.push_back(glm::dvec2{
+				attrib.texcoords[i],
+				attrib.texcoords[i + 1]
+			});
+		}
+
+		for (auto& shape : shapes) {
+			const std::vector<tinyobj::index_t> idx = shape.mesh.indices;
+			const std::vector<int>& mat_ids = shape.mesh.material_ids;
+			for (size_t face_ind = 0; face_ind < mat_ids.size(); face_ind++) {
+				auto tri = std::make_shared<Triangle>(
+					glm::ivec3{ idx[3 * face_ind].vertex_index, 	idx[3 * face_ind + 1].vertex_index, 	idx[3 * face_ind + 2].vertex_index },
+					glm::ivec3{ idx[3 * face_ind].normal_index, 	idx[3 * face_ind + 1].normal_index, 	idx[3 * face_ind + 2].normal_index },
+					glm::ivec3{ idx[3 * face_ind].texcoord_index, 	idx[3 * face_ind + 1].texcoord_index, 	idx[3 * face_ind + 2].texcoord_index },
+					materialIdx,
+					pos,
+					norm,
+					uv
+				);
+				parseTransform(hit, tri);
+				triangles.push_back(tri);
+			}
+		}
+
+		AABB bbox{ minX, minY, minZ, maxX, maxY, maxZ };
+		return std::make_shared<Mesh>(pos, norm, uv, triangles, bbox);
+	}
+
+	std::shared_ptr<Instance> parseInstance(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<Mesh>> meshes) {
+		if (!mesh.contains("name")) throw std::invalid_argument("Mesh doesn't name an instance");
+		std::string name = mesh.at("name");
+		auto m = meshes.find(name);
+		if(m == meshes.end()){
+			throw std::invalid_argument("Mesh doesn't name a valid instance");
+		}
+		auto instance = std::make_shared<Instance>(m->second);
+		parseTransform(mesh, instance);
+		return instance;
+	};
 
 	std::shared_ptr<Mesh> parseMesh(nlohmann::json& hit, const std::vector<MaterialPtr>& materials) {
 
@@ -125,7 +245,6 @@ namespace SceneParser {
 					norm,
 					uv
 				);
-				parseTransform(hit, tri);
 				triangles.push_back(tri);
 			}
 		}
@@ -279,39 +398,32 @@ namespace SceneParser {
 		return texture;
 	}
 
-	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials) {
+	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<Mesh>> meshes) {
 		std::shared_ptr<BVH> topLevelBVH;
 		std::vector<HittablePtr> BVHs;
 		std::vector<HittablePtr> primitives;
+		int nPrimitives = 0;
 
 		for (auto& obj : text) {
-
 			if (obj.contains("node"))
 				for (auto& node : obj["node"]) {
-					auto bvh = SceneParser::parseSceneGraph(node, materials);
+					auto bvh = SceneParser::parseSceneGraph(node, materials, meshes);
 					if (bvh)
 						BVHs.push_back(bvh);
 				}
 
-			if (obj.contains("primitives"))
-				for (auto& primitve : obj["primitives"]) {
-					auto prim = SceneParser::parsePrimitive(primitve, materials);
-					if (prim)
-						primitives.push_back(prim);
-				}
-
-			if (obj.contains("meshes"))
+			if (obj.contains("meshes")) {
 				for (auto& m : obj["meshes"]) {
-					auto mesh = SceneParser::parseMesh(m, materials);
-					if (mesh) {
-						auto bvh = std::make_shared<BVH>(mesh->tris);
+					auto instance = SceneParser::parseInstance(m, materials, meshes);
+					if (instance) {
+						auto tris = instance->getTri();
+						auto bvh = std::make_shared<BVH>(tris);
+						parseTransform(m, bvh);
+						nPrimitives += tris.size();
 						BVHs.push_back(bvh);
 					}
 				}
-		}
-
-		if (!primitives.empty()) {
-			BVHs.push_back(std::make_shared<BVH>(primitives));
+			}
 		}
 
 		if (!BVHs.empty()) {
@@ -319,6 +431,7 @@ namespace SceneParser {
 			topLevelBVH = std::make_shared<BVH>(BVHs, makeTopLevel);
 		}
 
+		std::cout << "Total n. of primitives: " << nPrimitives << std::endl;
 		return topLevelBVH;
 	}
 

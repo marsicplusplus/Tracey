@@ -13,8 +13,8 @@ BVH::BVH(std::vector<HittablePtr> h, bool makeTopLevel) : hittables(h) {
 		constructSubBVH();
 	}
 	auto t2 = std::chrono::high_resolution_clock::now();
-	auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-	std::cout << "BVH Construction for " << h.size() << " hittables: " << ms_int.count() << "ms" << std::endl;
+	auto ms_int = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1);
+	std::cout << "BVH Construction for " << h.size() << " hittables: " << ms_int.count() << "us" << std::endl;
 }
 
 BVH::~BVH(){

@@ -41,6 +41,7 @@ set( SRC
      src/scene_parser.cpp
 	 src/options_manager.cpp
 	 src/input_manager.cpp
+	 src/thread_pool.cpp
 	 src/quartic.cpp
 	 src/hittables/triangle.cpp
 	 src/bvh.cpp

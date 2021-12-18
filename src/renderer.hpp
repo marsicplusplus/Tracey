@@ -13,7 +13,7 @@
 
 class Renderer{
 public:
-	inline Renderer(const std::string& _title, size_t pool = 1) : title{ _title }, pool{ pool }, isBufferInvalid(false){
+	inline Renderer(const std::string& _title) : title{ _title }, isBufferInvalid(false){
 			this->frameBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 			this->secondaryBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 		};
@@ -44,7 +44,6 @@ public:
 		unsigned int shader;
 		unsigned int texture;
 		ScenePtr scene;
-		ThreadPool pool;
 		bool isBufferInvalid;
 
 		bool showGui;
