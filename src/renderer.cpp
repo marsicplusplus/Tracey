@@ -206,8 +206,8 @@ bool Renderer::start() {
 								int y = row + tHeight * tileRow;
 								if (cam) {
 									for(int s = 0; s < samples; ++s){
-										float u = static_cast<float>(x + Random::RandomFloat(rng)) / static_cast<float>(wWidth - 1);
-										float v = static_cast<float>(y + Random::RandomFloat(rng)) / static_cast<float>(wHeight - 1);
+										float u = static_cast<float>(x + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wWidth - 1);
+										float v = static_cast<float>(y + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wHeight - 1);
 										Ray ray = cam->generateCameraRay(u, v);
 										if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
 											pxColor += Color(0, 0, 0);
@@ -300,7 +300,7 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 		}
 		return Color{0,0,0};
 	}
-	return Color(0.0,0.0,0.0);
+	return Color(0.5,0.5,0.5);
 }
 void Renderer::putPixel(uint32_t fb[], int idx, uint8_t r, uint8_t g, uint8_t b){
 	fb[idx] = r << 16 | g << 8 | b << 0;
