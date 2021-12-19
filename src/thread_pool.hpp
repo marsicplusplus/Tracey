@@ -47,7 +47,7 @@ inline std::future<void> ThreadPool::queue(std::function<void(uint32_t&)>&& f) {
 inline void ThreadPool::init(std::size_t n){
 	for (std::size_t i = 0; i < n; ++i){
 		workers.emplace_back([this] {
-				uint32_t gen32 = uint32_t(time(NULL));
+				auto gen32 = uint32_t(time(NULL));
 				for(;;) {
 					std::packaged_task<void(uint32_t&)> task;
 					{

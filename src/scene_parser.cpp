@@ -92,19 +92,19 @@ namespace SceneParser {
 				maxZ = zVal;
 			}
 
-			pos.push_back(glm::fvec3{
+			pos.emplace_back(
 				attrib.vertices[i],
 				attrib.vertices[i + 1],
 				attrib.vertices[i + 2]
-			});
+			);
 		}
 
 		for (size_t i = 0; i < attrib.normals.size(); i += 3) {
-			norm.push_back(glm::fvec3{
+			norm.emplace_back(
 				attrib.normals[i],
 				attrib.normals[i + 1],
 				attrib.normals[i + 2]
-			});
+			);
 		}
 		for (size_t i = 0; i < attrib.texcoords.size(); i += 2) {
 			uv.push_back(glm::dvec2{
@@ -208,19 +208,19 @@ namespace SceneParser {
 				maxZ = zVal;
 			}
 
-			pos.push_back(glm::fvec3{
+			pos.emplace_back(
 				attrib.vertices[i],
 				attrib.vertices[i + 1],
 				attrib.vertices[i + 2]
-			});
+			);
 		}
 
 		for (size_t i = 0; i < attrib.normals.size(); i += 3) {
-			norm.push_back(glm::fvec3{
+			norm.emplace_back(
 				attrib.normals[i],
 				attrib.normals[i + 1],
 				attrib.normals[i + 2]
-			});
+			);
 		}
 		for (size_t i = 0; i < attrib.texcoords.size(); i += 2) {
 			uv.push_back(glm::dvec2{
@@ -416,7 +416,6 @@ namespace SceneParser {
 					if (instance) {
 						std::vector<HittablePtr> hittableVec;
 						hittableVec.push_back(instance);
-						std::cout << "Instance found" << std::endl;
 						auto bvh = std::make_shared<BVH>(hittableVec);
 						parseTransform(m, bvh);
 						BVHs.push_back(bvh);
