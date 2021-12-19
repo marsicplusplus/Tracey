@@ -1,19 +1,20 @@
 #ifndef __RENDERER_HPP__
 #define __RENDERER_HPP__
 
-#include "ray.hpp"
-#include "defs.hpp"
-#include "scene.hpp"
 #include "GLFW/glfw3.h"
-#include "options_manager.hpp"
-#include "thread_pool.hpp"
-#include <string>
+#include "defs.hpp"
 #include "imgui.h"
 #include "imfilebrowser.h"
+#include "options_manager.hpp"
+#include "ray.hpp"
+#include "scene.hpp"
+#include "thread_pool.hpp"
+#include <string>
+#include <utility>
 
 class Renderer{
 public:
-	inline Renderer(const std::string& _title, size_t pool = 1) : title{ _title }, pool{ pool }, isBufferInvalid(false){
+	inline Renderer(std::string  _title) : title{std::move( _title )}, isBufferInvalid(false){
 			this->frameBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 			this->secondaryBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 		};
@@ -44,7 +45,6 @@ public:
 		unsigned int shader;
 		unsigned int texture;
 		ScenePtr scene;
-		ThreadPool pool;
 		bool isBufferInvalid;
 
 		bool showGui;

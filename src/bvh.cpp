@@ -13,8 +13,8 @@ BVH::BVH(std::vector<HittablePtr> h, bool makeTopLevel) : hittables(h) {
 		constructSubBVH();
 	}
 	auto t2 = std::chrono::high_resolution_clock::now();
-	auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-	std::cout << "BVH Construction for " << h.size() << " hittables: " << ms_int.count() << "ms" << std::endl;
+	auto ms_int = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1);
+	std::cout << "BVH Construction for " << h.size() << " hittables: " << ms_int.count() << "us" << std::endl;
 }
 
 BVH::~BVH(){
@@ -28,7 +28,7 @@ void BVH::constructTopLevelBVH() {
 
 	auto nodeList = std::list<BVHNode*>();
 	for (int i = 0; i < hittables.size(); ++i) {
-		BVHNode* node = new BVHNode;
+		auto* node = new BVHNode;
 		auto hittable = hittables[i];
 		auto aabb = hittable->getWorldAABB();
 		node->minAABBLeftFirst = { aabb.minX, aabb.minY, aabb.minZ, i };
@@ -36,7 +36,7 @@ void BVH::constructTopLevelBVH() {
 		nodeList.push_back(node);
 	}
 
-	auto index = 2 * hittables.size() - 1;
+	int index = 2 * hittables.size() - 1;
 
 	this->root = &this->nodePool[0];
 	this->root->minAABBLeftFirst.w = 0;
@@ -503,8 +503,10 @@ float BVH::calculateBinID(AABB primAABB, float k1, float k0, int longestAxisIdx)
 bool BVH::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
 	const Ray transformedRay = ray.transformRay(transformInv);
 
-	if (traverse(transformedRay, this->root, tMin, tMax, rec)) {
-		rec.p = transform * glm::fvec4(rec.p, 1.0);
+	HitRecord tmp;
+	if (traverse(transformedRay, this->root, tMin, tMax, tmp)) {
+		rec = tmp;
+		rec.p = transform * glm::fvec4(rec.p, 1.0f);
 		rec.setFaceNormal(ray, transposeInv * glm::fvec4(rec.normal, 0.0));
 		return true;
 	}

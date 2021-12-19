@@ -4,6 +4,7 @@
 #include "camera.hpp"
 #include "light_object.hpp"
 #include "hittables/hittable.hpp"
+#include "hittables/mesh.hpp"
 #include "json.hpp"
 #include "bvh.hpp"
 
@@ -25,7 +26,6 @@ class Scene {
 		bool update(float dt);
 
 		void addLight(LightObjectPtr light);
-		void addHittable(HittablePtr hittable);
 
 		inline const MaterialPtr getMaterial(int idx) {
 			if (idx > materials.size())
@@ -35,7 +35,7 @@ class Scene {
 
 	private:
 		CameraPtr currentCamera;
-		std::vector<HittablePtr> hittables;
+		std::unordered_map<std::string, std::shared_ptr<BVH>> meshes;
 		std::vector<BVHPtr> BVHs;
 		std::vector<LightObjectPtr> lights;
 		std::vector<MaterialPtr> materials;

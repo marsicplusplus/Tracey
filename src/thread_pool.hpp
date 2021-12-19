@@ -10,8 +10,10 @@
 
 class ThreadPool {
 	public:
-		ThreadPool(size_t threads);
+		ThreadPool();
 		~ThreadPool();
+
+		void init(size_t threads);
 		
 		std::future<void> queue(std::function<void(uint32_t&)>&& f);
 
@@ -42,10 +44,10 @@ inline std::future<void> ThreadPool::queue(std::function<void(uint32_t&)>&& f) {
 	return r;
 }
 
-inline ThreadPool::ThreadPool(std::size_t n) : stop(false){
+inline void ThreadPool::init(std::size_t n){
 	for (std::size_t i = 0; i < n; ++i){
 		workers.emplace_back([this] {
-				uint32_t gen32 = uint32_t(time(NULL));
+				auto gen32 = uint32_t(time(NULL));
 				for(;;) {
 					std::packaged_task<void(uint32_t&)> task;
 					{
@@ -61,7 +63,9 @@ inline ThreadPool::ThreadPool(std::size_t n) : stop(false){
 				}
 			});
 	}
-}
+};
+
+inline ThreadPool::ThreadPool() : stop(false){}
 
 inline ThreadPool::~ThreadPool() {
 	{
@@ -72,4 +76,6 @@ inline ThreadPool::~ThreadPool() {
 	for(std::thread &worker: workers)
 		worker.join();
 }
+
+extern ThreadPool pool;
 #endif

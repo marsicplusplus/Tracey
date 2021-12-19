@@ -41,6 +41,7 @@ set( SRC
      src/scene_parser.cpp
 	 src/options_manager.cpp
 	 src/input_manager.cpp
+	 src/thread_pool.cpp
 	 src/quartic.cpp
 	 src/hittables/triangle.cpp
 	 src/bvh.cpp
@@ -60,7 +61,7 @@ else()
 		)
 endif()
 
-set(CXX_OPTIONS)
+set(CXX_OPTIONS -Wunused)
 add_executable( Tracey ${SRC} src/tracey.cpp)
 target_link_libraries( Tracey ${LIBS})
 target_compile_options( Tracey PRIVATE ${CXX_OPTIONS})

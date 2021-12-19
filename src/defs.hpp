@@ -4,11 +4,12 @@
 #include "materials/material.hpp"
 #include "glm/vec3.hpp"
 #include "ray.hpp"
+#include "thread_pool.hpp"
 #include <cmath>
 #include <limits>
 #include <memory>
 
-const float PI = 3.141592653589793238463L;
+const float PI = 3.141592653589793238463f;
 const float INF = std::numeric_limits<float>::infinity();
 
 #define CHECK_ERROR(COND, MESSAGE, RET) if(!(COND)){\
@@ -42,6 +43,12 @@ struct HitRecord {
 		normal = frontFace ? glm::normalize(outNormal) : glm::normalize(-outNormal);
 	}
 };
+
+struct RayPacket {
+	Ray ray;
+	HitRecord rec;
+};
+
 inline float randomfloat(std::mt19937 &gen, float min, float max){
 	std::uniform_real_distribution<float> dist(min, max);
 	return dist(gen);
@@ -96,6 +103,6 @@ namespace Random {
 
 	inline float RandomFloat( uint32_t& s ) 
 	{ return xorshift32(s) * 2.3283064365387e-10f; }
-}
+};
 
 #endif
