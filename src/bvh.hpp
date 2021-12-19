@@ -2,7 +2,6 @@
 #define __BVH_HPP__
 
 #include "hittables/hittable.hpp"
-#include "hittables/instance.hpp"
 #include <list>
 struct BVHNode {
 
@@ -23,7 +22,6 @@ struct Bin {
 class BVH : public Hittable {
 	public:
 		BVH(std::vector<HittablePtr> h, bool makeTopLevel = false);
-		BVH(std::shared_ptr<Hittable> hittable, bool makeTopLevel = false);
 		~BVH();
 
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const;

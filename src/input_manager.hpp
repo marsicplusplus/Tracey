@@ -9,7 +9,7 @@ struct MouseState {
 	int x;
 	int dy;
 	int y;
-	double yOff;
+	float yOff;
 	bool moved;
 };
 

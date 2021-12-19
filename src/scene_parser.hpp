@@ -5,7 +5,6 @@
 #include "light_object.hpp"
 #include "hittables/hittable.hpp"
 #include "hittables/mesh.hpp"
-#include "hittables/instance.hpp"
 #include "json.hpp"
 #include "bvh.hpp"
 #include "GLFW/glfw3.h"
