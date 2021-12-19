@@ -22,13 +22,13 @@ class Sphere : public Hittable {
 			/* Inefficent, but needed */
 			glm::fvec3 oc = transformedOrigin;
 			auto a = glm::dot(transformedRayDir, transformedRayDir);
-			auto b = 2.0 * glm::dot(oc, transformedRayDir);
+			auto b = 2.0f * glm::dot(oc, transformedRayDir);
 			auto c = glm::dot(oc, oc) - radius*radius;
-			auto discriminant = b*b - 4*a*c;
+			auto discriminant = b*b - 4.0f*a*c;
 			if(discriminant >= 0){
 				float sq = sqrt(discriminant);
-				float t0 = (-b - sq ) / (2.0*a);
-				float t1 = (-b + sq ) / (2.0*a);
+				float t0 = (-b - sq ) / (2.0f * a);
+				float t1 = (-b + sq ) / (2.0f * a);
 				float cT;
 				if(t0 < t1 && t0 > 0) cT = t0;
 				else if(t1 > 0) cT = t1;

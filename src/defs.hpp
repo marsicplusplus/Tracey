@@ -9,7 +9,7 @@
 #include <limits>
 #include <memory>
 
-const float PI = 3.141592653589793238463L;
+const float PI = 3.141592653589793238463f;
 const float INF = std::numeric_limits<float>::infinity();
 
 #define CHECK_ERROR(COND, MESSAGE, RET) if(!(COND)){\

@@ -3,7 +3,6 @@
 #include "textures/checkered.hpp"
 #include "textures/image_texture.hpp"
 #include "hittables/sphere.hpp"
-#include "hittables/instance.hpp"
 #include "hittables/plane.hpp"
 #include "hittables/triangle.hpp"
 #include "hittables/torus.hpp"
@@ -127,7 +126,6 @@ namespace SceneParser {
 					norm,
 					uv
 				);
-				parseTransform(hit, tri);
 				triangles.push_back(tri);
 			}
 		}
@@ -143,9 +141,8 @@ namespace SceneParser {
 		if(m == meshes.end()){
 			throw std::invalid_argument("Mesh doesn't name a valid instance");
 		}
-		auto instance = std::make_shared<Instance>(m->second);
-		parseTransform(mesh, instance);
-		return instance;
+
+		return m->second;
 	};
 
 	std::shared_ptr<Mesh> parseMesh(nlohmann::json& hit, const std::vector<MaterialPtr>& materials) {
@@ -417,8 +414,10 @@ namespace SceneParser {
 					std::cout << "Parsing " << m.at("name") << std::endl;
 					auto instance = SceneParser::parseInstance(m, materials, meshes);
 					if (instance) {
+						std::vector<HittablePtr> hittableVec;
+						hittableVec.push_back(instance);
 						std::cout << "Instance found" << std::endl;
-						auto bvh = std::make_shared<BVH>(instance);
+						auto bvh = std::make_shared<BVH>(hittableVec);
 						parseTransform(m, bvh);
 						BVHs.push_back(bvh);
 					}
