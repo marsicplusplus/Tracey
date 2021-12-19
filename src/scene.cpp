@@ -27,34 +27,27 @@ Scene::Scene(std::filesystem::path sceneFile){
 			materials.push_back(mat);
 		}
 	}
-	for(auto p : j["primitives"]){
-		auto hit = SceneParser::parsePrimitive(p, materials);
-		if(hit)
-			hittables.push_back(hit);
+
+	if(j.contains("instance_meshes")){
+		for (auto m : j["instance_meshes"]) {
+			std::string name;
+			auto mesh = SceneParser::parseMeshInstance(m, materials, name);
+			if (mesh)
+				meshes[name] = std::make_shared<BVH>(mesh->tris);
+		}
 	}
-	for (auto m : j["meshes"]) {
-		auto mesh = SceneParser::parseMesh(m, materials);
-		if (mesh)
-			hittables.push_back(mesh);
-	}
+
 	for(auto l : j["lights"]){
 		auto light = SceneParser::parseLight(l);
 		if(light)
 			lights.push_back(light);
 	}
 
-	topLevelBVH = SceneParser::parseSceneGraph(j["scenegraph"], materials);
+	topLevelBVH = SceneParser::parseSceneGraph(j["scenegraph"], materials, meshes);
 
-	if (topLevelBVH) {
-		hittables.push_back(topLevelBVH);
-	}
 	std::filesystem::current_path(currPath);
 }
 Scene::~Scene(){}
-
-void Scene::addHittable(HittablePtr hittable){
-	this->hittables.push_back(hittable);
-}
 
 void Scene::addLight(LightObjectPtr light){
 	this->lights.push_back(light);
@@ -66,12 +59,10 @@ bool Scene::traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) con
 	bool hasHit = false;
 	float closest = tMax;
 
-	for (const auto& object : this->hittables) {
-		if (object->hit(ray, tMin, closest, tmp)) {
-			hasHit = true;
-			closest = tmp.t;
-			rec = tmp;
-		}
+	if (topLevelBVH->hit(ray, tMin, closest, tmp)) {
+		hasHit = true;
+		closest = tmp.t;
+		rec = tmp;
 	}
 
 	return hasHit;

@@ -4,9 +4,9 @@
 #include "camera.hpp"
 #include "light_object.hpp"
 #include "hittables/hittable.hpp"
+#include "hittables/mesh.hpp"
 #include "json.hpp"
 #include "bvh.hpp"
-#include "mesh.hpp"
 #include "GLFW/glfw3.h"
 
 #include <vector>
@@ -20,6 +20,8 @@ namespace SceneParser {
 	glm::fvec4 parseVec4(nlohmann::basic_json<>& arr);
 
 	std::shared_ptr<Mesh> parseMesh(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials);
+	std::shared_ptr<Mesh> parseMeshInstance(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials, std::string& name);
+	std::shared_ptr<Hittable> parseInstance(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<BVH>> meshes);
 
 	void parseTransform(nlohmann::basic_json<>& hit, HittablePtr primitive);
 
@@ -35,7 +37,7 @@ namespace SceneParser {
 
 	std::shared_ptr<Hittable> getMeshBVH(nlohmann::json& hit, const std::vector<MaterialPtr>& materials);
 
-	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials);
+	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<BVH>> meshes);
 
 	static int findMaterial(std::string& name, const std::vector<MaterialPtr>& materials);
 

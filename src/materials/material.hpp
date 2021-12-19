@@ -6,6 +6,7 @@
 #include <memory>
 #include <random>
 #include <string>
+#include <utility>
 
 struct HitRecord;
 typedef glm::fvec3 Color;
@@ -19,7 +20,7 @@ enum class Materials {
 
 class Material {
 	public:
-		Material(std::string name) : name{name} {}
+		Material(std::string name) : name{std::move(name)} {}
 
 		inline virtual bool reflect(const Ray& in, const HitRecord &r, Ray &reflectedRay, float &reflectance) const {
 			return false;

@@ -171,7 +171,7 @@ bool Renderer::start() {
 	if(wWidth % tWidth != 0 || wHeight % tHeight != 0){
 		throw new std::invalid_argument("Window width and height must be multiples of tiles size!");
 	}
-
+	
 	glClearColor(0,0,0,0);
 
 	const int maxBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
@@ -206,8 +206,8 @@ bool Renderer::start() {
 								int y = row + tHeight * tileRow;
 								if (cam) {
 									for(int s = 0; s < samples; ++s){
-										float u = static_cast<float>(x + Random::RandomFloat(rng)) / static_cast<float>(wWidth - 1);
-										float v = static_cast<float>(y + Random::RandomFloat(rng)) / static_cast<float>(wHeight - 1);
+										float u = static_cast<float>(x + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wWidth - 1);
+										float v = static_cast<float>(y + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wHeight - 1);
 										Ray ray = cam->generateCameraRay(u, v);
 										if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
 											pxColor += Color(0, 0, 0);
@@ -300,7 +300,7 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 		}
 		return Color{0,0,0};
 	}
-	return Color(0.0,0.0,0.0);
+	return Color(0.5,0.5,0.5);
 }
 void Renderer::putPixel(uint32_t fb[], int idx, uint8_t r, uint8_t g, uint8_t b){
 	fb[idx] = r << 16 | g << 8 | b << 0;
@@ -463,7 +463,7 @@ void Renderer::renderGUI() {
 
 				int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
 				int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
-				uint8_t *bitmap = new uint8_t[3*wWidth * wHeight];
+				auto *bitmap = new uint8_t[3*wWidth * wHeight];
 				int i = 0;
 				int k = 0;
 				uint32_t *fb = applyPostProcessing();
@@ -500,7 +500,6 @@ Renderer::~Renderer() {
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 	glfwDestroyWindow(this->window);
-	pool.cancel_pending();
 	glDeleteShader(this->shader);
 	glDeleteBuffers(1, &this->VBO);
 	glDeleteVertexArrays(1, &this->VAO);
