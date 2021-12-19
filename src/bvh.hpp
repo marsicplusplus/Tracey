@@ -24,7 +24,7 @@ class BVH : public Hittable {
 		BVH(std::vector<HittablePtr> h, bool makeTopLevel = false);
 		~BVH();
 
-		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const;
+		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
 
 	private:
 		void constructTopLevelBVH();

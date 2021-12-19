@@ -54,14 +54,14 @@ protected:
 
 	inline void updateWorldBBox() {
 		std::vector<glm::fvec4> localVertices;
-		localVertices.push_back({ localBBox.minX, localBBox.minY, localBBox.minZ, 1.0f });
-		localVertices.push_back({ localBBox.minX, localBBox.minY, localBBox.maxZ, 1.0f });
-		localVertices.push_back({ localBBox.minX, localBBox.maxY, localBBox.minZ, 1.0f });
-		localVertices.push_back({ localBBox.minX, localBBox.maxY, localBBox.maxZ, 1.0f });
-		localVertices.push_back({ localBBox.maxX, localBBox.minY, localBBox.minZ, 1.0f });
-		localVertices.push_back({ localBBox.maxX, localBBox.minY, localBBox.maxZ, 1.0f });
-		localVertices.push_back({ localBBox.maxX, localBBox.maxY, localBBox.minZ, 1.0f });
-		localVertices.push_back({ localBBox.maxX, localBBox.maxY, localBBox.maxZ, 1.0f });
+		localVertices.emplace_back( localBBox.minX, localBBox.minY, localBBox.minZ, 1.0f );
+		localVertices.emplace_back( localBBox.minX, localBBox.minY, localBBox.maxZ, 1.0f );
+		localVertices.emplace_back( localBBox.minX, localBBox.maxY, localBBox.minZ, 1.0f );
+		localVertices.emplace_back( localBBox.minX, localBBox.maxY, localBBox.maxZ, 1.0f );
+		localVertices.emplace_back( localBBox.maxX, localBBox.minY, localBBox.minZ, 1.0f );
+		localVertices.emplace_back( localBBox.maxX, localBBox.minY, localBBox.maxZ, 1.0f );
+		localVertices.emplace_back( localBBox.maxX, localBBox.maxY, localBBox.minZ, 1.0f );
+		localVertices.emplace_back( localBBox.maxX, localBBox.maxY, localBBox.maxZ, 1.0f );
 
 		worldBBox = { INF, INF, INF, -INF, -INF, -INF };
 		for (auto vertex : localVertices) {

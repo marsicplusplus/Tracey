@@ -28,7 +28,7 @@ void BVH::constructTopLevelBVH() {
 
 	auto nodeList = std::list<BVHNode*>();
 	for (int i = 0; i < hittables.size(); ++i) {
-		BVHNode* node = new BVHNode;
+		auto* node = new BVHNode;
 		auto hittable = hittables[i];
 		auto aabb = hittable->getWorldAABB();
 		node->minAABBLeftFirst = { aabb.minX, aabb.minY, aabb.minZ, i };

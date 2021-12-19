@@ -463,7 +463,7 @@ void Renderer::renderGUI() {
 
 				int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
 				int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
-				uint8_t *bitmap = new uint8_t[3*wWidth * wHeight];
+				auto *bitmap = new uint8_t[3*wWidth * wHeight];
 				int i = 0;
 				int k = 0;
 				uint32_t *fb = applyPostProcessing();

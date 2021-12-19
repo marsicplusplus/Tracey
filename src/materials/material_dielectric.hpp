@@ -41,7 +41,7 @@ class DielectricMaterial : public Material {
 			return true;
 		}
 
-		inline virtual bool refract(const Ray& in, const HitRecord &r, Ray &refractedRay, float &refractance) const override {
+		inline bool refract(const Ray& in, const HitRecord &r, Ray &refractedRay, float &refractance) const override {
 			float cosi = glm::dot(-in.getDirection(), r.normal);
 			float n1 = r.frontFace ? 1.0f : ior;
 			float n2 = r.frontFace ? ior : 1.0f;
