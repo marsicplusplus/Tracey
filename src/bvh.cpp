@@ -1,5 +1,6 @@
 #include "bvh.hpp"
 #include "defs.hpp"
+#include "options_manager.hpp"
 #include <chrono>
 #include <iostream>
 #include <list>
@@ -125,16 +126,54 @@ bool BVH::computeBounding(BVHNode *node) {
 	if(node == nullptr) return false;
 	node->minAABBLeftFirst = { INF,INF,INF, node->minAABBLeftFirst.w };
 	node->maxAABBCount = { -INF,-INF,-INF , node->maxAABBCount.w };
+	int threadNum = OptionsMap::Instance()->getOption(Options::THREADS);
+	std::vector<std::future<void>> futures;
+	std::vector<AABB> bboxes(threadNum);
+	if(node->maxAABBCount.w > 255){
+		int nChunks = min((int)node->maxAABBCount.w, threadNum);
+		//printf("nChunks: %d\nNode Size: %d\n", nChunks, (int)node->maxAABBCount.w);
+		// Each of the N threads works on (t*N)/T triangles
+		for(size_t i = 0; i < nChunks; ++i){
+			int threadNodeStart = node->minAABBLeftFirst.w + std::ceil((i * node->maxAABBCount.w)/(float)nChunks);
+			int threadNodeEnd = node->minAABBLeftFirst.w + std::ceil(((i+1) * node->maxAABBCount.w)/(float)(nChunks));
+			//printf("Thread %d\nStart: %d\nEnd: %d\n----------\n", i, threadNodeStart, threadNodeEnd);
+			futures.push_back(Threading::pool.queue([&, threadNodeStart, threadNodeEnd, i](uint32_t &rng){
+				AABB aabb{INF, INF, INF, -INF, -INF, -INF};
+				for(size_t j = threadNodeStart; j < threadNodeEnd; ++j){
+					auto hit = hittables[hittableIdxs[j]];
+					AABB hitAABB = hit->getWorldAABB();
+					aabb.minX = min(aabb.minX, hitAABB.minX);
+					aabb.minY = min(aabb.minY, hitAABB.minY);
+					aabb.minZ = min(aabb.minZ, hitAABB.minZ);
+					aabb.maxX = max(aabb.maxX, hitAABB.maxX);
+					aabb.maxY = max(aabb.maxY, hitAABB.maxY);
+					aabb.maxZ = max(aabb.maxZ, hitAABB.maxZ);
+				}
+				bboxes[i] = aabb;
+			}));
+		}
 
-	for(size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i){
-		auto hit = hittables[hittableIdxs[i]];
-		AABB aabb = hit->getWorldAABB();
-		node->minAABBLeftFirst.x = min(aabb.minX, node->minAABBLeftFirst.x);
-		node->minAABBLeftFirst.y = min(aabb.minY, node->minAABBLeftFirst.y);
-		node->minAABBLeftFirst.z = min(aabb.minZ, node->minAABBLeftFirst.z);
-		node->maxAABBCount.x = max(aabb.maxX, node->maxAABBCount.x);
-		node->maxAABBCount.y = max(aabb.maxY, node->maxAABBCount.y);
-		node->maxAABBCount.z = max(aabb.maxZ, node->maxAABBCount.z);
+		for(size_t i = 0; i < futures.size(); ++i){
+			futures[i].get();
+			AABB aabb = bboxes[i];
+			node->minAABBLeftFirst.x = min(aabb.minX, node->minAABBLeftFirst.x);
+			node->minAABBLeftFirst.y = min(aabb.minY, node->minAABBLeftFirst.y);
+			node->minAABBLeftFirst.z = min(aabb.minZ, node->minAABBLeftFirst.z);
+			node->maxAABBCount.x = max(aabb.maxX, node->maxAABBCount.x);
+			node->maxAABBCount.y = max(aabb.maxY, node->maxAABBCount.y);
+			node->maxAABBCount.z = max(aabb.maxZ, node->maxAABBCount.z);
+		}
+	} else {
+		for(size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i){
+			auto hit = hittables[hittableIdxs[i]];
+			AABB aabb = hit->getWorldAABB();
+			node->minAABBLeftFirst.x = min(aabb.minX, node->minAABBLeftFirst.x);
+			node->minAABBLeftFirst.y = min(aabb.minY, node->minAABBLeftFirst.y);
+			node->minAABBLeftFirst.z = min(aabb.minZ, node->minAABBLeftFirst.z);
+			node->maxAABBCount.x = max(aabb.maxX, node->maxAABBCount.x);
+			node->maxAABBCount.y = max(aabb.maxY, node->maxAABBCount.y);
+			node->maxAABBCount.z = max(aabb.maxZ, node->maxAABBCount.z);
+		}
 	}
 	return true;
 }
@@ -143,7 +182,7 @@ void BVH::subdivideBin(BVHNode* node) {
 	if (node == nullptr) return;
 	if (node->maxAABBCount.w < 3) {
 		computeBounding(node);
-		return; // Jacco said this was wrong (or not efficient). Why?
+		return; 
 	}
 
 	partitionBin(node);

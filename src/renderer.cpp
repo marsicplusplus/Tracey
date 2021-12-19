@@ -197,7 +197,7 @@ bool Renderer::start() {
 					/* Launch thread */
 					int samples = this->nSamples;
 					int bounces = this->nBounces;
-					futures.push_back(pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
+					futures.push_back(Threading::pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
 						CameraPtr cam = scene->getCamera();
 						for (int row = 0; row < tHeight; ++row) {
 							for (int col = 0; col < tWidth; ++col) {

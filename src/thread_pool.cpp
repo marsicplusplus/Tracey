@@ -1,3 +1,5 @@
 #include "thread_pool.hpp"
 
-ThreadPool pool;
+namespace Threading{
+	ThreadPool pool;
+};
