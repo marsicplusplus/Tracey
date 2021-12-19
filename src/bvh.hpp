@@ -19,6 +19,18 @@ struct Bin {
 	int count = 0;
 };
 
+struct Split {
+	int idx;
+	int leftCount;
+	int rightCount;
+};
+
+struct BinningJob{
+	std::vector<Bin> bins;
+	std::vector<int> nLeft;
+	std::vector<int> nRight;
+};
+
 class BVH : public Hittable {
 	public:
 		BVH(std::vector<HittablePtr> h, bool makeTopLevel = false);
