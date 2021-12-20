@@ -2,10 +2,7 @@
 #include "textures/texture.hpp"
 #include "textures/checkered.hpp"
 #include "textures/image_texture.hpp"
-#include "hittables/sphere.hpp"
-#include "hittables/plane.hpp"
 #include "hittables/triangle.hpp"
-#include "hittables/torus.hpp"
 #include "materials/material.hpp"
 #include "materials/material_dielectric.hpp"
 #include "materials/material_mirror.hpp"
@@ -134,10 +131,11 @@ namespace SceneParser {
 		return std::make_shared<Mesh>(pos, norm, uv, triangles, bbox);
 	}
 
-	std::shared_ptr<Hittable> parseInstance(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<BVH>> meshes) {
+	std::shared_ptr<Hittable> parseInstance(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<BVH>> meshes, int &numTri) {
 		if (!mesh.contains("name")) throw std::invalid_argument("Mesh doesn't name an instance");
 		std::string name = mesh.at("name");
 		auto m = meshes.find(name);
+		numTri += m->second->getHittable().size();
 		if(m == meshes.end()){
 			throw std::invalid_argument("Mesh doesn't name a valid instance");
 		}
@@ -277,40 +275,6 @@ namespace SceneParser {
 		return std::make_shared<Camera>(pos, dir, up, fov);
 	}
 
-	std::shared_ptr<Hittable> parsePrimitive(nlohmann::json& prim, const std::vector<MaterialPtr>& materials) {
-		if (!prim.contains("type")) throw std::invalid_argument("Primitive doesn't name a type");
-		std::string type = prim.at("type");
-		if (!prim.contains("material")) throw std::invalid_argument("Primitive doesn't name a material");
-		std::string matName = prim.at("material");
-		int materialIdx = findMaterial(matName, materials);
-		if (materialIdx == -1) throw std::invalid_argument("Primitive doesn't name a valid material");
-		std::shared_ptr<Hittable> primitive;
-		if (type == "PLANE") {
-			glm::fvec3 pos(parseVec3(prim["position"]));
-			if (!prim.contains("normal")) throw std::invalid_argument("Plane doesn't specify a normal");
-			glm::fvec3 norm(parseVec3(prim.at("normal")));
-			primitive = (std::make_shared<Plane>(pos, norm, materialIdx));
-		}
-		else if (type == "SPHERE") {
-			float radius = (prim.contains("radius")) ? prim["radius"].get<float>() : 0.5;
-			primitive = (std::make_shared<Sphere>(radius, materialIdx));
-
-		}
-		else if (type == "TORUS") {
-			float radiusMajor = (prim.contains("radiusMajor")) ? prim["radiusMajor"].get<float>() : 0.5;
-			float radiusMinor = (prim.contains("radiusMinor")) ? prim["radiusMinor"].get<float>() : 0.1;
-			primitive = (std::make_shared<Torus>(radiusMajor, radiusMinor, materialIdx));
-		}
-		else if (type == "ZXRect") {
-			primitive = std::make_shared<ZXRect>(materialIdx);
-		}
-		else {
-			throw std::invalid_argument("Primitive doesn't name a valid type");
-		}
-		parseTransform(prim, primitive);
-		return primitive;
-	}
-
 	std::shared_ptr<LightObject> parseLight(nlohmann::json& l) {
 		if (!l.contains("type")) throw std::invalid_argument("LightObject doesn't name a type");
 		std::string type = l.at("type");
@@ -395,16 +359,15 @@ namespace SceneParser {
 		return texture;
 	}
 
-	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<BVH>> meshes) {
+	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<BVH>> meshes, int &numTri) {
 		std::shared_ptr<BVH> topLevelBVH;
 		std::vector<HittablePtr> BVHs;
 		std::vector<HittablePtr> primitives;
-		int nPrimitives = 0;
 
 		for (auto& obj : text) {
 			if (obj.contains("node"))
 				for (auto& node : obj["node"]) {
-					auto bvh = SceneParser::parseSceneGraph(node, materials, meshes);
+					auto bvh = SceneParser::parseSceneGraph(node, materials, meshes, numTri);
 					if (bvh)
 						BVHs.push_back(bvh);
 				}
@@ -412,11 +375,11 @@ namespace SceneParser {
 			if (obj.contains("meshes")) {
 				for (auto& m : obj["meshes"]) {
 					std::cout << "Parsing " << m.at("name") << std::endl;
-					auto instance = SceneParser::parseInstance(m, materials, meshes);
+					auto instance = SceneParser::parseInstance(m, materials, meshes, numTri);
 					if (instance) {
 						std::vector<HittablePtr> hittableVec;
 						hittableVec.push_back(instance);
-						auto bvh = std::make_shared<BVH>(hittableVec);
+						auto bvh = std::make_shared<BVH>(hittableVec, false, true);
 						parseTransform(m, bvh);
 						BVHs.push_back(bvh);
 					}
@@ -429,7 +392,6 @@ namespace SceneParser {
 			topLevelBVH = std::make_shared<BVH>(BVHs, makeTopLevel);
 		}
 
-		std::cout << "Total n. of primitives: " << nPrimitives << std::endl;
 		return topLevelBVH;
 	}
 

@@ -1,6 +1,4 @@
 #define STB_IMAGE_IMPLEMENTATION
-#include "hittables/sphere.hpp"
-#include "hittables/plane.hpp"
 #include "materials/material_diffuse.hpp"
 #include "materials/material_dielectric.hpp"
 #include "materials/material_mirror.hpp"
@@ -64,6 +62,8 @@ int main(int argc, char *args[]){
 	if(!configPath.empty() && std::filesystem::exists(configPath)){
 		parseOptions(configPath.c_str());
 	}
+	OptionsMap::Instance()->printOptions();
+	pool.init(OptionsMap::Instance()->getOption(Options::THREADS));
 	try{
 		if(!scenePath.empty() && std::filesystem::exists(scenePath)){
 			scene = std::make_shared<Scene>(scenePath);
@@ -72,9 +72,6 @@ int main(int argc, char *args[]){
 		std::cout << "Failed parsing the scene file: " << e.what() << std::endl;
 	}
 
-	OptionsMap::Instance()->printOptions();
-
-	pool.init(OptionsMap::Instance()->getOption(Options::THREADS));
 	Renderer renderer("TraceyGL");
 	if(scene) renderer.setScene(scene);
 	renderer.init();

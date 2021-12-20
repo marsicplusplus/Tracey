@@ -1,10 +1,11 @@
 #include "bvh.hpp"
 #include "defs.hpp"
+#include "GLFW/glfw3.h"
 #include <chrono>
 #include <iostream>
 #include <list>
 
-BVH::BVH(std::vector<HittablePtr> h, bool makeTopLevel) : hittables(h) {
+BVH::BVH(std::vector<HittablePtr> h, bool makeTopLevel, bool anim) : hittables(h), animate(anim) {
 	this->nodePool = new BVHNode[h.size() * 2];
 	auto t1 = std::chrono::high_resolution_clock::now();
 	if (makeTopLevel) {
@@ -501,12 +502,15 @@ float BVH::calculateBinID(AABB primAABB, float k1, float k0, int longestAxisIdx)
 }
 
 bool BVH::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
+	auto transformInv = transform.getInverse();
+	auto transposeInv = transform.getTransposeInverse();
+	auto transformMat = transform.getMatrix();
 	const Ray transformedRay = ray.transformRay(transformInv);
 
 	HitRecord tmp;
 	if (traverse(transformedRay, this->root, tMin, tMax, tmp)) {
 		rec = tmp;
-		rec.p = transform * glm::fvec4(rec.p, 1.0f);
+		rec.p = transformMat * glm::fvec4(rec.p, 1.0f);
 		rec.setFaceNormal(ray, transposeInv * glm::fvec4(rec.normal, 0.0));
 		return true;
 	}
@@ -591,4 +595,8 @@ BVHNode* BVH::findBestMatch(BVHNode* target, std::list<BVHNode*> nodes) {
 	}
 
 	return bestMatch;
+}
+
+bool BVH::update(float dt) {
+	return false;
 }

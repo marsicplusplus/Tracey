@@ -45,6 +45,7 @@ set( SRC
 	 src/quartic.cpp
 	 src/hittables/triangle.cpp
 	 src/bvh.cpp
+	 src/transform.cpp
 )
 
 if (UNIX)

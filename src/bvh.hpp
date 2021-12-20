@@ -21,10 +21,14 @@ struct Bin {
 
 class BVH : public Hittable {
 	public:
-		BVH(std::vector<HittablePtr> h, bool makeTopLevel = false);
+		BVH(std::vector<HittablePtr> h, bool makeTopLevel = false, bool anim = false);
 		~BVH();
 
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
+		bool update(float dt) override;
+		const std::vector<HittablePtr>& getHittable() const {
+			return hittables;
+		};
 
 	private:
 		void constructTopLevelBVH();
@@ -48,6 +52,7 @@ class BVH : public Hittable {
 		BVHNode* root;
 		size_t poolPtr;
 		float surfaceArea;
+		bool animate;
 };
 
 typedef std::shared_ptr<BVH> BVHPtr;

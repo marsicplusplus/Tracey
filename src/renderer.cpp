@@ -2,8 +2,6 @@
 #include "camera.hpp"
 #include "glad/glad.h"
 #include "glm/gtc/random.hpp"
-#include "hittables/sphere.hpp"
-#include "hittables/plane.hpp"
 #include "input_manager.hpp"
 #include "scene_parser.hpp"
 #include "options_manager.hpp"

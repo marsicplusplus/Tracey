@@ -64,6 +64,9 @@ Triangle::Triangle(
 	}
 
 bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
+	auto transformInv = transform.getInverse();
+	auto transposeInv = transform.getTransposeInverse();
+	auto transformMat = transform.getMatrix();
 
 	const auto transformedRay = ray.transformRay(transformInv);
 
@@ -107,7 +110,7 @@ bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const
 		rec.u = uv.x;
 		rec.v = uv.y;
 		rec.material = mat;
-		rec.p = transform * glm::fvec4(localp, 1.0);
+		rec.p = transformMat * glm::fvec4(localp, 1.0);
 		rec.t = tmp;
 
 		return true;

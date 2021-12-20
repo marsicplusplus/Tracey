@@ -3,37 +3,31 @@
 
 #include "defs.hpp"
 #include "ray.hpp"
+#include "transform.hpp"
 #include <memory>
 #include <algorithm>
 
 class Hittable {
 public:
-	Hittable(AABB aabb = AABB{ 0,0,0,0,0,0 }) : localBBox{aabb}, worldBBox{aabb}, transform{ glm::fmat4x4(1.0) }, transformInv{ glm::fmat4x4(1.0) }, transposeInv{ glm::fmat4x4(1.0) } {}
+	Hittable(AABB aabb = AABB{ 0,0,0,0,0,0 }) : localBBox{aabb}, worldBBox{aabb} {}
 
 	virtual bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const = 0;
+	virtual bool update(float dt) { return false; }
 
 	inline void translate(glm::fvec3 t){
-		transform = glm::translate(transform, t);
-		transformInv = glm::inverse(transform);
-		updateTranspose();
+		transform.translate(t);
 		updateWorldBBox();
 	}
 	inline void scale(glm::fvec3 s){
-		transform = glm::scale(transform, s);
-		transformInv = glm::inverse(transform);
-		updateTranspose();
+		transform.scale(s);
 		updateWorldBBox();
 	}
 	inline void scale(float s){
-		transform = glm::scale(transform, glm::fvec3(s,s,s));
-		transformInv = glm::inverse(transform);
-		updateTranspose();
+		transform.scale(s);
 		updateWorldBBox();
 	}
 	inline void rotate(float t, glm::fvec3 a){
-		transform = glm::rotate(transform, t, a);
-		transformInv = glm::inverse(transform);
-		updateTranspose();
+		transform.rotate(t, a);
 		updateWorldBBox();
 	}
 	inline AABB getLocalAABB() const {
@@ -48,10 +42,6 @@ public:
 	}
 
 protected:
-	inline void updateTranspose() {
-		transposeInv = glm::transpose(transformInv);
-	}
-
 	inline void updateWorldBBox() {
 		std::vector<glm::fvec4> localVertices;
 		localVertices.emplace_back( localBBox.minX, localBBox.minY, localBBox.minZ, 1.0f );
@@ -65,7 +55,7 @@ protected:
 
 		worldBBox = { INF, INF, INF, -INF, -INF, -INF };
 		for (auto vertex : localVertices) {
-			auto tranformedVertex = transform * vertex;
+			auto tranformedVertex = transform.getMatrix() * vertex;
 			worldBBox.minX = min(tranformedVertex.x, worldBBox.minX);
 			worldBBox.minY = min(tranformedVertex.y, worldBBox.minY);
 			worldBBox.minZ = min(tranformedVertex.z, worldBBox.minZ);
@@ -77,9 +67,7 @@ protected:
 
 protected:
 	glm::fvec3 position;
-	glm::fmat4x4 transformInv;
-	glm::fmat4x4 transform;
-	glm::fmat4x4 transposeInv;
+	Transform transform;
 	AABB localBBox;
 	AABB worldBBox;
 };
