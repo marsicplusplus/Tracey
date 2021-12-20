@@ -337,6 +337,10 @@ void Renderer::renderGUI() {
 			if (ImGui::Button("Load Scene")) {
 				this->fBrowser.Open();
 			}
+			if(scene){
+				ImGui::TextWrapped("Num of triangles: %d", scene->getNTris());
+				//ImGui::TextWrapped("BVH Building time: %d", scene->getNTris());
+			}
 		}
 		if(scene){
 			if (ImGui::CollapsingHeader("Camera Settings")) {

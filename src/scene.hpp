@@ -33,6 +33,10 @@ class Scene {
 			else return materials[idx];
 		}
 
+		inline const int getNTris() const {
+			return nTris;
+		}
+
 	private:
 		CameraPtr currentCamera;
 		std::unordered_map<std::string, std::shared_ptr<BVH>> meshes;
@@ -41,6 +45,7 @@ class Scene {
 		std::vector<MaterialPtr> materials;
 		std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
 		BVHPtr topLevelBVH;
+		int nTris = 0;
 
 };
 

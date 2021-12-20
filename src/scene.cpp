@@ -42,9 +42,8 @@ Scene::Scene(std::filesystem::path sceneFile){
 		if(light)
 			lights.push_back(light);
 	}
-	int numTri = 0;
-	topLevelBVH = SceneParser::parseSceneGraph(j["scenegraph"], materials, meshes, numTri);
-	std::cout << "Total Number of triangles: " << numTri << std::endl;
+	topLevelBVH = SceneParser::parseSceneGraph(j["scenegraph"], materials, meshes, nTris);
+	std::cout << "Total Number of triangles: " << nTris << std::endl;
 	std::filesystem::current_path(currPath);
 }
 Scene::~Scene(){}

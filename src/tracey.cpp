@@ -81,5 +81,5 @@ int main(int argc, char *args[]){
 	if(scene) renderer.setScene(scene);
 	renderer.init();
 	renderer.start();
-	pool.cancel_pending();
+	Threading::pool.cancel_pending();
 }
