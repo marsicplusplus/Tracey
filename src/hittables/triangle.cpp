@@ -9,37 +9,34 @@ Triangle::Triangle(
 		std::vector<glm::fvec3>& norm,
 		std::vector<glm::fvec2>& uvs
 		) : 
-	face{fIdx}, 
-	normal{nIdx},
-	texture{tIdx}, 
 	mat{m} {
-		v0 = pos[face.x];
-		v1 = pos[face.y];
-		v2 = pos[face.z];
+		v0 = pos[fIdx.x];
+		v1 = pos[fIdx.y];
+		v2 = pos[fIdx.z];
 
 		const glm::fvec3& xVal = {v0.x, v1.x, v2.x};
 		const glm::fvec3& yVal = {v0.y, v1.y, v2.y};
 		const glm::fvec3& zVal = {v0.z, v1.z, v2.z};
 
-		if (normal.x == -1 || normal.y == -1 || normal.z == -1) {
-			n0 = { 0.0f, 0.0f, 0.0f };
-			n1 = { 0.0f, 0.0f, 0.0f };
-			n2 = { 0.0f, 0.0f, 0.0f };
+		if (nIdx.x == -1 || nIdx.y == -1 || nIdx.z == -1) {
+			n0 = { -1.0f, -1.0f, -1.0f };
+			n1 = { -1.0f, -1.0f, -1.0f };
+			n2 = { -1.0f, -1.0f, -1.0f };
 		} else {
-			n0 = norm[normal.x];
-			n1 = norm[normal.y];
-			n2 = norm[normal.z];
+			n0 = norm[nIdx.x];
+			n1 = norm[nIdx.y];
+			n2 = norm[nIdx.z];
 		}
 
-		if (texture.x == -1 || texture.y == -1 || texture.z == -1) {
-			st0 = { 0.0f, 0.0f };
-			st1 = { 0.0f, 0.0f };
-			st2 = { 0.0f, 0.0f };
+		if (tIdx.x == -1 || tIdx.y == -1 || tIdx.z == -1) {
+			st0 = { -1.0f, -1.0f };
+			st1 = { -1.0f, -1.0f };
+			st2 = { -1.0f, -1.0f };
 		}
 		else {
-			st0 = uvs[texture.x];
-			st1 = uvs[texture.y];
-			st2 = uvs[texture.z];
+			st0 = uvs[tIdx.x];
+			st1 = uvs[tIdx.y];
+			st2 = uvs[tIdx.z];
 		}
 
 		localBBox.minX = min(min(xVal.x, xVal.y), xVal.z);
@@ -92,7 +89,7 @@ bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const
 		auto localp = transformedRay.at(tmp);
 
 		glm::fvec3 hitNormal;
-		if (normal.x == -1 || normal.y == -1 || normal.z == -1)
+		if (n0.x == -1 && n1.x == -1 || n2.x == -1)
 			hitNormal = glm::cross(v0v1, v0v2);
 		else {
 			hitNormal = u * n1 + v * n2 + (1.0f - u - v) * n0;
@@ -101,7 +98,7 @@ bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const
 		rec.setFaceNormal(ray, transposeInv * glm::fvec4(hitNormal, 0.0));
 
 		glm::fvec2 uv;
-		if (texture.x == -1 || texture.y == -1 || texture.z == -1) {
+		if (st0.x == -1 || st1.x == -1 || st2.x == -1) {
 			uv = glm::fvec2{ 0,0 };
 		}
 		else {

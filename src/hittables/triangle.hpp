@@ -22,10 +22,6 @@ struct Triangle : Hittable {
 
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
 
-		glm::ivec3 face;
-		glm::ivec3 normal;
-		glm::ivec3 texture;
-
 		glm::fvec3 v0;
 		glm::fvec3 v1;
 		glm::fvec3 v2;
