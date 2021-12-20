@@ -19,6 +19,18 @@ struct Bin {
 	int count = 0;
 };
 
+struct Split {
+	int idx;
+	int leftCount;
+	int rightCount;
+};
+
+struct BinningJob{
+	std::vector<Bin> bins;
+	std::vector<int> nLeft;
+	std::vector<int> nRight;
+};
+
 class BVH : public Hittable {
 	public:
 		BVH(std::vector<HittablePtr> h, bool makeTopLevel = false, bool anim = false);
@@ -34,7 +46,8 @@ class BVH : public Hittable {
 		void constructTopLevelBVH();
 		void constructSubBVH();
 		void subdivideBin(BVHNode* node);
-		void partitionBin(BVHNode* node);
+		void partitionBinSingle(BVHNode* node);
+		void partitionBinMulti(BVHNode* node);
 
 		void subdivideHQ(BVHNode* node);
 		void partitionHQ(BVHNode* node);

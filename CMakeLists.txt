@@ -62,7 +62,7 @@ else()
 		)
 endif()
 
-set(CXX_OPTIONS -Wunused)
+set(CXX_OPTIONS)
 add_executable( Tracey ${SRC} src/tracey.cpp)
 target_link_libraries( Tracey ${LIBS})
 target_compile_options( Tracey PRIVATE ${CXX_OPTIONS})

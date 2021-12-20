@@ -9,6 +9,7 @@
 #include "options_manager.hpp"
 #include <algorithm>
 #include <cstring>
+#include <chrono>
 #include <fstream>
 #include <memory>
 
@@ -63,7 +64,8 @@ int main(int argc, char *args[]){
 		parseOptions(configPath.c_str());
 	}
 	OptionsMap::Instance()->printOptions();
-	pool.init(OptionsMap::Instance()->getOption(Options::THREADS));
+	Threading::pool.init(OptionsMap::Instance()->getOption(Options::THREADS));
+	auto t1 = std::chrono::high_resolution_clock::now();
 	try{
 		if(!scenePath.empty() && std::filesystem::exists(scenePath)){
 			scene = std::make_shared<Scene>(scenePath);
@@ -71,6 +73,9 @@ int main(int argc, char *args[]){
 	} catch(std::exception &e){
 		std::cout << "Failed parsing the scene file: " << e.what() << std::endl;
 	}
+	auto t2 = std::chrono::high_resolution_clock::now();
+	auto ms_int = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1);
+	std::cout << "Scene parsed in " << ms_int.count() << "us" << std::endl;
 
 	Renderer renderer("TraceyGL");
 	if(scene) renderer.setScene(scene);
