@@ -42,7 +42,8 @@ class BVH : public Hittable {
 		void constructTopLevelBVH();
 		void constructSubBVH();
 		void subdivideBin(BVHNode* node);
-		void partitionBin(BVHNode* node);
+		void partitionBinSingle(BVHNode* node);
+		void partitionBinMulti(BVHNode* node);
 
 		void subdivideHQ(BVHNode* node);
 		void partitionHQ(BVHNode* node);
