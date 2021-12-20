@@ -49,11 +49,6 @@ struct RayPacket {
 	HitRecord rec;
 };
 
-inline float randomfloat(std::mt19937 &gen, float min, float max){
-	std::uniform_real_distribution<float> dist(min, max);
-	return dist(gen);
-}
-
 template<typename T> T max(T a, T b) { return (a > b) ? a : b; }
 template<typename T> T min(T a, T b) { return (a < b) ? a : b; }
 

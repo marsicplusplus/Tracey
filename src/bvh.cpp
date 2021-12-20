@@ -129,7 +129,7 @@ bool BVH::computeBounding(BVHNode *node) {
 	int threadNum = OptionsMap::Instance()->getOption(Options::THREADS);
 	std::vector<std::future<void>> futures;
 	std::vector<AABB> bboxes(threadNum);
-	if(node->maxAABBCount.w > 255){
+	if(node->maxAABBCount.w > 5000){
 		int nChunks = min((int)node->maxAABBCount.w, threadNum);
 		//printf("nChunks: %d\nNode Size: %d\n", nChunks, (int)node->maxAABBCount.w);
 		// Each of the N threads works on (t*N)/T triangles
@@ -185,7 +185,7 @@ void BVH::subdivideBin(BVHNode* node) {
 		return; 
 	}
 
-	if (node->maxAABBCount.w > 10000)
+	if (node->maxAABBCount.w > 5000)
 		partitionBinMulti(node);
 	else
 		partitionBinSingle(node);

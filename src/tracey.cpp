@@ -1,6 +1,4 @@
 #define STB_IMAGE_IMPLEMENTATION
-#include "hittables/sphere.hpp"
-#include "hittables/plane.hpp"
 #include "materials/material_diffuse.hpp"
 #include "materials/material_dielectric.hpp"
 #include "materials/material_mirror.hpp"
