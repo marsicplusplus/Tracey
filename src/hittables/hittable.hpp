@@ -36,6 +36,9 @@ public:
 	inline AABB getWorldAABB() const {
 		return worldBBox;
 	}
+	inline glm::fvec3 getWorldAABBcentroid() const {
+		return worldBBoxCentroid;
+	}
 	inline void setLocalAABB(AABB local) {
 		localBBox = local;
 		updateWorldBBox();
@@ -63,6 +66,11 @@ protected:
 			worldBBox.maxY = max(tranformedVertex.y, worldBBox.maxY);
 			worldBBox.maxZ = max(tranformedVertex.z, worldBBox.maxZ);
 		}
+
+		float cx = (worldBBox.minX + worldBBox.maxX) / 2.0f;
+		float cy = (worldBBox.minY + worldBBox.maxY) / 2.0f;
+		float cz = (worldBBox.minZ + worldBBox.maxZ) / 2.0f;
+		worldBBoxCentroid = glm::fvec3(cx, cy, cz);
 	}
 
 protected:
@@ -70,6 +78,7 @@ protected:
 	Transform transform;
 	AABB localBBox;
 	AABB worldBBox;
+	glm::fvec3 worldBBoxCentroid;
 };
 
 typedef std::shared_ptr<Hittable> HittablePtr;
