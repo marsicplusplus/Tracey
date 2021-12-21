@@ -8,7 +8,7 @@
 class Transform {
 	public:
 		Transform();
-		static Transform lerp(Transform &prev, Transform &next, float dt);
+		static Transform lerp(const Transform *prev, const Transform *next, float dt);
 
 		glm::mat4 getMatrix() const;
 		glm::mat4 getTransposeInverse() const;

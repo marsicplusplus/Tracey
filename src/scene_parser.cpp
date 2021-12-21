@@ -17,6 +17,38 @@
 
 namespace SceneParser {
 
+	Animation parseAnimation(nlohmann::json& animation){
+		bool loop = false;
+		int start = 0;
+		if(animation.contains("loop"))
+			loop = animation.at("loop");
+		if(animation.contains("start"))
+			start = animation.at("start");
+		auto &frames = animation.at("frames");
+
+		std::vector<Transform> keyframes;
+		std::vector<float> times;
+		for(auto &f : frames){
+			times.push_back(f.at("time"));
+			auto& t = f.at("transform");
+			Transform transformation;
+			glm::fvec3 translation = parseVec3(t.at("translation"));
+			transformation.translate(translation);
+			glm::fvec3 rot = parseVec3(t.at("rotation"));
+			if (rot.x != 0) transformation.rotate(glm::radians(rot.x), glm::fvec3(1.0, 0.0, 0.0));
+			if (rot.y != 0) transformation.rotate(glm::radians(rot.y), glm::fvec3(0.0, 1.0, 0.0));
+			if (rot.z != 0) transformation.rotate(glm::radians(rot.z), glm::fvec3(0.0, 0.0, 1.0));
+			if (t.contains("scale")) {
+				if (t.at("scale").is_array()){
+					auto s = parseVec3(t.at("scale"));
+					transformation.scale(s);
+				} else transformation.scale((float)(t.at("scale")));
+			}
+			keyframes.emplace_back(transformation);
+		}
+		return Animation(loop, start, keyframes, times); 
+	}
+
 	glm::fvec3 parseVec3(nlohmann::basic_json<>& arr) {
 		return glm::fvec3(arr[0].get<float>(), arr[1].get<float>(), arr[2].get<float>());
 	}
@@ -359,39 +391,40 @@ namespace SceneParser {
 		return texture;
 	}
 
-	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<BVH>> meshes, int &numTri) {
-		std::shared_ptr<BVH> topLevelBVH;
-		std::vector<HittablePtr> BVHs;
-		std::vector<HittablePtr> primitives;
+	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<BVH>> meshes, std::vector<HittablePtr>& BVHs, int &numTri) {
 
 		for (auto& obj : text) {
 			if (obj.contains("node"))
 				for (auto& node : obj["node"]) {
-					auto bvh = SceneParser::parseSceneGraph(node, materials, meshes, numTri);
+					auto bvh = SceneParser::parseSceneGraph(node, materials, meshes, BVHs, numTri);
 					if (bvh)
 						BVHs.push_back(bvh);
 				}
 
 			if (obj.contains("meshes")) {
 				for (auto& m : obj["meshes"]) {
-					std::cout << "Parsing " << m.at("name") << std::endl;
 					auto instance = SceneParser::parseInstance(m, materials, meshes, numTri);
 					if (instance) {
+						bool animate = false;
 						std::vector<HittablePtr> hittableVec;
 						hittableVec.push_back(instance);
-						auto bvh = std::make_shared<BVH>(hittableVec, false, true);
+						auto bvh = std::make_shared<BVH>(hittableVec, false);
 						parseTransform(m, bvh);
+						if(m.contains("animation")){
+							Animation anim = SceneParser::parseAnimation(m.at("animation"));
+							bvh->setAnimation(anim);
+						}
 						BVHs.push_back(bvh);
 					}
 				}
 			}
 		}
 
+		std::shared_ptr<BVH> topLevelBVH = nullptr;
 		if (!BVHs.empty()) {
 			bool makeTopLevel = true;
 			topLevelBVH = std::make_shared<BVH>(BVHs, makeTopLevel);
 		}
-
 		return topLevelBVH;
 	}
 

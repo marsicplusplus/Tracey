@@ -40,6 +40,10 @@ public:
 		localBBox = local;
 		updateWorldBBox();
 	}
+	inline void setTransform(const Transform t) {
+		transform = t;
+		updateWorldBBox();
+	}
 
 protected:
 	inline void updateWorldBBox() {

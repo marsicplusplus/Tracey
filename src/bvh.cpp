@@ -2,10 +2,11 @@
 #include "defs.hpp"
 #include "options_manager.hpp"
 #include <chrono>
+#include "GLFW/glfw3.h"
 #include <iostream>
 #include <list>
 
-BVH::BVH(std::vector<HittablePtr> h, bool makeTopLevel, bool anim) : hittables(h), animate(anim) {
+BVH::BVH(std::vector<HittablePtr> h, bool makeTopLevel) : hittables(h), animate(false) {
 	this->nodePool = new BVHNode[h.size() * 2];
 	auto t1 = std::chrono::high_resolution_clock::now();
 	if (makeTopLevel) {
@@ -23,6 +24,7 @@ BVH::~BVH(){
 }
 
 void BVH::constructTopLevelBVH() {
+	this->hittableIdxs.clear();
 	for (int i = 0; i < hittables.size(); ++i) {
 		this->hittableIdxs.push_back(i);
 	}
@@ -938,5 +940,13 @@ BVHNode* BVH::findBestMatch(BVHNode* target, std::list<BVHNode*> nodes) {
 }
 
 bool BVH::update(float dt) {
-	return false;
+	bool ret = false;
+	if(animate){
+		animationManager.update(dt);
+		if(animationManager.isStarted() && !animationManager.isEnded()){
+			this->setTransform(animationManager.getNextTransform());
+			ret = true;
+		}
+	}
+	return ret;
 }

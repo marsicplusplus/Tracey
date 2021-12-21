@@ -42,10 +42,11 @@ Scene::Scene(std::filesystem::path sceneFile){
 		if(light)
 			lights.push_back(light);
 	}
-	topLevelBVH = SceneParser::parseSceneGraph(j["scenegraph"], materials, meshes, nTris);
+	topLevelBVH = SceneParser::parseSceneGraph(j["scenegraph"], materials, meshes, BVHs, nTris);
 	std::cout << "Total Number of triangles: " << nTris << std::endl;
 	std::filesystem::current_path(currPath);
 }
+
 Scene::~Scene(){}
 
 void Scene::addLight(LightObjectPtr light){
@@ -76,7 +77,14 @@ const CameraPtr Scene::getCamera() const {
 }
 
 bool Scene::update(float dt){
-	return topLevelBVH->update(dt) | this->currentCamera->update(dt);
+	bool ret = false;
+	for(auto &b : BVHs){
+		ret |= b->update(dt);
+	}
+	if(ret){
+		topLevelBVH->constructTopLevelBVH();
+	}
+	return ret | this->currentCamera->update(dt);
 }
 
 Color Scene::traceLights(HitRecord &rec) const {

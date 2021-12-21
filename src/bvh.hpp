@@ -1,18 +1,14 @@
 #ifndef __BVH_HPP__
 #define __BVH_HPP__
 
+#include "animation.hpp"
 #include "hittables/hittable.hpp"
 #include <list>
+
 struct BVHNode {
-
-	// If this is a leaf, we want to know the first hittable in the array;
-// Otherwise we want to know the index of the left child. The right child will be left + 1;
-
 	glm::fvec4 minAABBLeftFirst;
 	glm::fvec4 maxAABBCount;
 };
-/* We could also combine the first 3 floats with the first int and the second set of 3 floats with the second int to use SIMD operations and gain more STONKS */
-
 
 struct Bin {
 	AABB aabb = AABB{ INF,INF,INF,-INF,-INF,-INF };
@@ -33,7 +29,7 @@ struct BinningJob{
 
 class BVH : public Hittable {
 	public:
-		BVH(std::vector<HittablePtr> h, bool makeTopLevel = false, bool anim = false);
+		BVH(std::vector<HittablePtr> h, bool makeTopLevel = false);
 		~BVH();
 
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
@@ -42,8 +38,14 @@ class BVH : public Hittable {
 			return hittables;
 		};
 
-	private:
 		void constructTopLevelBVH();
+		void setAnimation(const Animation anim){
+			animate = true;
+			animationManager = anim;
+			animationManager.setInitial(transform);
+		}
+
+	private:
 		void constructSubBVH();
 		void subdivideBin(BVHNode* node);
 		void partitionBinSingle(BVHNode* node);
@@ -51,6 +53,8 @@ class BVH : public Hittable {
 
 		void subdivideHQ(BVHNode* node);
 		void partitionHQ(BVHNode* node);
+
+		bool updateBVH(float dt, BVHNode* node);
 
 		bool computeBounding(BVHNode *node);
 		float calculateSurfaceArea(AABB bbox);
@@ -60,12 +64,14 @@ class BVH : public Hittable {
 
 		std::vector<HittablePtr> hittables;
 		std::vector<int> hittableIdxs;
-		
+
 		BVHNode* nodePool;
 		BVHNode* root;
 		size_t poolPtr;
 		float surfaceArea;
+
 		bool animate;
+		Animation animationManager;
 };
 
 typedef std::shared_ptr<BVH> BVHPtr;

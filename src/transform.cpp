@@ -50,10 +50,10 @@ glm::mat4 Transform::getInverse() const {
 	return mInv;
 }
 
-Transform Transform::lerp(Transform &prev, Transform &next, float dt){
-	auto newT = prev.t * (1.f - dt) + next.t * dt;
-	auto newS = prev.s * (1.f - dt) + next.s * dt;
-	auto newR = glm::mix(prev.r, next.r, dt);
+Transform Transform::lerp(const Transform *prev, const Transform *next, float dt){
+	auto newT = prev->t * (1.f - dt) + next->t * dt;
+	auto newS = prev->s * (1.f - dt) + next->s * dt;
+	auto newR = glm::mix(prev->r, next->r, dt);
 	Transform newTrans;
 	newTrans.s = newS;
 	newTrans.t = newT;

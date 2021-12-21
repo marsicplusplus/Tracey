@@ -46,6 +46,7 @@ set( SRC
 	 src/hittables/triangle.cpp
 	 src/bvh.cpp
 	 src/transform.cpp
+	 src/animation.cpp
 )
 
 if (UNIX)
@@ -62,7 +63,7 @@ else()
 		)
 endif()
 
-set(CXX_OPTIONS)
+set(CXX_OPTIONS -ffast-math)
 add_executable( Tracey ${SRC} src/tracey.cpp)
 target_link_libraries( Tracey ${LIBS})
 target_compile_options( Tracey PRIVATE ${CXX_OPTIONS})
