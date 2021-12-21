@@ -5,6 +5,11 @@
 #include "hittables/hittable.hpp"
 #include <list>
 
+enum class Heuristic {
+	SAH,
+	MIDPOINT,
+};
+
 struct BVHNode {
 	glm::fvec4 minAABBLeftFirst;
 	glm::fvec4 maxAABBCount;
@@ -29,7 +34,7 @@ struct BinningJob{
 
 class BVH : public Hittable {
 	public:
-		BVH(std::vector<HittablePtr> h, bool makeTopLevel = false);
+		BVH(std::vector<HittablePtr> h, Heuristic heur = Heuristic::SAH, bool makeTopLevel = false);
 		~BVH();
 
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
@@ -47,14 +52,14 @@ class BVH : public Hittable {
 
 	private:
 		void constructSubBVH();
+		void midpointSplit(BVHNode* node);
 		void subdivideBin(BVHNode* node);
 		void partitionBinSingle(BVHNode* node);
 		void partitionBinMulti(BVHNode* node);
+		void refit();
 
 		void subdivideHQ(BVHNode* node);
 		void partitionHQ(BVHNode* node);
-
-		bool updateBVH(float dt, BVHNode* node);
 
 		bool computeBounding(BVHNode *node);
 		float calculateSurfaceArea(AABB bbox);
@@ -70,6 +75,7 @@ class BVH : public Hittable {
 		size_t poolPtr;
 		float surfaceArea;
 
+		Heuristic heuristic;
 		bool animate;
 		Animation animationManager;
 };

@@ -33,7 +33,7 @@ Scene::Scene(std::filesystem::path sceneFile){
 			std::string name;
 			auto mesh = SceneParser::parseMeshInstance(m, materials, name);
 			if (mesh)
-				meshes[name] = std::make_shared<BVH>(mesh->tris);
+				meshes[name] = mesh;
 		}
 	}
 
@@ -81,9 +81,7 @@ bool Scene::update(float dt){
 	for(auto &b : BVHs){
 		ret |= b->update(dt);
 	}
-	if(ret){
-		topLevelBVH->constructTopLevelBVH();
-	}
+	if(ret) topLevelBVH->constructTopLevelBVH();
 	return ret | this->currentCamera->update(dt);
 }
 

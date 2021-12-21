@@ -57,7 +57,7 @@ namespace SceneParser {
 		return glm::fvec4(arr[0].get<float>(), arr[1].get<float>(), arr[2].get<float>(), arr[3].get<float>());
 	}
 
-	std::shared_ptr<Mesh> parseMeshInstance(nlohmann::json& hit, const std::vector<MaterialPtr>& materials, std::string &name) {
+	std::shared_ptr<BVH> parseMeshInstance(nlohmann::json& hit, const std::vector<MaterialPtr>& materials, std::string &name) {
 		name = hit.at("name");
 
 		if (!hit.contains("material")) throw std::invalid_argument("Mesh doesn't name a material");
@@ -158,9 +158,12 @@ namespace SceneParser {
 				triangles.push_back(tri);
 			}
 		}
-
+		Heuristic heuristic = Heuristic::SAH;
+		if(hit.contains("bvh")){
+			if(hit.at("bvh") == "MIDPOINT") heuristic = Heuristic::MIDPOINT;
+		}
 		AABB bbox{ minX, minY, minZ, maxX, maxY, maxZ };
-		return std::make_shared<Mesh>(pos, norm, uv, triangles, bbox);
+		return std::make_shared<BVH>(triangles, heuristic);
 	}
 
 	std::shared_ptr<Hittable> parseInstance(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<BVH>> meshes, int &numTri) {
@@ -408,7 +411,7 @@ namespace SceneParser {
 						bool animate = false;
 						std::vector<HittablePtr> hittableVec;
 						hittableVec.push_back(instance);
-						auto bvh = std::make_shared<BVH>(hittableVec, false);
+						auto bvh = std::make_shared<BVH>(hittableVec);
 						parseTransform(m, bvh);
 						if(m.contains("animation")){
 							Animation anim = SceneParser::parseAnimation(m.at("animation"));
@@ -423,7 +426,7 @@ namespace SceneParser {
 		std::shared_ptr<BVH> topLevelBVH = nullptr;
 		if (!BVHs.empty()) {
 			bool makeTopLevel = true;
-			topLevelBVH = std::make_shared<BVH>(BVHs, makeTopLevel);
+			topLevelBVH = std::make_shared<BVH>(BVHs, Heuristic::SAH, makeTopLevel);
 		}
 		return topLevelBVH;
 	}

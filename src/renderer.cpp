@@ -187,7 +187,7 @@ bool Renderer::start() {
 		float now = glfwGetTime();
 		frameTime = now - lastUpdateTime;
 		lastUpdateTime = now;
-		std::cout << "last Frame time: " << frameTime << std::endl;
+		//std::cout << "last Frame time: " << frameTime << std::endl;
 
 		while(frameTime > 0.0f){
 			float dt = min(frameTime, fpsLimit);

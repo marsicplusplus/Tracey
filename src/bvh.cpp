@@ -6,7 +6,7 @@
 #include <iostream>
 #include <list>
 
-BVH::BVH(std::vector<HittablePtr> h, bool makeTopLevel) : hittables(h), animate(false) {
+BVH::BVH(std::vector<HittablePtr> h, Heuristic heur, bool makeTopLevel) : hittables(h), heuristic(heur), animate(false) {
 	this->nodePool = new BVHNode[h.size() * 2];
 	auto t1 = std::chrono::high_resolution_clock::now();
 	if (makeTopLevel) {
@@ -131,7 +131,7 @@ bool BVH::computeBounding(BVHNode *node) {
 	int threadNum = OptionsMap::Instance()->getOption(Options::THREADS);
 	std::vector<std::future<void>> futures;
 	std::vector<AABB> bboxes(threadNum);
-	if(node->maxAABBCount.w > 5000){
+	if(node->maxAABBCount.w > 20000){
 		int nChunks = min((int)node->maxAABBCount.w, threadNum);
 		//printf("nChunks: %d\nNode Size: %d\n", nChunks, (int)node->maxAABBCount.w);
 		// Each of the N threads works on (t*N)/T triangles
@@ -186,17 +186,91 @@ void BVH::subdivideBin(BVHNode* node) {
 		computeBounding(node);
 		return; 
 	}
-
-	if (node->maxAABBCount.w > 5000)
-		partitionBinMulti(node);
-	else
-		partitionBinSingle(node);
+	if(this->heuristic == Heuristic::SAH){
+		if (node->maxAABBCount.w > 20000)
+			partitionBinMulti(node);
+		else
+			partitionBinSingle(node);
+	} else if (this->heuristic == Heuristic::MIDPOINT){ 
+		midpointSplit(node);
+	}
 
 	// Then subdivide again 
 	subdivideBin(&this->nodePool[(int)node->minAABBLeftFirst.w]);
 	subdivideBin(&this->nodePool[(int)node->minAABBLeftFirst.w + 1]);
 	
 	return;
+}
+
+void BVH::midpointSplit(BVHNode* node){
+	// Compute the centroid bounds (the bounds defined by the centroids of all triangles within the node)
+	AABB globalCentroidAABB = AABB{ INF,INF,INF,-INF,-INF,-INF };
+	for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
+		auto prim = hittables[hittableIdxs[i]];
+		AABB aabb = prim->getWorldAABB();
+		float cx = (aabb.minX + aabb.maxX) / 2.0f;
+		float cy = (aabb.minY + aabb.maxY) / 2.0f;
+		float cz = (aabb.minZ + aabb.maxZ) / 2.0f;
+
+		globalCentroidAABB.minX = min(cx, globalCentroidAABB.minX);
+		globalCentroidAABB.minY = min(cy, globalCentroidAABB.minY);
+		globalCentroidAABB.minZ = min(cz, globalCentroidAABB.minZ);
+		globalCentroidAABB.maxX = max(cx, globalCentroidAABB.maxX);
+		globalCentroidAABB.maxY = max(cy, globalCentroidAABB.maxY);
+		globalCentroidAABB.maxZ = max(cz, globalCentroidAABB.maxZ);
+	}
+
+	// For each triangle located within our node, we assign a bin ID (using centroid of triangle and centroid bounds)
+	float longestAxisLength = 0.0f;
+	int longestAxisIdx = -1;
+
+	float length = globalCentroidAABB.maxX - globalCentroidAABB.minX;
+	if (length > longestAxisLength) {
+		longestAxisLength = length;
+		longestAxisIdx = 0;
+	}
+
+	length = globalCentroidAABB.maxY - globalCentroidAABB.minY;
+	if (length > longestAxisLength) {
+		longestAxisLength = length;
+		longestAxisIdx = 1;
+	}
+
+	length = globalCentroidAABB.maxZ - globalCentroidAABB.minZ;
+	if (length > longestAxisLength) {
+		longestAxisLength = length;
+		longestAxisIdx = 2;
+	}
+
+	if (longestAxisIdx == -1) {
+		return;
+	}
+	glm::fvec3 minBBox = glm::fvec3(globalCentroidAABB.minX, globalCentroidAABB.minY, globalCentroidAABB.minZ);
+	glm::fvec3 maxBBox = glm::fvec3(globalCentroidAABB.maxX, globalCentroidAABB.maxY, globalCentroidAABB.maxZ);
+
+	auto split = (maxBBox[longestAxisIdx] + minBBox[longestAxisIdx]) / 2.0f;
+	
+	auto right = std::partition(&hittableIdxs[node->minAABBLeftFirst.w], &hittableIdxs[node->minAABBLeftFirst.w + node->maxAABBCount.w], [&](int idx){
+				auto aabb = hittables[idx]->getWorldAABB();
+				glm::fvec3 centroid = glm::fvec3((aabb.minX + aabb.maxX) / 2.0f, (aabb.minY + aabb.maxY) / 2.0f, (aabb.minZ + aabb.maxZ) / 2.0f);
+				return centroid[longestAxisIdx] < split;
+			});
+
+	auto first = node->minAABBLeftFirst.w;
+	auto numElems = node->maxAABBCount.w;
+	node->maxAABBCount.w = 0;
+	node->minAABBLeftFirst.w = poolPtr;
+	auto leftNode = &this->nodePool[poolPtr++];
+	auto rightNode = &this->nodePool[poolPtr++];
+
+	// Asign leftFirst and count to our left and right nodes
+	leftNode->minAABBLeftFirst.w = first;
+	leftNode->maxAABBCount.w = right - &hittableIdxs[first];
+	computeBounding(leftNode);
+
+	rightNode->minAABBLeftFirst.w = first + leftNode->maxAABBCount.w;
+	rightNode->maxAABBCount.w = &hittableIdxs[first + numElems] - right;
+	computeBounding(rightNode);
 }
 
 void BVH::subdivideHQ(BVHNode* node) {
@@ -937,6 +1011,11 @@ BVHNode* BVH::findBestMatch(BVHNode* target, std::list<BVHNode*> nodes) {
 	}
 
 	return bestMatch;
+}
+
+
+void refit() {
+	
 }
 
 bool BVH::update(float dt) {
