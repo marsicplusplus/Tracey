@@ -186,7 +186,7 @@ bool Renderer::start() {
 	while(!glfwWindowShouldClose(this->window)){
 		//std::cout << "last Frame time: " << frameTime << std::endl;
 
-		if(this->isBufferInvalid || firstRender) {
+		if(scene && (this->isBufferInvalid || firstRender)) {
 			firstRender = false;
 			std::vector<std::future<void>> futures;
 			for(int tileRow = 0; tileRow < verticalTiles; ++tileRow){

@@ -76,7 +76,7 @@ inline bool hitAABB(const Ray& ray, const AABB& bbox, float& distance) {
 	tmax = min(tmax, max(tz1, tz2));
 
 	distance = max(tmin, 0.0f);
-	return (tmax > distance);
+	return (tmax >= distance);
 }
 
 inline bool hitAABB(const Ray& ray, const glm::fvec4& minAABB, const glm ::fvec4& maxAABB, float& distance) {
