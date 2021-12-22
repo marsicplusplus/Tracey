@@ -67,6 +67,11 @@ bool Scene::traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) con
 	return hasHit;
 }
 
+void Scene::packetTraverse(const std::vector<Ray>& rays, std::vector<bool>& rayMasks, float tMin, float tMax, std::vector<HitRecord>& recs) const {
+	topLevelBVH->packetHit(rays, rayMasks, tMin, tMax, recs);
+}
+
+
 void Scene::setCamera(CameraPtr camera){
 	this->currentCamera = camera;
 }
@@ -76,7 +81,7 @@ const CameraPtr Scene::getCamera() const {
 }
 
 bool Scene::update(float dt){
-	return topLevelBVH->update(dt) | this->currentCamera->update(dt);
+	return topLevelBVH->update(dt) || this->currentCamera->update(dt);
 }
 
 Color Scene::traceLights(HitRecord &rec) const {

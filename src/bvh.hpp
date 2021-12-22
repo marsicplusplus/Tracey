@@ -37,6 +37,9 @@ class BVH : public Hittable {
 		~BVH();
 
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
+		void packetHit(const std::vector<Ray>& rays, std::vector<bool>& rayMasks, float tMin, float tMax, std::vector<HitRecord>& rec);
+		void packetTraverse(const std::vector<Ray>& rays, std::vector<bool>& rayMasks, BVHNode* node, float& tMin, float& tMax, std::vector<HitRecord>& rec);
+		bool frustrumIntersectsAABB(const std::vector<Ray>& rays, const glm::fvec4& minBBox, const glm::fvec4& maxBBox);
 		bool update(float dt) override;
 		const std::vector<HittablePtr>& getHittable() const {
 			return hittables;

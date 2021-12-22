@@ -34,7 +34,7 @@ struct HitRecord {
 	int material;
 	float u;
 	float v;
-	float t;
+	float t = INF;
 	glm::fvec3 p = glm::fvec3(INF, INF, INF);
 	glm::fvec3 normal;
 

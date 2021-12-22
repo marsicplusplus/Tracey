@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iostream>
 #include <list>
+#include <stack>
 
 BVH::BVH(std::vector<HittablePtr> h, bool makeTopLevel, bool anim) : hittables(h), animate(anim) {
 	this->nodePool = new BVHNode[h.size() * 2];
@@ -918,6 +919,123 @@ bool BVH::traverse(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitR
 		}
 	}
 }
+
+void BVH::packetHit(const std::vector<Ray>& rays, std::vector<bool>& rayMasks, float tMin, float tMax, std::vector<HitRecord>& recs) {
+	auto transformInv = transform.getInverse();
+	auto transposeInv = transform.getTransposeInverse();
+	auto transformMat = transform.getMatrix();
+	std::vector<Ray> transformedRays;
+	for (auto& ray : rays) {
+		transformedRays.push_back(ray.transformRay(transformInv));
+	}
+
+	HitRecord tmp;
+	packetTraverse(transformedRays, rayMasks, this->root, tMin, tMax, recs);
+	for (int i = 0; i < recs.size(); i++) {
+		if (rayMasks[i]) {
+			recs[i].p = transformMat * glm::fvec4(recs[i].p, 1.0f);
+			recs[i].setFaceNormal(rays[i], transposeInv * glm::fvec4(recs[i].normal, 0.0));
+		}
+	}
+}
+
+
+void BVH::packetTraverse(const std::vector<Ray>& rays, std::vector<bool>& rayMasks, BVHNode* node, float& tMin, float& tMax, std::vector<HitRecord>& recs) {
+	
+	BVHNode* curNode = node;
+	std::stack<BVHNode*> traversalStack;
+	while (true) {
+		bool anyHit = false;
+		if (frustrumIntersectsAABB(rays, curNode->minAABBLeftFirst, curNode->maxAABBCount)) {
+			for (int i = 0; i < rays.size(); ++i) {
+				float distance;
+				rayMasks[i] = hitAABB(rays[i], curNode->minAABBLeftFirst, curNode->maxAABBCount, distance);
+				if (rayMasks[i]) {
+					anyHit = true;
+					if (curNode->maxAABBCount.w == 0) {
+						break;
+					}
+				}
+			}
+		}
+
+		if (anyHit) {
+			if (curNode->maxAABBCount.w == 0) {
+				auto firstChild = &this->nodePool[(int)curNode->minAABBLeftFirst.w];
+				auto secondChild = &this->nodePool[(int)curNode->minAABBLeftFirst.w + 1];
+				traversalStack.push(firstChild);
+				curNode = secondChild;
+				continue;
+			} else {
+				// We are a leaf
+				// Intersect the primitives
+				for (int r = 0; r < rays.size(); r++) {
+					if (rayMasks[r]) {
+						HitRecord rec = recs[r];
+						for (size_t i = curNode->minAABBLeftFirst.w; i < curNode->minAABBLeftFirst.w + curNode->maxAABBCount.w; ++i) {
+							auto prim = hittables[hittableIdxs[i]];
+							if (prim->hit(rays[r], tMin, rec.t, rec)) {
+								recs[r] = rec;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (traversalStack.empty()) {
+			break;
+		}
+
+		curNode = traversalStack.top();
+		traversalStack.pop();
+	}
+}
+
+
+bool BVH::frustrumIntersectsAABB(const std::vector<Ray>& rays, const glm::fvec4& minBBox, const glm::fvec4& maxBBox) {
+	// TODO
+	float distance = 0;
+	for (auto& ray : rays) {
+		if (hitAABB(ray, minBBox, maxBBox, distance))
+			return true;
+	}
+	
+	return false;
+}
+//
+//
+//2: void traverseBVH(Rays R, Frustum F, BVH theBVH)
+	// : BVHCell curCell = theBVH.root;
+	//: Stack<StackNode> traversalStack;
+	//: bool rayMasks[size(R)];
+	//: while (true)
+	// : bool anyHit = false;
+	//: if (frustumIntersectsAABB(F, curCell.AABB()))
+	// : for (Index i = 0; i < size(R); ++i)
+	//	  : rayMasks[i] = rayIntersectsAABB(R[i], curCell.AABB()))
+	//	 : if (rayMasks[i])
+	//	  : anyHit = true;
+	//  : if (isInner(curCell)) break;
+	//  : if (anyHit)
+	//   : if (isInner(curCell))
+	//   : StackNode node;
+	//  : node.cell = curCell.farChild(R);
+	//  : traversalStack.pushBack(node);
+	//  : curCell = curCell.nearChild(R);
+	//  : continue;
+	//  : else // isLeaf( curCell ) == true
+	//  : Triangles T = curCell.triangles();
+	//  : for (Index j = 0; j < size(T); ++j)
+	//	 : if (frustumIntersectsTriangle(F, T[j]))
+	//	 : for (Index i = 0; i < size(R); ++i)
+	//	 : if (rayMasks[i])
+	//	 : rayIntersectTriangle(R[i], T[j]);
+	//: // END if ( anyHit )
+	// : if (traversalStack.empty())
+	// : break;
+	//: StackNode node = traversalStack.pop();
+	//: curCell = node.cell;
 
 
 BVHNode* BVH::findBestMatch(BVHNode* target, std::list<BVHNode*> nodes) {

@@ -203,6 +203,7 @@ bool Renderer::start() {
 								int x = col + tWidth * tileCol;
 								int y = row + tHeight * tileRow;
 								if (cam) {
+									std::vector<Ray> rays;
 									for(int s = 0; s < samples; ++s){
 										float u = static_cast<float>(x + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wWidth - 1);
 										float v = static_cast<float>(y + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wHeight - 1);
@@ -210,8 +211,13 @@ bool Renderer::start() {
 										if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
 											pxColor += Color(0, 0, 0);
 										} else{
-											pxColor += trace(ray, bounces, scene);
+											//pxColor += trace(ray, bounces, scene);
+											rays.push_back(ray);
 										}
+									}
+									auto pxColorVec = packetTrace(rays, bounces, scene);
+									for (auto& color : pxColorVec) {
+										pxColor += color;
 									}
 								}
 								pxColor = pxColor / static_cast<float>(samples);
@@ -300,6 +306,68 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 	}
 	return Color(0.5,0.5,0.5);
 }
+
+
+std::vector<Color> Renderer::packetTrace(std::vector<Ray>& rays, int bounces, const ScenePtr scene) {
+	std::vector<HitRecord> recs(rays.size());
+	std::vector<bool> rayMasks(rays.size(), true);
+	std::vector<Color> colorVec;
+	if (!scene || bounces <= 0)
+		return colorVec;
+
+	scene->packetTraverse(rays, rayMasks, 0.001f, INF, recs);
+	for (int r = 0; r < recs.size(); r++) {
+		if (recs[r].t != INF) {
+			HitRecord hr = recs[r];
+			Ray reflectedRay;
+			MaterialPtr mat = scene->getMaterial(hr.material);
+			Color attenuation = mat->getMaterialColor(hr.u, hr.v, hr.p);
+			float reflectance = 1;
+
+			if (mat->getType() == Materials::DIFFUSE) {
+				colorVec.push_back(attenuation * scene->traceLights(hr));
+				continue;
+			}
+			else if (mat->getType() == Materials::MIRROR) {
+
+				mat->reflect(rays[r], hr, reflectedRay, reflectance);
+				if (reflectance == 1.0f) {
+					colorVec.push_back(attenuation * (trace(reflectedRay, bounces - 1, scene)));
+					continue;
+				}
+				else {
+					colorVec.push_back(attenuation * (reflectance * trace(reflectedRay, bounces - 1, scene) + (1.0f - reflectance) * scene->traceLights(hr)));
+					continue;
+				}
+			}
+			else if (mat->getType() == Materials::DIELECTRIC) {
+
+				Color refractionColor(0.0f);
+				Color reflectionColor(0.0f);
+				float reflectance;
+				mat->reflect(rays[r], hr, reflectedRay, reflectance);
+				reflectionColor = trace(reflectedRay, bounces - 1, scene);
+
+				if (reflectance < 1.0f) {
+					Ray refractedRay;
+					float refractance;
+					mat->refract(rays[r], hr, refractedRay, refractance);
+					refractionColor = trace(refractedRay, bounces - 1, scene);
+				}
+
+				mat->absorb(rays[r], hr, attenuation);
+
+				colorVec.push_back(attenuation * (reflectionColor * reflectance + refractionColor * (1 - reflectance)));
+			}
+		}
+		else {
+			colorVec.push_back(Color(0.5, 0.5, 0.5));
+		}
+	}
+	return colorVec;
+}
+
+
 void Renderer::putPixel(uint32_t fb[], int idx, uint8_t r, uint8_t g, uint8_t b){
 	fb[idx] = r << 16 | g << 8 | b << 0;
 }
