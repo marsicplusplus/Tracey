@@ -29,7 +29,18 @@ namespace SceneParser {
 
 		std::vector<Transform> keyframes;
 		std::vector<float> times;
+		std::vector<EasingType> easings;
 		for(auto &f : frames){
+			EasingType easing;
+			if(!f.contains("easing")) easing = EasingType::LINEAR;
+			else {
+				std::string e = f.at("easing");
+				if(e == "easin_linear") easing = EasingType::LINEAR;
+				else if(e == "easin_cubic") easing = EasingType::EASIN_CUBIC;
+				else if(e == "easin_expo") easing = EasingType::EASIN_EXPO;
+				else if(e == "easin_elastic") easing = EasingType::EASIN_ELASTIC;
+			}
+			easings.push_back(easing);
 			times.push_back(f.at("time"));
 			auto& t = f.at("transform");
 			Transform transformation;
@@ -47,7 +58,7 @@ namespace SceneParser {
 			}
 			keyframes.emplace_back(transformation);
 		}
-		return Animation(loop, start, keyframes, times); 
+		return Animation(loop, start, keyframes, times, easings); 
 	}
 
 	glm::fvec3 parseVec3(nlohmann::basic_json<>& arr) {

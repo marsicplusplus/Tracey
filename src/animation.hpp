@@ -2,12 +2,13 @@
 #define __ANIMATION_HPP__
 
 #include "transform.hpp"
+#include "easing.hpp"
 #include <vector>
 
 class Animation {
 	public:
 		Animation() {};
-		Animation(bool _loop, float start, std::vector<Transform> _frames, std::vector<float> _times);
+		Animation(bool _loop, float start, std::vector<Transform> _frames, std::vector<float> _times, std::vector<EasingType> _easings);
 		
 		void update(float dt);
 
@@ -29,6 +30,7 @@ class Animation {
 		Transform initial;
 		Transform current;
 		std::vector<Transform> frames;
+		std::vector<EasingType> easings;
 		std::vector<float> times;
 		int currentFrame;
 		bool loop;

@@ -1,9 +1,9 @@
 #include "animation.hpp"
 #include <algorithm>
 
-
-Animation::Animation(bool _loop, float _start, std::vector<Transform> _frames, std::vector<float> _times) : loop(_loop), start(_start), frames(_frames), times(_times){
+Animation::Animation(bool _loop, float _start, std::vector<Transform> _frames, std::vector<float> _times, std::vector<EasingType> _easings) : loop(_loop), start(_start), frames(_frames), times(_times), easings(_easings){
 	assert(frames.size() == times.size());
+	assert((frames.size()) == easings.size()); // One extra easing method to go from the last frame back to the first;
 	currentFrame = -1;
 	started = false;
 	stopped = false;
@@ -23,13 +23,13 @@ Transform Animation::getNextTransform(){
 	int nextIdx = currentFrame+1;
 	if(currentFrame == -1){
 		prev = &initial;
-		next = &frames[0];
 	} else {
 		prev = &frames[currentFrame];
-		next = &frames[nextIdx];
 	}
+	next = &frames[nextIdx];
+	EasingType nextEase = easings[nextIdx];
 
-	current = Transform::lerp(prev, next, std::clamp(accumulator/(float)times[nextIdx], 0.0f, 1.0f));
+	current = Transform::lerp(prev, next, Easing::ease(nextEase, (accumulator/(float)times[nextIdx])));
 
 	if(accumulator >= times[nextIdx]){
 		accumulator = 0;
