@@ -4,7 +4,6 @@
 #include "camera.hpp"
 #include "light_object.hpp"
 #include "hittables/hittable.hpp"
-#include "hittables/mesh.hpp"
 #include "json.hpp"
 #include "bvh.hpp"
 

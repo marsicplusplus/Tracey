@@ -4,6 +4,7 @@
 #include "scene_parser.hpp"
 
 #include <fstream>
+#include <iostream>
 
 Scene::Scene(){}
 Scene::Scene(std::filesystem::path sceneFile){

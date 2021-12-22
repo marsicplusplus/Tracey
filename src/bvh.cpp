@@ -6,7 +6,7 @@
 #include <iostream>
 #include <list>
 
-BVH::BVH(std::vector<HittablePtr> h, Heuristic heur, bool makeTopLevel) : hittables(h), heuristic(heur), animate(false) {
+BVH::BVH(std::vector<HittablePtr> h, Heuristic heur, bool _refit, bool makeTopLevel) : hittables(h), heuristic(heur), animate(false), mustRefit(_refit) {
 	this->nodePool = new BVHNode[h.size() * 2];
 	auto t1 = std::chrono::high_resolution_clock::now();
 	if (makeTopLevel) {

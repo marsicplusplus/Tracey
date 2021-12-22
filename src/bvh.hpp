@@ -34,7 +34,7 @@ struct BinningJob{
 
 class BVH : public Hittable {
 	public:
-		BVH(std::vector<HittablePtr> h, Heuristic heur = Heuristic::SAH, bool makeTopLevel = false);
+		BVH(std::vector<HittablePtr> h, Heuristic heur = Heuristic::SAH, bool _refit = false, bool makeTopLevel = false);
 		~BVH();
 
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
@@ -77,6 +77,7 @@ class BVH : public Hittable {
 
 		Heuristic heuristic;
 		bool animate;
+		bool mustRefit;
 		Animation animationManager;
 };
 
