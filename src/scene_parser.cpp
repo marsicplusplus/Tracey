@@ -127,7 +127,7 @@ namespace SceneParser {
 			}
 		}
 
-		AABB bbox{ minX, minY, minZ, maxX, maxY, maxZ };
+		AABB bbox{ { minX, minY, minZ, INF }, { maxX, maxY, maxZ, -INF } };
 		return std::make_shared<Mesh>(pos, norm, uv, triangles, bbox);
 	}
 
@@ -244,7 +244,7 @@ namespace SceneParser {
 			}
 		}
 
-		AABB bbox{ minX, minY, minZ, maxX, maxY, maxZ };
+		AABB bbox{ {minX, minY, minZ, INF},{ maxX, maxY, maxZ, -INF} };
 		auto mesh = std::make_shared<Mesh>(pos, norm, uv, triangles, bbox);
 		return mesh;
 	}

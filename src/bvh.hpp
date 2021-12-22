@@ -15,7 +15,7 @@ struct BVHNode {
 
 
 struct Bin {
-	AABB aabb = AABB{ INF,INF,INF,-INF,-INF,-INF };
+	AABB aabb = AABB{ glm::fvec4(INF,INF,INF,INF), glm::fvec4(-INF,-INF,-INF, -INF)};
 	int count = 0;
 };
 
@@ -54,7 +54,7 @@ class BVH : public Hittable {
 
 		bool computeBounding(BVHNode *node);
 		float calculateSurfaceArea(AABB bbox);
-		float calculateBinID(AABB primAABB, float k1, float k0, int longestAxisIdx);
+		float calculateBinID(glm::fvec4 centroid, float k1, float k0, int longestAxisIdx);
 		bool traverse(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitRecord& rec) const;
 		BVHNode* findBestMatch(BVHNode* target, std::list<BVHNode*> nodes);
 

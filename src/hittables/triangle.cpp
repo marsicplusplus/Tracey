@@ -39,23 +39,23 @@ Triangle::Triangle(
 			st2 = uvs[tIdx.z];
 		}
 
-		localBBox.minX = min(min(xVal.x, xVal.y), xVal.z);
-		localBBox.minY = min(min(yVal.x, yVal.y), yVal.z);
-		localBBox.minZ = min(min(zVal.x, zVal.y), zVal.z);
-		localBBox.maxX = max(max(xVal.x, xVal.y), xVal.z);
-		localBBox.maxY = max(max(yVal.x, yVal.y), yVal.z);
-		localBBox.maxZ = max(max(zVal.x, zVal.y), zVal.z);
-		if(localBBox.minX == localBBox.maxX){
-			localBBox.minX -= 0.0001f;
-			localBBox.maxX += 0.0001f;
+		localBBox.min.x = min(min(xVal.x, xVal.y), xVal.z);
+		localBBox.min.y = min(min(yVal.x, yVal.y), yVal.z);
+		localBBox.min.z = min(min(zVal.x, zVal.y), zVal.z);
+		localBBox.max.x = max(max(xVal.x, xVal.y), xVal.z);
+		localBBox.max.y = max(max(yVal.x, yVal.y), yVal.z);
+		localBBox.max.z = max(max(zVal.x, zVal.y), zVal.z);
+		if(localBBox.min.x == localBBox.max.x){
+			localBBox.min.x -= 0.0001f;
+			localBBox.max.x += 0.0001f;
 		}
-		if(localBBox.minY == localBBox.maxY){
-			localBBox.minY -= 0.0001f;
-			localBBox.maxY += 0.0001f;
+		if(localBBox.min.y == localBBox.max.y){
+			localBBox.min.y -= 0.0001f;
+			localBBox.max.y += 0.0001f;
 		}
-		if(localBBox.minZ == localBBox.maxZ){
-			localBBox.minZ -= 0.0001f;
-			localBBox.maxZ += 0.0001f;
+		if(localBBox.min.z == localBBox.max.z){
+			localBBox.min.z -= 0.0001f;
+			localBBox.max.z += 0.0001f;
 		}
 		updateWorldBBox();
 	}

@@ -21,12 +21,8 @@ typedef glm::fvec3 Color;
 class Material;
 
 struct AABB {
-	float minX;
-	float minY;
-	float minZ;
-	float maxX;
-	float maxY;
-	float maxZ;
+	glm::fvec4 min;
+	glm::fvec4 max;
 };
 
 struct HitRecord {
@@ -57,20 +53,20 @@ inline bool hitAABB(const Ray& ray, const AABB& bbox, float& distance) {
 	auto origin = ray.getOrigin();
 	auto rayDirInv = ray.getInverseDirection();
 
-	float tx1 = (bbox.minX - origin.x) * rayDirInv.x;
-	float tx2 = (bbox.maxX - origin.x) * rayDirInv.x;
+	float tx1 = (bbox.min.x - origin.x) * rayDirInv.x;
+	float tx2 = (bbox.max.x - origin.x) * rayDirInv.x;
 
 	tmin = max(tmin, min(tx1, tx2));
 	tmax = min(tmax, max(tx1, tx2));
 
-	float ty1 = (bbox.minY - origin.y) * rayDirInv.y;
-	float ty2 = (bbox.maxY - origin.y) * rayDirInv.y;
+	float ty1 = (bbox.min.y - origin.y) * rayDirInv.y;
+	float ty2 = (bbox.max.y - origin.y) * rayDirInv.y;
 
 	tmin = max(tmin, min(ty1, ty2));
 	tmax = min(tmax, max(ty1, ty2));
 
-	float tz1 = (bbox.minZ - origin.z) * rayDirInv.z;
-	float tz2 = (bbox.maxZ - origin.z) * rayDirInv.z;
+	float tz1 = (bbox.min.z - origin.z) * rayDirInv.z;
+	float tz2 = (bbox.max.z - origin.z) * rayDirInv.z;
 
 	tmin = max(tmin, min(tz1, tz2));
 	tmax = min(tmax, max(tz1, tz2));
@@ -80,7 +76,7 @@ inline bool hitAABB(const Ray& ray, const AABB& bbox, float& distance) {
 }
 
 inline bool hitAABB(const Ray& ray, const glm::fvec4& minAABB, const glm ::fvec4& maxAABB, float& distance) {
-	return hitAABB(ray, { minAABB.x, minAABB.y, minAABB.z, maxAABB.x, maxAABB.y, maxAABB.z }, distance);
+	return hitAABB(ray, { minAABB, maxAABB }, distance);
 }
 
 inline bool hitAABB(const Ray& ray, const AABB& bbox) {
