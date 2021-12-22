@@ -35,10 +35,17 @@ namespace SceneParser {
 			if(!f.contains("easing")) easing = EasingType::LINEAR;
 			else {
 				std::string e = f.at("easing");
-				if(e == "easin_linear") easing = EasingType::LINEAR;
-				else if(e == "easin_cubic") easing = EasingType::EASIN_CUBIC;
-				else if(e == "easin_expo") easing = EasingType::EASIN_EXPO;
-				else if(e == "easin_elastic") easing = EasingType::EASIN_ELASTIC;
+				if(e == "easein_linear") easing = EasingType::LINEAR;
+				else if(e == "easein_cubic") easing = EasingType::EASIN_CUBIC;
+				else if(e == "easeout_cubic") easing = EasingType::EASOUT_CUBIC;
+				else if(e == "easein_expo") easing = EasingType::EASIN_EXPO;
+				else if(e == "easeout_expo") easing = EasingType::EASOUT_EXPO;
+				else if(e == "easein_elastic") easing = EasingType::EASIN_ELASTIC;
+				else if(e == "easeout_elastic") easing = EasingType::EASOUT_ELASTIC;
+				else if(e == "easein_sin") easing = EasingType::EASIN_SIN;
+				else if(e == "easeout_sin") easing = EasingType::EASOUT_SIN;
+				else if(e == "easein_back") easing = EasingType::EASIN_BACK;
+				else if(e == "easeout_back") easing = EasingType::EASOUT_BACK;
 			}
 			easings.push_back(easing);
 			times.push_back(f.at("time"));
