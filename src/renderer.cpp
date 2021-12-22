@@ -184,21 +184,7 @@ bool Renderer::start() {
 
 	std::deque<double> averageFrameTime;
 	while(!glfwWindowShouldClose(this->window)){
-		float now = glfwGetTime();
-		frameTime = now - lastUpdateTime;
-		lastUpdateTime = now;
 		//std::cout << "last Frame time: " << frameTime << std::endl;
-
-		while(frameTime > 0.0f){
-			float dt = min(frameTime, fpsLimit);
-			frameTime -= dt;
-			glfwPollEvents();
-			double xpos, ypos;
-			glfwGetCursorPos(this->window, &xpos, &ypos);
-			InputManager::Instance()->setMouseState(xpos, ypos);
-			if(scene) this->isBufferInvalid = this->scene->update(dt);
-		}
-
 
 		if(this->isBufferInvalid || firstRender) {
 			firstRender = false;
@@ -240,6 +226,20 @@ bool Renderer::start() {
 
 			isBufferInvalid = false;
 		}
+		float now = glfwGetTime();
+		frameTime = now - lastUpdateTime;
+		lastUpdateTime = now;
+
+		while(frameTime > 0.0f){
+			float dt = min(frameTime, fpsLimit);
+			frameTime -= dt;
+			glfwPollEvents();
+			double xpos, ypos;
+			glfwGetCursorPos(this->window, &xpos, &ypos);
+			InputManager::Instance()->setMouseState(xpos, ypos);
+			if(scene) this->isBufferInvalid = this->scene->update(dt);
+		}
+
 		uint32_t* buffer = applyPostProcessing();
 		glBindTexture(GL_TEXTURE_2D, this->texture);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wWidth, wHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, buffer);

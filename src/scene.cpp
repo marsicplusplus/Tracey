@@ -32,7 +32,7 @@ Scene::Scene(std::filesystem::path sceneFile){
 	if(j.contains("instance_meshes")){
 		for (auto m : j["instance_meshes"]) {
 			std::string name;
-			auto mesh = SceneParser::parseMeshInstance(m, materials, name);
+			auto mesh = SceneParser::parseMeshInstance(m, materials, textures, name);
 			if (mesh)
 				meshes[name] = mesh;
 		}

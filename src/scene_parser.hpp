@@ -20,7 +20,7 @@ namespace SceneParser {
 	glm::fvec4 parseVec4(nlohmann::basic_json<>& arr);
 
 	BVHPtr parseMeshInstance(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials, std::string& name);
-	std::pair<std::string, BVHPtr> parseInstance(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, BVHPtr> meshes, int &numTri);
+	BVHPtr parseMeshInstance(nlohmann::json& hit, std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<Texture>>& textures, std::string &name);
 	Animation parseAnimation(nlohmann::json& animation);
 
 	void parseTransform(nlohmann::basic_json<>& hit, HittablePtr primitive);
@@ -33,11 +33,11 @@ namespace SceneParser {
 
 	std::pair<std::string, std::shared_ptr<Texture>> parseTexture(nlohmann::json& text);
 
-	std::shared_ptr<Hittable> getMeshBVH(nlohmann::json& hit, const std::vector<MaterialPtr>& materials);
+	//std::shared_ptr<Hittable> getMeshBVH(nlohmann::json& hit, const std::vector<MaterialPtr>& materials);
 
 	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, BVHPtr>& meshes, std::unordered_map<std::string, std::list<BVHPtr>>& BVHs, int& numTri);
 
-	static int findMaterial(std::string& name, const std::vector<MaterialPtr>& materials);
+	static int findMaterial(std::string& name, std::vector<MaterialPtr>& materials);
 
 };
 

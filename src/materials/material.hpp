@@ -20,7 +20,10 @@ enum class Materials {
 
 class Material {
 	public:
-		Material(std::string name) : name{std::move(name)} {}
+		Material(std::string name) : name{std::move(name)} {
+			albedo = nullptr;
+			bump = nullptr;
+		}
 
 		inline virtual bool reflect(const Ray& in, const HitRecord &r, Ray &reflectedRay, float &reflectance) const {
 			return false;
@@ -48,6 +51,7 @@ class Material {
 
 	protected:
 		std::shared_ptr<Texture> albedo;
+		std::shared_ptr<Texture> bump;
 		std::string name;
 };
 

@@ -7,11 +7,11 @@
 class MirrorMaterial : public Material {
 
 	public: 
-		MirrorMaterial(Color color, std::string name, float _reflective = 1.0f) : Material{name}, reflectionIdx{_reflective} {
+		MirrorMaterial(std::string name, Color color, float _reflective = 1.0f) : Material{name}, reflectionIdx{_reflective} {
 			albedo = std::make_shared<SolidColor>(color);
 		}
 
-		MirrorMaterial(std::shared_ptr<Texture> t, std::string name, float _reflective = 1.0f) : Material{name}, reflectionIdx{_reflective} {
+		MirrorMaterial(std::string name, std::shared_ptr<Texture> t, float _reflective = 1.0f) : Material{name}, reflectionIdx{_reflective} {
 			albedo = t;
 		}
 

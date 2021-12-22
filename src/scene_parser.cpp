@@ -58,13 +58,8 @@ namespace SceneParser {
 		return glm::fvec4(arr[0].get<float>(), arr[1].get<float>(), arr[2].get<float>(), arr[3].get<float>());
 	}
 
-	std::shared_ptr<BVH> parseMeshInstance(nlohmann::json& hit, const std::vector<MaterialPtr>& materials, std::string &name) {
+	std::shared_ptr<BVH> parseMeshInstance(nlohmann::json& hit, std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<Texture>>& textures, std::string &name) {
 		name = hit.at("name");
-
-		if (!hit.contains("material")) throw std::invalid_argument("Mesh doesn't name a material");
-		std::string matName = hit.at("material");
-		int materialIdx = findMaterial(matName, materials);
-		if (materialIdx == -1) throw std::invalid_argument("Mesh doesn't name a valid material");
 
 		if (!hit.contains("path")) {
 			throw std::invalid_argument("Mesh doesn't have a valid path");
@@ -85,11 +80,13 @@ namespace SceneParser {
 
 		auto& attrib = reader.GetAttrib();
 		auto& shapes = reader.GetShapes();
+		auto& mats = reader.GetMaterials();
 
 		std::vector<glm::fvec3> pos;
 		std::vector<glm::fvec3> norm;
 		std::vector<glm::fvec2> uv;
 		std::vector<HittablePtr> triangles;
+		std::vector<DiffuseMaterial> diffuseMats;
 
 		float minX = INF, minY = INF, minZ = INF, maxX = -INF, maxY = -INF, maxZ = -INF;
 
@@ -126,15 +123,41 @@ namespace SceneParser {
 			});
 		}
 
+		int materialIdx = -1;
+		if (hit.contains("material")){
+			std::string matName = hit.at("material");
+			materialIdx = findMaterial(matName, materials);
+		} else if(!mats.empty()) {
+			for (size_t i = 0; i < mats.size(); ++i) {
+				std::shared_ptr<Texture> t;
+				if(mats[i].diffuse_texname.empty()){
+					t = std::make_shared<SolidColor>(mats[i].diffuse[0], mats[i].diffuse[1], mats[i].diffuse[2]);
+				} else {
+					std::filesystem::path path = meshPath.parent_path().string();
+					path /= mats[i].diffuse_texname;
+					t = std::make_shared<ImageTexture>(path.string());
+				}
+				textures[mats[i].name] = t;
+				materials.emplace_back(std::make_shared<DiffuseMaterial>(mats[i].name, t));
+			}
+		} else throw std::invalid_argument("Mesh doesn't name a valid material");
+
 		for (auto& shape : shapes) {
 			const std::vector<tinyobj::index_t> idx = shape.mesh.indices;
 			const std::vector<int>& mat_ids = shape.mesh.material_ids;
 			for (size_t face_ind = 0; face_ind < mat_ids.size(); face_ind++) {
+				int material;
+				if(materialIdx == -1){
+					auto name = mats[mat_ids[face_ind]].name;
+					material = findMaterial(name, materials);
+				} else {
+					material = materialIdx;
+				}
 				auto tri = std::make_shared<Triangle>(
 					glm::ivec3{ idx[3 * face_ind].vertex_index, 	idx[3 * face_ind + 1].vertex_index, 	idx[3 * face_ind + 2].vertex_index },
 					glm::ivec3{ idx[3 * face_ind].normal_index, 	idx[3 * face_ind + 1].normal_index, 	idx[3 * face_ind + 2].normal_index },
 					glm::ivec3{ idx[3 * face_ind].texcoord_index, 	idx[3 * face_ind + 1].texcoord_index, 	idx[3 * face_ind + 2].texcoord_index },
-					materialIdx,
+					material,
 					pos,
 					norm,
 					uv
@@ -229,16 +252,16 @@ namespace SceneParser {
 		auto texture = textures.find(textname);
 		if (texture == textures.end()) throw std::invalid_argument("Material doesn't name a valid texture");
 		if (type == "DIFFUSE") {
-			mat = std::make_shared<DiffuseMaterial>(texture->second, name);
+			mat = std::make_shared<DiffuseMaterial>(name, texture->second);
 		}
 		else if (type == "MIRROR") {
 			float ref = m.contains("reflect") ? m["reflect"].get<float>() : 1.0f;
-			mat = std::make_shared<MirrorMaterial>(texture->second, name, ref);
+			mat = std::make_shared<MirrorMaterial>(name, texture->second, ref);
 		}
 		else if (type == "DIELECTRIC") {
 			float ior = (m.contains("ior")) ? (float)m.at("ior") : 1.0;
 			Color absorption = m.contains("absorption") ? parseVec3(m.at("absorption")) : Color(1.0, 1.0, 1.0);
-			mat = std::make_shared<DielectricMaterial>(texture->second, name, ior, absorption);
+			mat = std::make_shared<DielectricMaterial>(name, texture->second, ior, absorption);
 		}
 		return mat;
 	}
@@ -321,6 +344,7 @@ namespace SceneParser {
 	}
 
 
+	/*
 	std::shared_ptr<Hittable> getMeshBVH(nlohmann::json& hit, const std::vector<MaterialPtr>& materials) {
 		if (!hit.contains("material")) throw std::invalid_argument("Mesh doesn't name a material");
 		std::string matName = hit.at("material");
@@ -333,13 +357,11 @@ namespace SceneParser {
 		//	std::filesystem::path p = hit.at("path");
 		//	meshBVH = parseMesh(p, materialIdx);
 		//}
-
-
-
 		return meshBVH;
 	}
+	*/
 
-	static int findMaterial(std::string& name, const std::vector<MaterialPtr>& materials) {
+	static int findMaterial(std::string& name, std::vector<MaterialPtr>& materials) {
 		size_t i = 0;
 		while (i < materials.size()) {
 			if (materials[i]->getName() == name) return i;
