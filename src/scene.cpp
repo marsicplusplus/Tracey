@@ -79,8 +79,20 @@ const CameraPtr Scene::getCamera() const {
 
 bool Scene::update(float dt){
 	bool ret = false;
+	for(auto &m : meshes){
+		if(m.second->update(dt)){
+			auto instanceList = BVHs[m.first];
+			for(auto &i : instanceList){
+				i->constructSubBVH();
+			}
+			ret = true;
+		}
+	}
 	for(auto &b : BVHs){
-		ret |= b->update(dt);
+		auto instanceList = b.second;
+		for(auto &i : instanceList){
+			ret|=i->update(dt);
+		}
 	}
 	if(ret) topLevelBVH->constructTopLevelBVH();
 	return ret | this->currentCamera->update(dt);

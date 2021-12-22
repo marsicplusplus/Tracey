@@ -38,8 +38,8 @@ class Scene {
 
 	private:
 		CameraPtr currentCamera;
-		std::unordered_map<std::string, std::shared_ptr<BVH>> meshes;
-		std::vector<HittablePtr> BVHs;
+		std::unordered_map<std::string, BVHPtr> meshes;
+		std::unordered_map<std::string, std::list<BVHPtr>> BVHs;
 		std::vector<LightObjectPtr> lights;
 		std::vector<MaterialPtr> materials;
 		std::unordered_map<std::string, std::shared_ptr<Texture>> textures;

@@ -7,8 +7,9 @@
 #include <list>
 
 BVH::BVH(std::vector<HittablePtr> h, Heuristic heur, bool _refit, bool makeTopLevel) : hittables(h), heuristic(heur), animate(false), mustRefit(_refit) {
-	this->nodePool = new BVHNode[h.size() * 2];
+	this->refitCounter = 0;
 	auto t1 = std::chrono::high_resolution_clock::now();
+	this->nodePool = nullptr;
 	if (makeTopLevel) {
 		constructTopLevelBVH();
 	} else {
@@ -24,6 +25,8 @@ BVH::~BVH(){
 }
 
 void BVH::constructTopLevelBVH() {
+	delete[] this->nodePool;
+	this->nodePool = new BVHNode[hittables.size() * 2];
 	this->hittableIdxs.clear();
 	for (int i = 0; i < hittables.size(); ++i) {
 		this->hittableIdxs.push_back(i);
@@ -103,6 +106,10 @@ void BVH::constructTopLevelBVH() {
 }
 
 void BVH::constructSubBVH() {
+	if(this->nodePool != nullptr)
+		delete[] this->nodePool;
+	this->nodePool = new BVHNode[hittables.size() * 2];
+	this->hittableIdxs.clear();
 	for (int i = 0; i < hittables.size(); ++i) {
 		this->hittableIdxs.push_back(i);
 	}
@@ -1013,9 +1020,29 @@ BVHNode* BVH::findBestMatch(BVHNode* target, std::list<BVHNode*> nodes) {
 	return bestMatch;
 }
 
+void BVH::refitNode(BVHNode* node){
+	if(node == nullptr) return;
+	if(node->maxAABBCount.w != 0){ /* Leaf! Refit */
+		computeBounding(node);
+	} else {
+		auto leftNode = &this->nodePool[(int)node->minAABBLeftFirst.w];
+		refitNode(leftNode);
+		computeBounding(leftNode);
+		auto rightNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 1];
+		refitNode(rightNode);
+		computeBounding(rightNode);
+	}
+}
 
-void refit() {
-	
+
+void BVH::refit() {
+	if(this->refitCounter > 3) {
+		this->refitCounter = 0;
+		constructSubBVH();
+	} else {
+		++refitCounter;
+		refitNode(this->root);
+	}
 }
 
 bool BVH::update(float dt) {
@@ -1026,6 +1053,26 @@ bool BVH::update(float dt) {
 			this->setTransform(animationManager.getNextTransform());
 			ret = true;
 		}
+	}
+	if(mustRefit) {
+		this->refit();
+		ret = true;
+	}
+	return ret;
+}
+
+bool BVH::updateNode(BVHNode* node, float dt){
+	if(node == nullptr) return false;
+	bool ret = false;
+	if(node->maxAABBCount.w != 0){ /* Leaf! Updates */
+		for(size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i){
+			ret |= hittables[hittableIdxs[i]]->update(dt);
+		}
+	} else {
+		auto leftNode = &this->nodePool[(int)node->minAABBLeftFirst.w];
+		ret |= updateNode(leftNode, dt);
+		auto rightNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 1];
+		ret |= updateNode(rightNode, dt);
 	}
 	return ret;
 }

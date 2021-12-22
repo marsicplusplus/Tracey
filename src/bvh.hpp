@@ -44,6 +44,8 @@ class BVH : public Hittable {
 		};
 
 		void constructTopLevelBVH();
+		void constructSubBVH();
+
 		void setAnimation(const Animation anim){
 			animate = true;
 			animationManager = anim;
@@ -51,12 +53,13 @@ class BVH : public Hittable {
 		}
 
 	private:
-		void constructSubBVH();
 		void midpointSplit(BVHNode* node);
 		void subdivideBin(BVHNode* node);
 		void partitionBinSingle(BVHNode* node);
 		void partitionBinMulti(BVHNode* node);
 		void refit();
+		void refitNode(BVHNode* node);
+		bool updateNode(BVHNode* node, float dt);
 
 		void subdivideHQ(BVHNode* node);
 		void partitionHQ(BVHNode* node);
@@ -78,6 +81,7 @@ class BVH : public Hittable {
 		Heuristic heuristic;
 		bool animate;
 		bool mustRefit;
+		int refitCounter;
 		Animation animationManager;
 };
 

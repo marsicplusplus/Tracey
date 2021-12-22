@@ -146,11 +146,15 @@ namespace SceneParser {
 		if(hit.contains("bvh")){
 			if(hit.at("bvh") == "MIDPOINT") heuristic = Heuristic::MIDPOINT;
 		}
+		bool refit = false;
+		if(hit.contains("refit")){
+			refit = hit.at("refit");
+		}
 		AABB bbox{ minX, minY, minZ, maxX, maxY, maxZ };
-		return std::make_shared<BVH>(triangles, heuristic);
+		return std::make_shared<BVH>(triangles, heuristic, refit);
 	}
 
-	std::shared_ptr<Hittable> parseInstance(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<BVH>> meshes, int &numTri) {
+	std::pair<std::string, BVHPtr> parseInstance(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, BVHPtr> meshes, int &numTri) {
 		if (!mesh.contains("name")) throw std::invalid_argument("Mesh doesn't name an instance");
 		std::string name = mesh.at("name");
 		auto m = meshes.find(name);
@@ -158,8 +162,7 @@ namespace SceneParser {
 		if(m == meshes.end()){
 			throw std::invalid_argument("Mesh doesn't name a valid instance");
 		}
-
-		return m->second;
+		return std::make_pair(m->first, m->second);
 	};
 
 	void parseTransform(nlohmann::basic_json<>& hit, HittablePtr primitive) {
@@ -272,38 +275,47 @@ namespace SceneParser {
 		return texture;
 	}
 
-	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<BVH>> meshes, std::vector<HittablePtr>& BVHs, int &numTri) {
+	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, BVHPtr>& meshes, std::unordered_map<std::string, std::list<BVHPtr>>& BVHs, int &numTri) {
 
 		for (auto& obj : text) {
-			if (obj.contains("node"))
-				for (auto& node : obj["node"]) {
-					auto bvh = SceneParser::parseSceneGraph(node, materials, meshes, BVHs, numTri);
-					if (bvh)
-						BVHs.push_back(bvh);
-				}
+			//if (obj.contains("node"))
+				//for (auto& node : obj["node"]) {
+					//auto bvh = SceneParser::parseSceneGraph(node, materials, meshes, BVHs, numTri);
+					//if (bvh)
+						//BVHs.push_back(bvh);
+				//}
 
 			if (obj.contains("meshes")) {
 				for (auto& m : obj["meshes"]) {
 					auto instance = SceneParser::parseInstance(m, materials, meshes, numTri);
-					if (instance) {
 						bool animate = false;
 						std::vector<HittablePtr> hittableVec;
-						hittableVec.push_back(instance);
+						hittableVec.push_back(instance.second);
 						auto bvh = std::make_shared<BVH>(hittableVec);
 						parseTransform(m, bvh);
 						if(m.contains("animation")){
 							Animation anim = SceneParser::parseAnimation(m.at("animation"));
 							bvh->setAnimation(anim);
 						}
-						BVHs.push_back(bvh);
-					}
+						BVHs[instance.first].push_back(bvh);
 				}
 			}
 		}
 
 		std::shared_ptr<BVH> topLevelBVH = nullptr;
+		// TODO: my god. This is really ugly. Stop passing pointers around. 
+		// Start using indices.
+		// This is awful and slow.
+		// Rework this when we implement back meshes as an abstraction, right now this is needed as we need to rebuild the BVH
+		// of the instances associated with refitting meshes;
 		if (!BVHs.empty()) {
-			topLevelBVH = std::make_shared<BVH>(BVHs, Heuristic::SAH, /*refit*/ false, /*makeTopLevel*/ true);
+			std::vector<HittablePtr> bvhs;
+			for(auto const& imap: BVHs){
+				for(auto const& i : imap.second){
+					bvhs.push_back(i);
+				}
+			}
+			topLevelBVH = std::make_shared<BVH>(bvhs, Heuristic::SAH, /*refit*/ false, /*makeTopLevel*/ true);
 		}
 		return topLevelBVH;
 	}
