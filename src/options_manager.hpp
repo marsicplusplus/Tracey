@@ -60,8 +60,8 @@ class OptionsMap{
 			opts[Options::FPS_LIMIT] = 60;
 			opts[Options::W_WIDTH] = 640;
 			opts[Options::W_HEIGHT] = 384;
-			opts[Options::TILE_WIDTH] = 1;
-			opts[Options::TILE_HEIGHT] = 1;
+			opts[Options::TILE_WIDTH] = 16;
+			opts[Options::TILE_HEIGHT] = 16;
 			opts[Options::SCALING] = 1;
 			opts[Options::THREADS] = 1;
 		};

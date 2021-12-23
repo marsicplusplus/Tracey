@@ -156,6 +156,7 @@ void Renderer::initGui() {
 	this->aberrationOffset = glm::fvec3(0.0f, 0.0f, 0.0f);
 	this->guiVignetting = false;
 	this->vignettingSlider = 1.0f;
+	this->guiPacketTraversal = false;
 	this->fBrowser.SetTitle("Choose a scene");
 	this->fBrowser.SetWindowSize(500, 300);
 	this->fBrowser.SetTypeFilters({".json"});
@@ -184,7 +185,6 @@ bool Renderer::start() {
 
 	std::deque<double> averageFrameTime;
 	while(!glfwWindowShouldClose(this->window)){
-		//std::cout << "last Frame time: " << frameTime << std::endl;
 
 		if(scene && (this->isBufferInvalid || firstRender)) {
 			firstRender = false;
@@ -196,6 +196,7 @@ bool Renderer::start() {
 					int bounces = this->nBounces;
 					futures.push_back(Threading::pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
 						CameraPtr cam = scene->getCamera();
+						std::vector<RayInfo> packet(tHeight * tWidth);
 						for (int row = 0; row < tHeight; ++row) {
 							for (int col = 0; col < tWidth; ++col) {
 								Color pxColor(0,0,0);
@@ -208,15 +209,32 @@ bool Renderer::start() {
 										Ray ray = cam->generateCameraRay(u, v);
 										if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
 											pxColor += Color(0, 0, 0);
-										} else{
-											pxColor += trace(ray, bounces, scene);
+										} else {
+											if (guiPacketTraversal) {
+												auto zIndex = calcZOrder(col, row);
+												packet[zIndex].ray = ray;
+												packet[zIndex].x = x;
+												packet[zIndex].y = y;
+											} else {
+												pxColor += trace(ray, bounces, scene);
+											}
 										}
 									}
 								}
-								pxColor = pxColor / static_cast<float>(samples);
-								putPixel(frameBuffer, wWidth * (y) + (x), pxColor);
+								if (!guiPacketTraversal) {
+									pxColor = pxColor / static_cast<float>(samples);
+									putPixel(frameBuffer, wWidth * (y)+(x), pxColor);
+								}
+
 							}
 						}
+						if (guiPacketTraversal) {
+							packetTrace(packet, bounces, scene);
+							for (auto& rayInfo : packet) {
+								putPixel(frameBuffer, wWidth * (rayInfo.y) + (rayInfo.x), rayInfo.pxColor);
+							}
+						}
+
 					}));
 				}
 			}
@@ -230,6 +248,7 @@ bool Renderer::start() {
 		frameTime = now - lastUpdateTime;
 		lastUpdateTime = now;
 
+		std::cout << "Last frameTime: " << frameTime << "s" << std::endl;
 		while(frameTime > 0.0f){
 			float dt = min(frameTime, fpsLimit);
 			frameTime -= dt;
@@ -295,8 +314,62 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 		}
 		return Color{0,0,0};
 	}
-	return Color(0.5,0.5,0.5);
+	return Color(0.1,0.1,0.1);
 }
+
+void Renderer::packetTrace(std::vector<RayInfo>& packet, int bounces, const ScenePtr scene) {
+	if (!scene || bounces <= 0)
+		return;
+
+	scene->packetTraverse(packet, 0.001f);
+	for (auto& rayInfo : packet) {
+		if (rayInfo.rec.t != INF) {
+			HitRecord hr = rayInfo.rec;
+			Ray reflectedRay;
+			MaterialPtr mat = scene->getMaterial(hr.material);
+			Color attenuation = mat->getMaterialColor(hr.u, hr.v, hr.p);
+			float reflectance = 1;
+
+			if (mat->getType() == Materials::DIFFUSE) {
+				rayInfo.pxColor = attenuation * scene->traceLights(hr);
+				continue;
+			}
+			else if (mat->getType() == Materials::MIRROR) {
+
+				mat->reflect(rayInfo.ray, hr, reflectedRay, reflectance);
+				if (reflectance == 1.0f) {
+					rayInfo.pxColor = attenuation * (trace(reflectedRay, bounces - 1, scene));
+					continue;
+				}
+				else {
+					rayInfo.pxColor = attenuation * (reflectance * trace(reflectedRay, bounces - 1, scene) + (1.0f - reflectance) * scene->traceLights(hr));
+					continue;
+				}
+			}
+			else if (mat->getType() == Materials::DIELECTRIC) {
+
+				Color refractionColor(0.0f);
+				Color reflectionColor(0.0f);
+				float reflectance;
+				mat->reflect(rayInfo.ray, hr, reflectedRay, reflectance);
+				reflectionColor = trace(reflectedRay, bounces - 1, scene);
+
+				if (reflectance < 1.0f) {
+					Ray refractedRay;
+					float refractance;
+					mat->refract(rayInfo.ray, hr, refractedRay, refractance);
+					refractionColor = trace(refractedRay, bounces - 1, scene);
+				}
+
+				mat->absorb(rayInfo.ray, hr, attenuation);
+
+				rayInfo.pxColor = attenuation * (reflectionColor * reflectance + refractionColor * (1 - reflectance));
+			}
+		}
+	}
+}
+
+
 void Renderer::putPixel(uint32_t fb[], int idx, uint8_t r, uint8_t g, uint8_t b){
 	fb[idx] = r << 16 | g << 8 | b << 0;
 }
@@ -430,8 +503,15 @@ void Renderer::renderGUI() {
 					}
 				}
 
+				if (ImGui::Checkbox("Packet Traversal", &guiPacketTraversal)) {
+					this->nSamples = 1;
+				}
+
 				ImGui::TextWrapped("Samples");
 				ImGui::SliderInt("##SAMPLES", &nSamples, 1, 100);
+				if (nSamples > 1) {
+					guiPacketTraversal = false;
+				}
 				ImGui::TextWrapped("Bounces");
 				ImGui::SliderInt("##BOUNCES", &nBounces, 2, 100);
 			}

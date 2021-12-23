@@ -12,6 +12,17 @@ public:
 	Hittable(AABB aabb = AABB{ 0,0,0,0,0,0 }) : localBBox{aabb}, worldBBox{aabb} {}
 
 	virtual bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const = 0;
+
+	virtual void packetHit(std::vector<RayInfo>& packet, Frustum frustum, float tMin, int first, int last) {
+
+		for (int i = first; i < last; i++) {
+			if (hit(packet[i].ray, tMin, packet[i].rec.t, packet[i].rec)) {
+				packet[i].rec.p = transform.getMatrix() * glm::fvec4(packet[i].rec.p, 1.0f);
+				packet[i].rec.setFaceNormal(packet[i].ray, transform.getTransposeInverse() * glm::fvec4(packet[i].rec.normal, 0.0));
+			}
+		}
+	};
+
 	virtual bool update(float dt) { return false; }
 
 	inline void translate(glm::fvec3 t){
@@ -58,6 +69,7 @@ protected:
 		localVertices.emplace_back( localBBox.maxX, localBBox.maxY, localBBox.maxZ, 1.0f );
 
 		worldBBox = { INF, INF, INF, -INF, -INF, -INF };
+		worldVertices = std::vector<glm::fvec3>(8);
 		for (auto vertex : localVertices) {
 			auto tranformedVertex = transform.getMatrix() * vertex;
 			worldBBox.minX = min(tranformedVertex.x, worldBBox.minX);
@@ -74,6 +86,8 @@ protected:
 	Transform transform;
 	AABB localBBox;
 	AABB worldBBox;
+	std::vector<glm::fvec3> worldVertices;
+
 };
 
 typedef std::shared_ptr<Hittable> HittablePtr;
