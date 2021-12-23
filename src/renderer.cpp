@@ -156,14 +156,15 @@ void Renderer::initGui() {
 	this->aberrationOffset = glm::fvec3(0.0f, 0.0f, 0.0f);
 	this->guiVignetting = false;
 	this->vignettingSlider = 1.0f;
+	this->guiPacketTraversal = false;
 	this->fBrowser.SetTitle("Choose a scene");
 	this->fBrowser.SetWindowSize(500, 300);
 	this->fBrowser.SetTypeFilters({".json"});
 }
 
 bool Renderer::start() {
-	const int tWidth = OptionsMap::Instance()->getOption(Options::TILE_WIDTH);
-	const int tHeight = OptionsMap::Instance()->getOption(Options::TILE_HEIGHT);
+	const int tWidth = 16; //OptionsMap::Instance()->getOption(Options::TILE_WIDTH);
+	const int tHeight = 16; // OptionsMap::Instance()->getOption(Options::TILE_HEIGHT);
 	const int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
 	const int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
 	if(wWidth % tWidth != 0 || wHeight % tHeight != 0){
@@ -197,33 +198,45 @@ bool Renderer::start() {
 					int bounces = this->nBounces;
 					futures.push_back(Threading::pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
 						CameraPtr cam = scene->getCamera();
+						std::vector<RayInfo> packet(tHeight * tWidth);
 						for (int row = 0; row < tHeight; ++row) {
 							for (int col = 0; col < tWidth; ++col) {
 								Color pxColor(0,0,0);
 								int x = col + tWidth * tileCol;
 								int y = row + tHeight * tileRow;
 								if (cam) {
-									std::vector<Ray> rays;
 									for(int s = 0; s < samples; ++s){
 										float u = static_cast<float>(x + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wWidth - 1);
 										float v = static_cast<float>(y + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wHeight - 1);
 										Ray ray = cam->generateCameraRay(u, v);
 										if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
 											pxColor += Color(0, 0, 0);
-										} else{
-											//pxColor += trace(ray, bounces, scene);
-											rays.push_back(ray);
+										} else {
+											if (guiPacketTraversal) {
+												auto zIndex = calcZOrder(col, row);
+												packet[zIndex].ray = ray;
+												packet[zIndex].x = x;
+												packet[zIndex].y = y;
+											} else {
+												pxColor += trace(ray, bounces, scene);
+											}
 										}
 									}
-									auto pxColorVec = packetTrace(rays, bounces, scene);
-									for (auto& color : pxColorVec) {
-										pxColor += color;
-									}
 								}
-								pxColor = pxColor / static_cast<float>(samples);
-								putPixel(frameBuffer, wWidth * (y) + (x), pxColor);
+								if (!guiPacketTraversal) {
+									pxColor = pxColor / static_cast<float>(samples);
+									putPixel(frameBuffer, wWidth * (y)+(x), pxColor);
+								}
+
 							}
 						}
+						if (guiPacketTraversal) {
+							packetTrace(packet, bounces, scene);
+							for (auto& rayInfo : packet) {
+								putPixel(frameBuffer, wWidth * (rayInfo.y) + (rayInfo.x), rayInfo.pxColor);
+							}
+						}
+
 					}));
 				}
 			}
@@ -307,36 +320,32 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 	return Color(0.5,0.5,0.5);
 }
 
-
-std::vector<Color> Renderer::packetTrace(std::vector<Ray>& rays, int bounces, const ScenePtr scene) {
-	std::vector<HitRecord> recs(rays.size());
-	std::vector<bool> rayMasks(rays.size(), true);
-	std::vector<Color> colorVec;
+void Renderer::packetTrace(std::vector<RayInfo>& packet, int bounces, const ScenePtr scene) {
 	if (!scene || bounces <= 0)
-		return colorVec;
+		return;
 
-	scene->packetTraverse(rays, rayMasks, 0.001f, INF, recs);
-	for (int r = 0; r < recs.size(); r++) {
-		if (recs[r].t != INF) {
-			HitRecord hr = recs[r];
+	scene->packetTraverse(packet, 0.001f);
+	for (auto& rayInfo : packet) {
+		if (rayInfo.rec.t != INF) {
+			HitRecord hr = rayInfo.rec;
 			Ray reflectedRay;
 			MaterialPtr mat = scene->getMaterial(hr.material);
 			Color attenuation = mat->getMaterialColor(hr.u, hr.v, hr.p);
 			float reflectance = 1;
 
 			if (mat->getType() == Materials::DIFFUSE) {
-				colorVec.push_back(attenuation * scene->traceLights(hr));
+				rayInfo.pxColor = attenuation * scene->traceLights(hr);
 				continue;
 			}
 			else if (mat->getType() == Materials::MIRROR) {
 
-				mat->reflect(rays[r], hr, reflectedRay, reflectance);
+				mat->reflect(rayInfo.ray, hr, reflectedRay, reflectance);
 				if (reflectance == 1.0f) {
-					colorVec.push_back(attenuation * (trace(reflectedRay, bounces - 1, scene)));
+					rayInfo.pxColor = attenuation * (trace(reflectedRay, bounces - 1, scene));
 					continue;
 				}
 				else {
-					colorVec.push_back(attenuation * (reflectance * trace(reflectedRay, bounces - 1, scene) + (1.0f - reflectance) * scene->traceLights(hr)));
+					rayInfo.pxColor = attenuation * (reflectance * trace(reflectedRay, bounces - 1, scene) + (1.0f - reflectance) * scene->traceLights(hr));
 					continue;
 				}
 			}
@@ -345,26 +354,22 @@ std::vector<Color> Renderer::packetTrace(std::vector<Ray>& rays, int bounces, co
 				Color refractionColor(0.0f);
 				Color reflectionColor(0.0f);
 				float reflectance;
-				mat->reflect(rays[r], hr, reflectedRay, reflectance);
+				mat->reflect(rayInfo.ray, hr, reflectedRay, reflectance);
 				reflectionColor = trace(reflectedRay, bounces - 1, scene);
 
 				if (reflectance < 1.0f) {
 					Ray refractedRay;
 					float refractance;
-					mat->refract(rays[r], hr, refractedRay, refractance);
+					mat->refract(rayInfo.ray, hr, refractedRay, refractance);
 					refractionColor = trace(refractedRay, bounces - 1, scene);
 				}
 
-				mat->absorb(rays[r], hr, attenuation);
+				mat->absorb(rayInfo.ray, hr, attenuation);
 
-				colorVec.push_back(attenuation * (reflectionColor * reflectance + refractionColor * (1 - reflectance)));
+				rayInfo.pxColor = attenuation * (reflectionColor * reflectance + refractionColor * (1 - reflectance));
 			}
 		}
-		else {
-			colorVec.push_back(Color(0.5, 0.5, 0.5));
-		}
 	}
-	return colorVec;
 }
 
 
@@ -501,8 +506,15 @@ void Renderer::renderGUI() {
 					}
 				}
 
+				if (ImGui::Checkbox("Packet Traversal", &guiPacketTraversal)) {
+					this->nSamples = 1;
+				}
+
 				ImGui::TextWrapped("Samples");
 				ImGui::SliderInt("##SAMPLES", &nSamples, 1, 100);
+				if (nSamples > 1) {
+					guiPacketTraversal = false;
+				}
 				ImGui::TextWrapped("Bounces");
 				ImGui::SliderInt("##BOUNCES", &nBounces, 2, 100);
 			}

@@ -9,8 +9,8 @@ enum class Options {
 	MAX_BOUNCES,
 	SAMPLES,
 	FPS_LIMIT,
-	TILE_WIDTH,
-	TILE_HEIGHT,
+	//TILE_WIDTH,
+	//TILE_HEIGHT,
 	W_WIDTH,
 	W_HEIGHT,
 	THREADS,
@@ -45,8 +45,8 @@ class OptionsMap{
 			std::cout << "SCALING: \t\t" << opts[Options::SCALING] << std::endl;
 			std::cout << "W_WIDTH: \t\t" << opts[Options::W_WIDTH] << std::endl;
 			std::cout << "W_HEIGHT: \t\t" << opts[Options::W_HEIGHT] << std::endl;
-			std::cout << "TILE_WIDTH: \t\t" << opts[Options::TILE_WIDTH] << std::endl;
-			std::cout << "TILE_HEIGHT: \t\t" << opts[Options::TILE_HEIGHT] << std::endl;
+			//std::cout << "TILE_WIDTH: \t\t" << opts[Options::TILE_WIDTH] << std::endl;
+			//std::cout << "TILE_HEIGHT: \t\t" << opts[Options::TILE_HEIGHT] << std::endl;
 			std::cout << "THREADS: \t\t" << opts[Options::THREADS] << std::endl;
 		}
 
@@ -60,8 +60,8 @@ class OptionsMap{
 			opts[Options::FPS_LIMIT] = 60;
 			opts[Options::W_WIDTH] = 640;
 			opts[Options::W_HEIGHT] = 384;
-			opts[Options::TILE_WIDTH] = 1;
-			opts[Options::TILE_HEIGHT] = 1;
+			//opts[Options::TILE_WIDTH] = 16;
+			//opts[Options::TILE_HEIGHT] = 16;
 			opts[Options::SCALING] = 1;
 			opts[Options::THREADS] = 1;
 		};

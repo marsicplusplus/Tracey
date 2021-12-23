@@ -3,6 +3,8 @@
 
 #include "hittables/hittable.hpp"
 #include <list>
+#include <stack>
+
 struct BVHNode {
 
 	// If this is a leaf, we want to know the first hittable in the array;
@@ -13,6 +15,11 @@ struct BVHNode {
 };
 /* We could also combine the first 3 floats with the first int and the second set of 3 floats with the second int to use SIMD operations and gain more STONKS */
 
+struct StackNode
+{
+	BVHNode* node;
+	int first;
+};
 
 struct Bin {
 	AABB aabb = AABB{ INF,INF,INF,-INF,-INF,-INF };
@@ -37,9 +44,11 @@ class BVH : public Hittable {
 		~BVH();
 
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
-		void packetHit(const std::vector<Ray>& rays, std::vector<bool>& rayMasks, float tMin, float tMax, std::vector<HitRecord>& rec);
-		void packetTraverse(const std::vector<Ray>& rays, std::vector<bool>& rayMasks, BVHNode* node, float& tMin, float& tMax, std::vector<HitRecord>& rec);
-		bool frustrumIntersectsAABB(const std::vector<Ray>& rays, const glm::fvec4& minBBox, const glm::fvec4& maxBBox);
+		void packetHit(std::vector<RayInfo>& rays, Frustum frustum, float tMin, int first, int last) override;
+		void packetTraverse(std::vector<RayInfo>& rays, Frustum frustum, BVHNode* node, float& tMin, int first);
+		bool frustumIntersectsAABB(Frustum frustum, const glm::fvec4& minBBox, const glm::fvec4& maxBBox);
+		void getFirstHit(std::vector<RayInfo> packet, Frustum F, const glm::fvec4& minBBox, const glm::fvec4& maxBBox, int& first);
+		int getLastHit(std::vector<RayInfo> packet, const glm::fvec4& minBBox, const glm::fvec4& maxBBox, int first);
 		bool update(float dt) override;
 		const std::vector<HittablePtr>& getHittable() const {
 			return hittables;

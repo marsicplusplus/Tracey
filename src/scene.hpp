@@ -22,7 +22,7 @@ class Scene {
 		void setCamera(CameraPtr camera);
 
 		bool traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) const;
-		void packetTraverse(const std::vector<Ray>& rays, std::vector<bool>& rayMasks, float tMin, float tMax, std::vector<HitRecord>& recs) const;
+		void packetTraverse(std::vector<RayInfo>& packet, float tMin) const;
 		Color traceLights(HitRecord &rec) const;
 		bool update(float dt);
 

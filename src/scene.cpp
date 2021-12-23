@@ -67,8 +67,27 @@ bool Scene::traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) con
 	return hasHit;
 }
 
-void Scene::packetTraverse(const std::vector<Ray>& rays, std::vector<bool>& rayMasks, float tMin, float tMax, std::vector<HitRecord>& recs) const {
-	topLevelBVH->packetHit(rays, rayMasks, tMin, tMax, recs);
+void Scene::packetTraverse(std::vector<RayInfo>& packet, float tMin) const {
+	Frustum frustum;
+
+	auto corner = (packet.size() - 1) / 3;
+	const auto p1 = packet[0 * corner];
+	const auto p0 = packet[1 * corner];
+	const auto p2 = packet[2 * corner];
+	const auto p3 = packet[3 * corner];
+
+	auto origin = p0.ray.getOrigin();
+	frustum.normals[0] = glm::cross(p0.ray.getDirection() - origin, p1.ray.getDirection() - p0.ray.getDirection());
+	frustum.normals[1] = glm::cross(p1.ray.getDirection() - origin, p2.ray.getDirection() - p1.ray.getDirection());
+	frustum.normals[2] = glm::cross(p2.ray.getDirection() - origin, p3.ray.getDirection() - p2.ray.getDirection());
+	frustum.normals[3] = glm::cross(p3.ray.getDirection() - origin, p1.ray.getDirection() - p3.ray.getDirection());
+
+	frustum.offsets[0] = glm::dot(frustum.normals[0], origin);
+	frustum.offsets[1] = glm::dot(frustum.normals[1], origin);
+	frustum.offsets[2] = glm::dot(frustum.normals[2], origin);
+	frustum.offsets[3] = glm::dot(frustum.normals[3], origin);
+
+	topLevelBVH->packetHit(packet, frustum, tMin, 0, 0);
 }
 
 

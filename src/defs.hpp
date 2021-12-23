@@ -44,9 +44,17 @@ struct HitRecord {
 	}
 };
 
-struct RayPacket {
+struct RayInfo {
 	Ray ray;
+	int x;
+	int y;
 	HitRecord rec;
+	Color pxColor = Color(0.5, 0.5, 0.5);
+};
+
+struct Frustum {
+	glm::fvec3 normals[4];
+	float offsets[4];
 };
 
 template<typename T> T max(T a, T b) { return (a > b) ? a : b; }
@@ -83,9 +91,36 @@ inline bool hitAABB(const Ray& ray, const glm::fvec4& minAABB, const glm ::fvec4
 	return hitAABB(ray, { minAABB.x, minAABB.y, minAABB.z, maxAABB.x, maxAABB.y, maxAABB.z }, distance);
 }
 
+inline bool hitAABB(const Ray& ray, const glm::fvec4& minAABB, const glm::fvec4& maxAABB) {
+	float distance = 0.0f;
+	return hitAABB(ray, minAABB, maxAABB, distance);
+}
+
 inline bool hitAABB(const Ray& ray, const AABB& bbox) {
 	float distance = 0.0f;
 	return hitAABB(ray, bbox, distance);
+}
+
+inline uint32_t calcZOrder(int xPos, int yPos)
+{
+	static const uint32_t MASKS[] = { 0x55555555, 0x33333333, 0x0F0F0F0F, 0x00FF00FF };
+	static const uint32_t SHIFTS[] = { 1, 2, 4, 8 };
+
+	uint32_t x = xPos;  // Interleave lower 16 bits of x and y, so the bits of x
+	uint32_t y = yPos;  // are in the even positions and bits from y in the odd;
+
+	x = (x | (x << SHIFTS[3])) & MASKS[3];
+	x = (x | (x << SHIFTS[2])) & MASKS[2];
+	x = (x | (x << SHIFTS[1])) & MASKS[1];
+	x = (x | (x << SHIFTS[0])) & MASKS[0];
+
+	y = (y | (y << SHIFTS[3])) & MASKS[3];
+	y = (y | (y << SHIFTS[2])) & MASKS[2];
+	y = (y | (y << SHIFTS[1])) & MASKS[1];
+	y = (y | (y << SHIFTS[0])) & MASKS[0];
+
+	const uint32_t result = x | (y << 1);
+	return result;
 }
 
 namespace Random {
