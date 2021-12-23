@@ -178,6 +178,7 @@ bool Renderer::start() {
 	const float fpsLimit = 1.0 / static_cast<float>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
 	float lastUpdateTime = glfwGetTime();  // number of seconds since the last loop
 	float frameTime = 0.0f;
+	float lasttime = 0.0f;
 
 	const int horizontalTiles = wWidth / tWidth;
 	const int verticalTiles = wHeight / tHeight;
@@ -243,12 +244,13 @@ bool Renderer::start() {
 				f.get();
 
 			isBufferInvalid = false;
+			std::cout << "Last frameTime: " << lasttime << "s" << std::endl;
 		}
 		float now = glfwGetTime();
 		frameTime = now - lastUpdateTime;
+		lasttime = frameTime;
 		lastUpdateTime = now;
 
-		std::cout << "Last frameTime: " << frameTime << "s" << std::endl;
 		while(frameTime > 0.0f){
 			float dt = min(frameTime, fpsLimit);
 			frameTime -= dt;
