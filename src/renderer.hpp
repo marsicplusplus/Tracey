@@ -53,6 +53,7 @@ public:
 		float guiSensitivity;
 		glm::vec3 guiCamPos;
 		glm::vec3 guiCamDir;
+		float lastUpdateTime;
 		float guiK1;
 		float guiK2;
 		bool guiBarrel;

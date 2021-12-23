@@ -176,7 +176,7 @@ bool Renderer::start() {
 	const int maxBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
 	const int samples = OptionsMap::Instance()->getOption(Options::SAMPLES);
 	const float fpsLimit = 1.0 / static_cast<float>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
-	float lastUpdateTime = glfwGetTime();  // number of seconds since the last loop
+	this->lastUpdateTime = glfwGetTime();  // number of seconds since the last loop
 	float frameTime = 0.0f;
 	float lasttime = 0.0f;
 
@@ -582,6 +582,7 @@ void Renderer::renderGUI() {
 		{
 			this->setScene(std::make_shared<Scene>(this->fBrowser.GetSelected().string()));
 			this->fBrowser.ClearSelected();
+			this->lastUpdateTime = glfwGetTime();
 		}
 	}
 	ImGui::Render();
