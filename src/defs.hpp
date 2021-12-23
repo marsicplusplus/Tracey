@@ -49,7 +49,7 @@ struct RayInfo {
 	int x;
 	int y;
 	HitRecord rec;
-	Color pxColor = Color(0.5, 0.5, 0.5);
+	Color pxColor = Color(0.4, 0.4, 0.4);
 };
 
 struct Frustum {

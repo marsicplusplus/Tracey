@@ -1050,28 +1050,12 @@ void BVH::packetTraverse(std::vector<RayInfo>& packet, Frustum frustum, BVHNode*
 
 
 bool BVH::frustumIntersectsAABB(Frustum frustum, const glm::fvec4& minBBox, const glm::fvec4& maxBBox) {
-
-	std::vector<glm::fvec3> vertices;
-	vertices.emplace_back(minBBox.x, minBBox.y, minBBox.z);
-	vertices.emplace_back(minBBox.x, minBBox.y, maxBBox.z);
-	vertices.emplace_back(minBBox.x, maxBBox.y, minBBox.z);
-	vertices.emplace_back(minBBox.x, maxBBox.y, maxBBox.z);
-	vertices.emplace_back(maxBBox.x, minBBox.y, minBBox.z);
-	vertices.emplace_back(maxBBox.x, minBBox.y, maxBBox.z);
-	vertices.emplace_back(maxBBox.x, maxBBox.y, minBBox.z);
-	vertices.emplace_back(maxBBox.x, maxBBox.y, maxBBox.z);
-
-	for (int i = 0; i < 4; i++) {
-		for (auto& vertex : vertices) {
-			if (glm::dot(vertex, frustum.normals[i]) - frustum.offsets[i] < 0.0f) {
-				break;
-			}
-		}
-
-		return false;
-	}
-
-	return true;
+	AABB aabb {minBBox.x, minBBox.y, minBBox.z, maxBBox.x, maxBBox.y, maxBBox.z};
+	glm::fvec3 c = (maxBBox + minBBox) * 0.5f; // Compute AABB center
+	glm::fvec3 e = {maxBBox.x - c.x, maxBBox.y - c.y, maxBBox.z - c.z}; // Compute positive extents
+	float r = e[0]*glm::abs(frustum.normals[0].x) + e[1]*glm::abs(frustum.normals[0].y) + e[2]*glm::abs(frustum.normals[0].z);
+	float s = glm::dot(frustum.normals[0], c) - frustum.offsets[0];
+	return fabs(s) <= r;
 }
 
 void BVH::getFirstHit(std::vector<RayInfo> packet, Frustum F, const glm::fvec4& minBBox, const glm::fvec4& maxBBox, int& first) {

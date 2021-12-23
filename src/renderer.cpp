@@ -200,6 +200,7 @@ bool Renderer::start() {
 					futures.push_back(Threading::pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
 						CameraPtr cam = scene->getCamera();
 						std::vector<RayInfo> packet(tHeight * tWidth);
+						std::vector<Ray> corners(4);
 						for (int row = 0; row < tHeight; ++row) {
 							for (int col = 0; col < tWidth; ++col) {
 								Color pxColor(0,0,0);
@@ -214,6 +215,10 @@ bool Renderer::start() {
 											pxColor += Color(0, 0, 0);
 										} else {
 											if (guiPacketTraversal) {
+												if(row == 0 && col == 0) corners.push_back(ray);
+												if(row == 0 && col == tWidth-1) corners.push_back(ray);
+												if(row == tHeight-1 && col == 0) corners.push_back(ray);
+												if(row == tHeight-1 && col == tWidth-1) corners.push_back(ray);
 												auto zIndex = calcZOrder(col, row);
 												packet[zIndex].ray = ray;
 												packet[zIndex].x = x;
@@ -232,7 +237,7 @@ bool Renderer::start() {
 							}
 						}
 						if (guiPacketTraversal) {
-							packetTrace(packet, bounces, scene);
+							packetTrace(corners, packet, bounces, scene);
 							for (auto& rayInfo : packet) {
 								putPixel(frameBuffer, wWidth * (rayInfo.y) + (rayInfo.x), rayInfo.pxColor);
 							}
@@ -328,11 +333,11 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 	return Color(0.4,0.4,0.4);
 }
 
-void Renderer::packetTrace(std::vector<RayInfo>& packet, int bounces, const ScenePtr scene) {
+void Renderer::packetTrace(std::vector<Ray> &corners, std::vector<RayInfo>& packet, int bounces, const ScenePtr scene) {
 	if (!scene || bounces <= 0)
 		return;
 
-	scene->packetTraverse(packet, 0.001f);
+	scene->packetTraverse(corners, packet, 0.001f);
 	for (auto& rayInfo : packet) {
 		if (rayInfo.rec.t != INF) {
 			HitRecord hr = rayInfo.rec;
