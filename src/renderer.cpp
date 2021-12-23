@@ -184,7 +184,9 @@ bool Renderer::start() {
 	const int verticalTiles = wHeight / tHeight;
 	bool firstRender = true;
 
-	std::deque<double> averageFrameTime;
+#ifdef DEBUG
+	std::deque<float> averageFrameTime;
+#endif
 	while(!glfwWindowShouldClose(this->window)){
 
 		if(scene && (this->isBufferInvalid || firstRender)) {
@@ -245,6 +247,13 @@ bool Renderer::start() {
 
 			isBufferInvalid = false;
 			std::cout << "Last frameTime: " << lasttime << "s" << std::endl;
+#ifdef DEBUG
+			averageFrameTime.push_back(lasttime);
+			int count = averageFrameTime.size();
+			if(count > 500) averageFrameTime.pop_front();
+			std::cout << "Average time of the last " << count << " frames: " << 
+				std::reduce(averageFrameTime.begin(), averageFrameTime.end()) / count << "s" << std::endl;
+#endif
 		}
 		float now = glfwGetTime();
 		frameTime = now - lastUpdateTime;
@@ -316,7 +325,7 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 		}
 		return Color{0,0,0};
 	}
-	return Color(0.1,0.1,0.1);
+	return Color(0.4,0.4,0.4);
 }
 
 void Renderer::packetTrace(std::vector<RayInfo>& packet, int bounces, const ScenePtr scene) {

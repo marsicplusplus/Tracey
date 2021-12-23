@@ -946,61 +946,44 @@ bool BVH::traverse(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitR
 	bool hasHit = false;
 	float closest = tMax;
 
-	if (node->maxAABBCount.w != 0) {
-
-		// We are a leaf
-		// Intersect the primitives
-		for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
-			auto prim = hittables[hittableIdxs[i]];
-			if (prim->hit(ray, tMin, closest, tmp)) {
-				rec = tmp;
-				closest = rec.t;
-				hasHit = true;
+	BVHNode* nodestack[64];
+	size_t stackPtr = 0;
+	nodestack[stackPtr++] = node; // Push the root into the stack
+	while(stackPtr != 0){
+		BVHNode* currNode = nodestack[--stackPtr];
+		if(currNode->maxAABBCount.w != 0) {// I'm a leaf
+			for (size_t i = currNode->minAABBLeftFirst.w; i < currNode->minAABBLeftFirst.w + currNode->maxAABBCount.w; ++i) {
+				auto prim = hittables[hittableIdxs[i]];
+				if (prim->hit(ray, tMin, closest, tmp)) {
+					rec = tmp;
+					closest = rec.t;
+					hasHit = true;
+				}
 			}
-		}
-
-		tMax = closest;
-		return hasHit;
-	} else {
-
-		auto firstNode = &this->nodePool[(int)node->minAABBLeftFirst.w];
-		auto secondNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 1];
-
-		float firstDistance = 0.0f;
-		float secondDistance = 0.0f;
-
-		bool hitAABBFirst = hitAABB(ray, firstNode->minAABBLeftFirst, firstNode->maxAABBCount, firstDistance);
-		bool hitAABBSecond = hitAABB(ray, secondNode->minAABBLeftFirst, secondNode->maxAABBCount, secondDistance);
-
-		if (hitAABBFirst && hitAABBSecond) {
-			if (firstDistance > secondDistance) {
-				auto tempNode = firstNode;
-				firstNode = secondNode;
-				secondNode = tempNode;
-
-				auto tempDist = firstDistance;
-				firstDistance = secondDistance;
-				secondDistance = tempDist;
-			}
-
-			if (firstDistance < tMax) {
-				bool hitFirst = false;
-				bool hitSecond = false;
-				hitFirst = traverse(ray, firstNode, tMin, tMax, rec);
-				if (secondDistance < tMax)
-					hitSecond = traverse(ray, secondNode, tMin, tMax, rec);
-				return hitFirst || hitSecond;
-			}
-
-			return false;
-		} else if (hitAABBFirst && firstDistance < tMax) {
-			return traverse(ray, firstNode, tMin, tMax, rec);
-		} else if (hitAABBSecond && secondDistance < tMax) {
-			return traverse(ray, secondNode, tMin, tMax, rec);
+			tMax = closest;
 		} else {
-			return false;
+			auto firstNode = &this->nodePool[(int)currNode->minAABBLeftFirst.w];
+			auto secondNode = &this->nodePool[(int)currNode->minAABBLeftFirst.w + 1];
+			float firstDistance = 0.0f;
+			float secondDistance = 0.0f;
+			bool hitAABBFirst = hitAABB(ray, firstNode->minAABBLeftFirst, firstNode->maxAABBCount, firstDistance);
+			bool hitAABBSecond = hitAABB(ray, secondNode->minAABBLeftFirst, secondNode->maxAABBCount, secondDistance);
+			if (hitAABBFirst && hitAABBSecond) {
+				if(firstDistance < secondDistance && firstDistance < tMax){
+					nodestack[stackPtr++] = secondNode;
+					nodestack[stackPtr++] = firstNode;
+				} else if (secondDistance < tMax) {
+					nodestack[stackPtr++] = firstNode;
+					nodestack[stackPtr++] = secondNode;
+				}
+			} else if(hitAABBFirst && firstDistance < tMax){
+				nodestack[stackPtr++] = firstNode;
+			} else if(hitAABBSecond && secondDistance < tMax) {
+				nodestack[stackPtr++] = secondNode;
+			}
 		}
 	}
+	return hasHit;
 }
 
 void BVH::packetHit(std::vector<RayInfo>& packet, Frustum frustum, float tMin, int first, int /*last*/) {

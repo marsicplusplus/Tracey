@@ -5,4 +5,4 @@ W_WIDTH=640
 W_HEIGHT=384
 # 0 To go fullscreen on your primary monitor
 SCALING=2
-THREADS=8
+THREADS=-1

@@ -5,7 +5,6 @@ rm TraceyGL/* -rf
 
 cp -r ./src \
 	./scenes \
-	./Textures \
 	./external \
 	./config.txt \
 	./CMakeLists.txt \
