@@ -10,6 +10,7 @@
 #include <memory>
 
 const float PI = 3.141592653589793238463f;
+const float PI_PI = 6.283185307179586f;
 const float INF = std::numeric_limits<float>::infinity();
 
 #define CHECK_ERROR(COND, MESSAGE, RET) if(!(COND)){\
@@ -133,6 +134,19 @@ namespace Random {
 
 	inline float RandomFloat( uint32_t& s ) 
 	{ return xorshift32(s) * 2.3283064365387e-10f; }
+
+	inline glm::fvec2 RandomUnitDisk(uint32_t& s){
+		//To generate random points over the disk with radius =r
+			//1. Generate U1∼ uniform(0,1) and U2∼ uniform(0,1), independent.
+			//2. Set X=r√U2cos(2πU1) and Y=r√U2sin(2πU1)
+			// https://rh8liuqy.github.io/Uniform_Disk.html
+		const float u1 = RandomFloat(s);
+		const float u2 = RandomFloat(s);
+		glm::fvec2 ret;
+		ret.x = sqrt(u2) * cos(PI_PI * u1);
+		ret.y = sqrt(u2) * sin(PI_PI * u1);
+		return ret;
+	}
 };
 
 #endif

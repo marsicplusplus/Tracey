@@ -56,6 +56,7 @@ public:
 		float lastUpdateTime;
 		float guiK1;
 		float guiK2;
+		float guiCamAperture;
 		bool guiBarrel;
 		bool guiFisheye;
 		bool guiContinuousRender;

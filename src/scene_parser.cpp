@@ -229,7 +229,8 @@ namespace SceneParser {
 		glm::fvec3 dir = parseVec3(cam.at("dir"));
 		glm::fvec3 up = parseVec3(cam.at("up"));
 		float fov = (cam.at("fov"));
-		return std::make_shared<Camera>(pos, dir, up, fov);
+		float aperture = (cam.contains("aperture")) ? (float)cam.at("aperture") : 0.0f;
+		return std::make_shared<Camera>(pos, dir, up, fov, aperture);
 	}
 
 	std::shared_ptr<LightObject> parseLight(nlohmann::json& l) {

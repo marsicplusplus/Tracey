@@ -8,22 +8,24 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-Camera::Camera(glm::fvec3 origin, glm::fvec3 dir, glm::fvec3 up, float fov) : position{origin}, direction{dir}, up{up}, fov{glm::radians(fov)}, cameraType(CameraType::normal), fisheyeAngle(glm::radians(90.0f)){
+Camera::Camera(glm::fvec3 origin, glm::fvec3 dir, glm::fvec3 up, float fov, float lensAperture) : position{origin}, direction{dir}, up{up}, fov{glm::radians(fov)}, cameraType(CameraType::normal), fisheyeAngle(glm::radians(90.0f)){
 	this->aspectRatio = static_cast<float>(OptionsMap::Instance()->getOption(Options::W_WIDTH))/static_cast<float>(OptionsMap::Instance()->getOption(Options::W_HEIGHT));
 	this->sensitivity = 5;
 	this->k1 = 1;
 	this->k2 = 1;
+	this->aperture = lensAperture / 2.0f;
 	cameraMatrix = glm::mat3x3(1);
 	updateVectors();
 }
 
-Ray Camera::generateCameraRay(float u, float v) {
-
+Ray Camera::generateCameraRay(float s, float t, uint32_t &rng) {
 	glm::fvec3 rayDir;
+	glm::fvec2 rd = aperture * Random::RandomUnitDisk(rng);
+	glm::fvec3 offset = u * rd.x + v * rd.y;
 
 	switch (this->cameraType) {
 		case CameraType::fisheye: {
-			auto xyz = Fisheye(u, v);
+			auto xyz = Fisheye(s, t);
 			if (xyz == glm::fvec3(0, 0, 0)) {
 				rayDir = xyz;
 			} else {
@@ -33,18 +35,18 @@ Ray Camera::generateCameraRay(float u, float v) {
 			break;
 		}
 		case CameraType::barrel: {
-			auto uv = Distort(u, v);
-			u = uv.x;
-			v = uv.y;
+			auto uv = Distort(s, t);
+			s = uv.x;
+			t = uv.y;
 		}
 		case CameraType::normal:
 		default: {
-			rayDir = this->llCorner + u * this->horizontal + v * this->vertical - this->position;
+			rayDir = this->llCorner + s * this->horizontal + t * this->vertical - this->position;
 			break;
 		}
 	}
 
-	Ray ray(this->position, rayDir);
+	Ray ray(this->position + offset, rayDir - offset);
 	return ray;
 }
 
@@ -72,6 +74,10 @@ void Camera::setFOV(float fov) {
 void Camera::setCameraType(CameraType type) {
 	this->cameraType = type;
 };
+
+void Camera::setAperture(float a) {
+	this->aperture = a/2.0f;
+}
 
 void Camera::setSensitivity(float sensitivity) {
 	this->sensitivity = sensitivity;
@@ -101,8 +107,8 @@ void Camera::updateVectors() {
 
 	this->cameraMatrix = glm::mat3x3(this->right, this->up, this->direction);
 
-	auto u = glm::normalize(glm::cross(w, this->up));
-	auto v = glm::cross(u, w);
+	u = glm::normalize(glm::cross(w, this->up));
+	v = glm::cross(u, w);
 	this->horizontal = this->viewportWidth * u;
 	this->vertical = this->viewportHeight * v;
 	this->llCorner = this->position - this->horizontal/2.0f - this->vertical/2.0f + w;
@@ -168,30 +174,30 @@ bool Camera::update(float dt, bool forceUpdate) {
 	return updated;
 }
 
-glm::fvec2 Camera::Distort(float u, float v)
+glm::fvec2 Camera::Distort(float s, float t)
 {
 	// Using The Division Model from A.W. Fitzgibbon 
 	// "Simultaneous linear estimation of multiple view geometry and lens distortion"
-	auto uv = glm::vec2(u, v);
+	auto st = glm::vec2(s, t);
 	// Bring uv from 0 - +1 to -1 - +1
-	uv *= 2.0;
-	uv -= 1.0;
+	st *= 2.0;
+	st -= 1.0;
 
 	// Calculate angle of uv with x axis
-	float phi = glm::atan(uv.y, uv.x);
-	float undistorted = glm::length(uv);
+	float phi = glm::atan(st.y, st.x);
+	float undistorted = glm::length(st);
 
 	float distorted = undistorted * (1 + this->k1 * pow(undistorted, 2) + this->k2 * pow(undistorted, 4));
-	uv.x = distorted * cos(phi);
-	uv.y = distorted * sin(phi);
+	st.x = distorted * cos(phi);
+	st.y = distorted * sin(phi);
 
 	// Bring uv from -1 - +1 to 0 - +1
-	uv += 1;
-	uv *= 0.5f;
-	return uv;
+	st += 1;
+	st *= 0.5f;
+	return st;
 }
 
-glm::fvec3 Camera::Fisheye(float u, float v)
+glm::fvec3 Camera::Fisheye(float s, float t)
 {
 	// Adapted from http://paulbourke.net/dome/fisheye/
 	// Anything uv with a radius larger than 1 will be black pixel (Left)
@@ -218,29 +224,29 @@ glm::fvec3 Camera::Fisheye(float u, float v)
 	//
 
 	
-	// Bring u and v from 0 - 1 to -1 - +1
-	u *= 2;
-	v *= 2;
-	u -= 1;
-	v -= 1;
+	// Bring s and t from 0 - 1 to -1 - +1
+	s *= 2;
+	t *= 2;
+	s -= 1;
+	t -= 1;
 
 	// Adjust for aspect ratio
 	if (this->viewportWidth > this->viewportHeight) {
-		u *= aspectRatio;
+		s *= aspectRatio;
 	} else if (this->viewportHeight > this->viewportWidth) {
-		v /= aspectRatio;
+		t /= aspectRatio;
 	}
 
-	auto uv = glm::vec2(u, v);
+	auto st = glm::vec2(s, t);
 
 
-	float radius = glm::length(uv);
+	float radius = glm::length(st);
 	if (radius > 1) {
 		return glm::vec3(0, 0, 0);
 	}
 
 	// Calculate angle of uv with x axis
-	float phi = glm::atan(uv.y, uv.x);
+	float phi = glm::atan(st.y, st.x);
 
 	// Calculate angle of uv with z axis
 	float theta = radius * this->fisheyeAngle;

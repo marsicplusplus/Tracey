@@ -210,7 +210,7 @@ bool Renderer::start() {
 									for(int s = 0; s < samples; ++s){
 										float u = static_cast<float>(x + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wWidth - 1);
 										float v = static_cast<float>(y + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wHeight - 1);
-										Ray ray = cam->generateCameraRay(u, v);
+										Ray ray = cam->generateCameraRay(u, v, rng);
 										if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
 											pxColor += Color(0, 0, 0);
 										} else {
@@ -445,6 +445,14 @@ void Renderer::renderGUI() {
 				ImGui::TextWrapped("FOV");
 				if (ImGui::SliderInt("##FOV", &guiFOV, 20, 120)) {
 					this->scene->getCamera()->setFOV(guiFOV);
+				}
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+				guiCamAperture = this->scene->getCamera()->getAperture();
+				ImGui::Text("Aperture");
+				if (ImGui::SliderFloat("##Aperture", &guiCamAperture, 0.0f, 2.0f)) {
+					this->scene->getCamera()->setAperture(guiCamAperture);
 				}
 
 				ImGui::Spacing();
