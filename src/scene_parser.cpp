@@ -147,15 +147,15 @@ namespace SceneParser {
 			materialIdx = findMaterial(matName, materials);
 		} else if(!mats.empty()) {
 			for (size_t i = 0; i < mats.size(); ++i) {
-				std::shared_ptr<Texture> t;
+				TexturePtr t;
 				if(mats[i].diffuse_texname.empty()){
-					t = std::make_shared<SolidColor>(meshPath.append("Diffuse"), mats[i].diffuse[0], mats[i].diffuse[1], mats[i].diffuse[2]);
+					t = std::make_unique<SolidColor>(meshPath / ("Diffuse"), mats[i].diffuse[0], mats[i].diffuse[1], mats[i].diffuse[2]);
 				} else {
-					std::filesystem::path path = meshPath.parent_path().string();
-					path /= mats[i].diffuse_texname;
-					t = std::make_shared<ImageTexture>(mats[i].diffuse_texname, path.string());
+					std::filesystem::path texturePath = meshPath.parent_path();
+					texturePath /= mats[i].diffuse_texname;
+					t = std::make_unique<ImageTexture>(mats[i].diffuse_texname, texturePath);
 				}
-				textures.emplace_back(t);
+				textures.emplace_back(std::move(t));
 				materials.emplace_back(std::make_shared<DiffuseMaterial>(mats[i].name, textures.size() - 1));
 			}
 		} else throw std::invalid_argument("Mesh doesn't name a valid material");
@@ -233,27 +233,27 @@ namespace SceneParser {
 		return std::make_shared<Camera>(pos, dir, up, fov, aperture);
 	}
 
-	std::shared_ptr<LightObject> parseLight(nlohmann::json& l) {
+	LightObjectPtr parseLight(nlohmann::json& l) {
 		if (!l.contains("type")) throw std::invalid_argument("LightObject doesn't name a type");
 		std::string type = l.at("type");
 		Color color = (l.contains("color")) ? (parseVec3(l["color"])) : Color(1.0f);
 		float intensity = (l.contains("intensity")) ? (float)(l.at("intensity")) : 1.0f;
 		if (type == "POINT") {
 			glm::fvec3 pos(parseVec3(l["position"]));
-			return (std::make_shared<PointLight>(pos, intensity, color));
+			return (std::make_unique<PointLight>(pos, intensity, color));
 		}
 		else if (type == "DIRECTIONAL") {
 			glm::fvec3 dir(parseVec3(l["direction"]));
-			return (std::make_shared<DirectionalLight>(dir, intensity, color));
+			return (std::make_unique<DirectionalLight>(dir, intensity, color));
 		}
 		else if (type == "AMBIENT") {
-			return (std::make_shared<AmbientLight>(intensity, color));
+			return (std::make_unique<AmbientLight>(intensity, color));
 		}
 		else if (type == "SPOT") {
 			glm::fvec3 pos(parseVec3(l["position"]));
 			glm::fvec3 dir(parseVec3(l["direction"]));
 			float cutoff = l.contains("cutoffAngle") ? (float)l.at("cutoffAngle") : 45.0f;
-			return (std::make_shared<SpotLight>(pos, dir, glm::radians(cutoff), intensity, color));
+			return (std::make_unique<SpotLight>(pos, dir, glm::radians(cutoff), intensity, color));
 		}
 		else {
 			throw std::invalid_argument("LightObject doesn't name a valid type");
@@ -297,21 +297,21 @@ namespace SceneParser {
 			throw std::invalid_argument("Cannot find name or type of texture");
 		}
 		if (type == "SOLID_COLOR") {
-			texture = std::make_shared<SolidColor>(name, (text.contains("color")) ? parseVec3(text["color"]) : Color(0, 0, 0));
+			texture = std::make_unique<SolidColor>(name, (text.contains("color")) ? parseVec3(text["color"]) : Color(0, 0, 0));
 		}
 		else if (type == "CHECKERED") {
 			if (text.contains("color1") && text.contains("color2")) {
 				Color c1 = parseVec3(text["color1"]);
 				Color c2 = parseVec3(text["color2"]);
-				texture = std::make_shared<Checkered>(name, c1, c2);
+				texture = std::make_unique<Checkered>(name, c1, c2);
 			}
 			else {
-				texture = std::make_shared<Checkered>(name);
+				texture = std::make_unique<Checkered>(name);
 			}
 		}
 		else if (type == "IMAGE") {
 			if (text.contains("path"))
-				texture = std::make_shared<ImageTexture>(name, text["path"].get<std::string>());
+				texture = std::make_unique<ImageTexture>(name, text["path"].get<std::string>());
 			else
 				throw std::invalid_argument("Image Texture doesn't contains a valid path");
 		}
@@ -363,23 +363,6 @@ namespace SceneParser {
 		return topLevelBVH;
 	}
 
-
-	/*
-	std::shared_ptr<Hittable> getMeshBVH(nlohmann::json& hit, const std::vector<MaterialPtr>& materials) {
-		if (!hit.contains("material")) throw std::invalid_argument("Mesh doesn't name a material");
-		std::string matName = hit.at("material");
-		int materialIdx = findMaterial(matName, materials);
-		if (materialIdx == -1) throw std::invalid_argument("Mesh doesn't name a valid material");
-
-		std::shared_ptr<Hittable> meshBVH;
-
-		//if (hit.contains("path")) {
-		//	std::filesystem::path p = hit.at("path");
-		//	meshBVH = parseMesh(p, materialIdx);
-		//}
-		return meshBVH;
-	}
-	*/
 	static int findTexture(std::string& name, std::vector<TexturePtr>& textures) {
 		size_t i = 0;
 		while (i < textures.size()) {

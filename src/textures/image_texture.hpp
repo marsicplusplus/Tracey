@@ -2,7 +2,6 @@
 #define __IMAGE_TEXTURE_HPP__
 
 #include "textures/texture.hpp"
-#include "stb_image.h"
 
 #include <algorithm>
 #include <iostream>
@@ -16,7 +15,6 @@ class ImageTexture : public Texture {
 		int width;
 		int height;
 		int slice;
-		unsigned char *img;
 		const static int bpp = 3;
 };
 

@@ -1,7 +1,6 @@
 #include "scene.hpp"
 #include "GLFW/glfw3.h"
 #include "input_manager.hpp"
-#include "materials/material_diffuse.hpp"
 #include "scene_parser.hpp"
 #include "glm/trigonometric.hpp"
 
@@ -20,7 +19,7 @@ Scene::Scene(std::filesystem::path sceneFile){
 	for(auto t : j["textures"]){
 		auto text = SceneParser::parseTexture(t);
 		if (text){
-			textures.push_back(text);
+			textures.push_back(std::move(text));
 		}
 	}
 	for(auto m : j["materials"]){
@@ -42,7 +41,7 @@ Scene::Scene(std::filesystem::path sceneFile){
 	for(auto l : j["lights"]){
 		auto light = SceneParser::parseLight(l);
 		if(light)
-			lights.push_back(light);
+			lights.push_back(std::move(light));
 	}
 	topLevelBVH = SceneParser::parseSceneGraph(j["scenegraph"], materials, meshes, BVHs, nTris);
 	std::cout << "Total Number of triangles: " << nTris << std::endl;
@@ -52,7 +51,7 @@ Scene::Scene(std::filesystem::path sceneFile){
 Scene::~Scene(){}
 
 void Scene::addLight(LightObjectPtr light){
-	this->lights.push_back(light);
+	this->lights.push_back(std::move(light));
 }
 
 bool Scene::traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) const {

@@ -27,28 +27,29 @@ if( MSVC )
 endif()
 
 set( SRC
-     external/imgui/imgui.cpp
-     external/imgui/imgui_draw.cpp
-     external/imgui/imgui_tables.cpp
-     external/imgui/imgui_widgets.cpp
-     external/imgui/backends/imgui_impl_glfw.cpp
-     external/imgui/backends/imgui_impl_opengl3.cpp
-     external/glad/src/glad.c
-	 src/tracey.cpp
-	 src/renderer.cpp
-	 src/camera.cpp
-	 src/scene.cpp
-     src/scene_parser.cpp
-	 src/options_manager.cpp
-	 src/input_manager.cpp
-	 src/thread_pool.cpp
-	 src/quartic.cpp
-	 src/hittables/triangle.cpp
-	 src/bvh.cpp
-	 src/transform.cpp
-	 src/animation.cpp
-	 src/textures/image_texture.cpp
-)
+	external/imgui/imgui.cpp
+	external/imgui/imgui_draw.cpp
+	external/imgui/imgui_tables.cpp
+	external/imgui/imgui_widgets.cpp
+	external/imgui/backends/imgui_impl_glfw.cpp
+	external/imgui/backends/imgui_impl_opengl3.cpp
+	external/glad/src/glad.c
+	src/hittables/triangle.cpp
+	src/textures/image_texture.cpp
+	src/tracey.cpp
+	src/core.cpp
+	src/renderer.cpp
+	src/camera.cpp
+	src/scene.cpp
+	src/scene_parser.cpp
+	src/options_manager.cpp
+	src/input_manager.cpp
+	src/thread_pool.cpp
+	src/quartic.cpp
+	src/bvh.cpp
+	src/transform.cpp
+	src/animation.cpp
+	)
 
 if (UNIX)
 	set (

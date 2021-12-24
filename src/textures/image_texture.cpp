@@ -5,6 +5,7 @@ ImageTexture::ImageTexture(std::string name, std::string fp) : Texture(name){
 	img = stbi_load(fp.c_str(), &width, &height, &channels, channels);
 	if (!img) {
 		std::cerr << "ERROR: Could not load texture image file '" << fp << "'.\n";
+		if (stbi_failure_reason()) std::cout << stbi_failure_reason() << std::endl;
 		width = height = 0;
 	}
 	//if(((width & (width-1)) != 0) || (height & (height-1)) != 0){
@@ -14,9 +15,7 @@ ImageTexture::ImageTexture(std::string name, std::string fp) : Texture(name){
 	slice = bpp * width;
 }
 
-ImageTexture::~ImageTexture(){
-	stbi_image_free(img);
-}
+ImageTexture::~ImageTexture(){}
 
 Color ImageTexture::color(float u, float v, const glm::fvec3 &p) const{
 	if(img == nullptr || width == 0 || height == 0) return Color(0.4,0.4,0.4);
