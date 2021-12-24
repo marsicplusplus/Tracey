@@ -7,12 +7,8 @@
 class MirrorMaterial : public Material {
 
 	public: 
-		MirrorMaterial(std::string name, Color color, float _reflective = 1.0f) : Material{name}, reflectionIdx{_reflective} {
-			albedo = std::make_shared<SolidColor>(color);
-		}
-
-		MirrorMaterial(std::string name, std::shared_ptr<Texture> t, float _reflective = 1.0f) : Material{name}, reflectionIdx{_reflective} {
-			albedo = t;
+		MirrorMaterial(std::string name, int albedoIdx, float _reflective = 1.0f) : Material{name}, reflectionIdx{_reflective} {
+			albedo = albedoIdx;
 		}
 
 		inline Materials getType() const override { return Materials::MIRROR; }

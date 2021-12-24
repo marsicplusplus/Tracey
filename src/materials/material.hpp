@@ -21,8 +21,8 @@ enum class Materials {
 class Material {
 	public:
 		Material(std::string name) : name{std::move(name)} {
-			albedo = nullptr;
-			bump = nullptr;
+			albedo = -1;
+			bump = -1;
 		}
 
 		inline virtual bool reflect(const Ray& in, const HitRecord &r, Ray &reflectedRay, float &reflectance) const {
@@ -41,17 +41,17 @@ class Material {
 			return;
 		}
 
-		inline virtual Color getMaterialColor(float u, float v, glm::fvec3 p) const {
-			return albedo->color(u, v, p);
-		}
-
 		inline const std::string& getName() const {
 			return name;
 		}
 
+		inline int getAlbedoIdx() const {
+			return albedo;
+		}
+
 	protected:
-		std::shared_ptr<Texture> albedo;
-		std::shared_ptr<Texture> bump;
+		int albedo;
+		int bump;
 		std::string name;
 };
 

@@ -33,6 +33,11 @@ class Scene {
 			else return materials[idx];
 		}
 
+		inline Color getTextureColor(int idx, float u, float v, glm::fvec3 &p){
+			if(idx == -1) return Color(0.5, 0.5, 1.0);
+			return textures[idx]->color(u, v, p);
+		}
+
 		inline const int getNTris() const {
 			return nTris;
 		}
@@ -43,7 +48,7 @@ class Scene {
 		std::unordered_map<std::string, std::list<BVHPtr>> BVHs;
 		std::vector<LightObjectPtr> lights;
 		std::vector<MaterialPtr> materials;
-		std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
+		std::vector<std::shared_ptr<Texture>> textures;
 		BVHPtr topLevelBVH;
 		int nTris = 0;
 

@@ -242,7 +242,6 @@ bool Renderer::start() {
 								putPixel(frameBuffer, wWidth * (rayInfo.y) + (rayInfo.x), rayInfo.pxColor);
 							}
 						}
-
 					}));
 				}
 			}
@@ -297,7 +296,7 @@ Color Renderer::trace(Ray &ray, int bounces, const ScenePtr scene){
 	if (scene->traverse(ray, 0.001f, INF, hr)) {
 		Ray reflectedRay;
 		MaterialPtr mat = scene->getMaterial(hr.material);
-		Color attenuation = mat->getMaterialColor(hr.u, hr.v, hr.p);
+		Color attenuation = scene->getTextureColor(mat->getAlbedoIdx(), hr.u, hr.v, hr.p);
 		float reflectance = 1;
 
 		if (mat->getType() == Materials::DIFFUSE) {
@@ -343,7 +342,7 @@ void Renderer::packetTrace(std::vector<Ray> &corners, std::vector<RayInfo>& pack
 			HitRecord hr = rayInfo.rec;
 			Ray reflectedRay;
 			MaterialPtr mat = scene->getMaterial(hr.material);
-			Color attenuation = mat->getMaterialColor(hr.u, hr.v, hr.p);
+			Color attenuation = scene->getTextureColor(mat->getAlbedoIdx(), hr.u, hr.v, hr.p);
 			float reflectance = 1;
 
 			if (mat->getType() == Materials::DIFFUSE) {

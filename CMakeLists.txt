@@ -47,6 +47,7 @@ set( SRC
 	 src/bvh.cpp
 	 src/transform.cpp
 	 src/animation.cpp
+	 src/textures/image_texture.cpp
 )
 
 if (UNIX)

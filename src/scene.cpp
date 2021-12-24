@@ -1,6 +1,7 @@
 #include "scene.hpp"
 #include "GLFW/glfw3.h"
 #include "input_manager.hpp"
+#include "materials/material_diffuse.hpp"
 #include "scene_parser.hpp"
 #include "glm/trigonometric.hpp"
 
@@ -18,8 +19,8 @@ Scene::Scene(std::filesystem::path sceneFile){
 
 	for(auto t : j["textures"]){
 		auto text = SceneParser::parseTexture(t);
-		if (text.second){
-			textures.insert(text);
+		if (text){
+			textures.push_back(text);
 		}
 	}
 	for(auto m : j["materials"]){

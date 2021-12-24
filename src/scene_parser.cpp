@@ -76,7 +76,7 @@ namespace SceneParser {
 		return glm::fvec4(arr[0].get<float>(), arr[1].get<float>(), arr[2].get<float>(), arr[3].get<float>());
 	}
 
-	std::shared_ptr<BVH> parseMeshInstance(nlohmann::json& hit, std::vector<MaterialPtr>& materials, std::unordered_map<std::string, std::shared_ptr<Texture>>& textures, std::string &name) {
+	std::shared_ptr<BVH> parseMeshInstance(nlohmann::json& hit, std::vector<MaterialPtr>& materials, std::vector<TexturePtr>& textures, std::string &name) {
 		name = hit.at("name");
 
 		if (!hit.contains("path")) {
@@ -149,14 +149,14 @@ namespace SceneParser {
 			for (size_t i = 0; i < mats.size(); ++i) {
 				std::shared_ptr<Texture> t;
 				if(mats[i].diffuse_texname.empty()){
-					t = std::make_shared<SolidColor>(mats[i].diffuse[0], mats[i].diffuse[1], mats[i].diffuse[2]);
+					t = std::make_shared<SolidColor>(meshPath.append("Diffuse"), mats[i].diffuse[0], mats[i].diffuse[1], mats[i].diffuse[2]);
 				} else {
 					std::filesystem::path path = meshPath.parent_path().string();
 					path /= mats[i].diffuse_texname;
-					t = std::make_shared<ImageTexture>(path.string());
+					t = std::make_shared<ImageTexture>(mats[i].diffuse_texname, path.string());
 				}
-				textures[mats[i].name] = t;
-				materials.emplace_back(std::make_shared<DiffuseMaterial>(mats[i].name, t));
+				textures.emplace_back(t);
+				materials.emplace_back(std::make_shared<DiffuseMaterial>(mats[i].name, textures.size() - 1));
 			}
 		} else throw std::invalid_argument("Mesh doesn't name a valid material");
 
@@ -259,7 +259,7 @@ namespace SceneParser {
 		}
 	}
 
-	std::shared_ptr<Material> parseMaterial(nlohmann::json& m, const std::unordered_map<std::string, std::shared_ptr<Texture>>& textures) {
+	std::shared_ptr<Material> parseMaterial(nlohmann::json& m, std::vector<TexturePtr>& textures) {
 		std::shared_ptr<Material> mat;
 		if (!m.contains("name")) throw std::invalid_argument("Material is missing name");
 		std::string name = m.at("name");
@@ -267,49 +267,50 @@ namespace SceneParser {
 		std::string type = m.at("type");
 		if (!m.contains("texture")) throw std::invalid_argument("Material is missing texture");
 		std::string textname = m.at("texture");
-		auto texture = textures.find(textname);
-		if (texture == textures.end()) throw std::invalid_argument("Material doesn't name a valid texture");
+		auto texture = findTexture(textname, textures);
+		if (texture == -1) throw std::invalid_argument("Material doesn't name a valid texture");
 		if (type == "DIFFUSE") {
-			mat = std::make_shared<DiffuseMaterial>(name, texture->second);
+			mat = std::make_shared<DiffuseMaterial>(name, texture);
 		}
 		else if (type == "MIRROR") {
 			float ref = m.contains("reflect") ? m["reflect"].get<float>() : 1.0f;
-			mat = std::make_shared<MirrorMaterial>(name, texture->second, ref);
+			mat = std::make_shared<MirrorMaterial>(name, texture, ref);
 		}
 		else if (type == "DIELECTRIC") {
 			float ior = (m.contains("ior")) ? (float)m.at("ior") : 1.0;
 			Color absorption = m.contains("absorption") ? parseVec3(m.at("absorption")) : Color(1.0, 1.0, 1.0);
-			mat = std::make_shared<DielectricMaterial>(name, texture->second, ior, absorption);
+			mat = std::make_shared<DielectricMaterial>(name, texture, ior, absorption);
 		}
 		return mat;
 	}
 
-	std::pair<std::string, std::shared_ptr<Texture>> parseTexture(nlohmann::json& text) {
-		std::pair<std::string, std::shared_ptr<Texture>> texture;
+	TexturePtr parseTexture(nlohmann::json& text) {
+		TexturePtr texture;
 		std::string type;
+		std::string name;
 		try {
-			texture.first = text.at("name");
+			name = text.at("name");
 			type = text.at("type");
 		}
 		catch (std::exception& e) {
 			throw std::invalid_argument("Cannot find name or type of texture");
 		}
 		if (type == "SOLID_COLOR") {
-			texture.second = std::make_shared<SolidColor>((text.contains("color")) ? parseVec3(text["color"]) : Color(0, 0, 0));
+			texture = std::make_shared<SolidColor>(name, (text.contains("color")) ? parseVec3(text["color"]) : Color(0, 0, 0));
 		}
 		else if (type == "CHECKERED") {
 			if (text.contains("color1") && text.contains("color2")) {
 				Color c1 = parseVec3(text["color1"]);
 				Color c2 = parseVec3(text["color2"]);
-				texture.second = std::make_shared<Checkered>(c1, c2);
+				texture = std::make_shared<Checkered>(name, c1, c2);
 			}
 			else {
-				texture.second = std::make_shared<Checkered>();
+				texture = std::make_shared<Checkered>(name);
 			}
 		}
 		else if (type == "IMAGE") {
 			if (text.contains("path"))
-				texture.second = std::make_shared<ImageTexture>(text["path"].get<std::string>());
+				texture = std::make_shared<ImageTexture>(name, text["path"].get<std::string>());
 			else
 				throw std::invalid_argument("Image Texture doesn't contains a valid path");
 		}
@@ -378,7 +379,14 @@ namespace SceneParser {
 		return meshBVH;
 	}
 	*/
-
+	static int findTexture(std::string& name, std::vector<TexturePtr>& textures) {
+		size_t i = 0;
+		while (i < textures.size()) {
+			if (textures[i]->getName() == name) return i;
+			++i;
+		}
+		return -1;
+	}
 	static int findMaterial(std::string& name, std::vector<MaterialPtr>& materials) {
 		size_t i = 0;
 		while (i < materials.size()) {
