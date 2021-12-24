@@ -27,13 +27,11 @@ namespace SceneParser {
 
 	CameraPtr parseCamera(nlohmann::json& cam);
 
-	std::shared_ptr<LightObject> parseLight(nlohmann::json& l);
+	LightObjectPtr parseLight(nlohmann::json& l);
 
 	std::shared_ptr<Material> parseMaterial(nlohmann::json& m, std::vector<TexturePtr>& textures);
 
 	TexturePtr parseTexture(nlohmann::json& text);
-
-	//std::shared_ptr<Hittable> getMeshBVH(nlohmann::json& hit, const std::vector<MaterialPtr>& materials);
 
 	std::shared_ptr<BVH> parseSceneGraph(nlohmann::json& text, const std::vector<MaterialPtr>& materials, std::unordered_map<std::string, BVHPtr>& meshes, std::unordered_map<std::string, std::list<BVHPtr>>& BVHs, int& numTri);
 

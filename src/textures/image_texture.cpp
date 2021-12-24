@@ -5,6 +5,7 @@ ImageTexture::ImageTexture(std::string name, std::string fp) : Texture(name){
 	img = stbi_load(fp.c_str(), &width, &height, &channels, channels);
 	if (!img) {
 		std::cerr << "ERROR: Could not load texture image file '" << fp << "'.\n";
+		if (stbi_failure_reason()) std::cout << stbi_failure_reason() << std::endl;
 		width = height = 0;
 	}
 	//if(((width & (width-1)) != 0) || (height & (height-1)) != 0){

@@ -18,6 +18,7 @@ class LightObject {
 
 	public:
 		LightObject(float i, Color c) : intensity{i}, color{c} {}
+		virtual ~LightObject() {};
 
 		virtual inline Lights getType() {return Lights::NILL; }
 
@@ -134,6 +135,6 @@ class AmbientLight : public LightObject {
 		}
 };
 
-typedef std::shared_ptr<LightObject> LightObjectPtr;
+typedef std::unique_ptr<LightObject> LightObjectPtr;
 
 #endif
