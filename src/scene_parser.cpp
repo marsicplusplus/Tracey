@@ -147,15 +147,15 @@ namespace SceneParser {
 			materialIdx = findMaterial(matName, materials);
 		} else if(!mats.empty()) {
 			for (size_t i = 0; i < mats.size(); ++i) {
-				std::shared_ptr<Texture> t;
+				TexturePtr t;
 				if(mats[i].diffuse_texname.empty()){
-					t = std::make_shared<SolidColor>(meshPath.append("Diffuse"), mats[i].diffuse[0], mats[i].diffuse[1], mats[i].diffuse[2]);
+					t = std::make_unique<SolidColor>(meshPath.append("Diffuse"), mats[i].diffuse[0], mats[i].diffuse[1], mats[i].diffuse[2]);
 				} else {
 					std::filesystem::path path = meshPath.parent_path().string();
 					path /= mats[i].diffuse_texname;
-					t = std::make_shared<ImageTexture>(mats[i].diffuse_texname, path.string());
+					t = std::make_unique<ImageTexture>(mats[i].diffuse_texname, path.string());
 				}
-				textures.emplace_back(t);
+				textures.emplace_back(std::move(t));
 				materials.emplace_back(std::make_shared<DiffuseMaterial>(mats[i].name, textures.size() - 1));
 			}
 		} else throw std::invalid_argument("Mesh doesn't name a valid material");
@@ -296,21 +296,21 @@ namespace SceneParser {
 			throw std::invalid_argument("Cannot find name or type of texture");
 		}
 		if (type == "SOLID_COLOR") {
-			texture = std::make_shared<SolidColor>(name, (text.contains("color")) ? parseVec3(text["color"]) : Color(0, 0, 0));
+			texture = std::make_unique<SolidColor>(name, (text.contains("color")) ? parseVec3(text["color"]) : Color(0, 0, 0));
 		}
 		else if (type == "CHECKERED") {
 			if (text.contains("color1") && text.contains("color2")) {
 				Color c1 = parseVec3(text["color1"]);
 				Color c2 = parseVec3(text["color2"]);
-				texture = std::make_shared<Checkered>(name, c1, c2);
+				texture = std::make_unique<Checkered>(name, c1, c2);
 			}
 			else {
-				texture = std::make_shared<Checkered>(name);
+				texture = std::make_unique<Checkered>(name);
 			}
 		}
 		else if (type == "IMAGE") {
 			if (text.contains("path"))
-				texture = std::make_shared<ImageTexture>(name, text["path"].get<std::string>());
+				texture = std::make_unique<ImageTexture>(name, text["path"].get<std::string>());
 			else
 				throw std::invalid_argument("Image Texture doesn't contains a valid path");
 		}

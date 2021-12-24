@@ -48,7 +48,7 @@ class Scene {
 		std::unordered_map<std::string, std::list<BVHPtr>> BVHs;
 		std::vector<LightObjectPtr> lights;
 		std::vector<MaterialPtr> materials;
-		std::vector<std::shared_ptr<Texture>> textures;
+		std::vector<TexturePtr> textures;
 		BVHPtr topLevelBVH;
 		int nTris = 0;
 

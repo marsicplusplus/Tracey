@@ -20,7 +20,7 @@ Scene::Scene(std::filesystem::path sceneFile){
 	for(auto t : j["textures"]){
 		auto text = SceneParser::parseTexture(t);
 		if (text){
-			textures.push_back(text);
+			textures.push_back(std::move(text));
 		}
 	}
 	for(auto m : j["materials"]){

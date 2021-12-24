@@ -15,7 +15,6 @@ ImageTexture::ImageTexture(std::string name, std::string fp) : Texture(name){
 }
 
 ImageTexture::~ImageTexture(){
-	stbi_image_free(img);
 }
 
 Color ImageTexture::color(float u, float v, const glm::fvec3 &p) const{
