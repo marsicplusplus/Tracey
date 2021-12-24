@@ -14,8 +14,7 @@ ImageTexture::ImageTexture(std::string name, std::string fp) : Texture(name){
 	slice = bpp * width;
 }
 
-ImageTexture::~ImageTexture(){
-}
+ImageTexture::~ImageTexture(){}
 
 Color ImageTexture::color(float u, float v, const glm::fvec3 &p) const{
 	if(img == nullptr || width == 0 || height == 0) return Color(0.4,0.4,0.4);

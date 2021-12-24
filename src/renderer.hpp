@@ -9,12 +9,13 @@
 #include "ray.hpp"
 #include "scene.hpp"
 #include "thread_pool.hpp"
+#include "core.hpp"
 #include <string>
 #include <utility>
 
 class Renderer{
 public:
-	inline Renderer(std::string  _title) : title{std::move( _title )}, isBufferInvalid(false){
+	inline Renderer(std::string  _title) : title{std::move( _title )}, isBufferInvalid(false) {
 			this->frameBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 			this->secondaryBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 		};
@@ -29,7 +30,6 @@ public:
 	private:
 		static void putPixel(uint32_t fb[], int idx, Color &color);
 		static void putPixel(uint32_t fb[], int idx, uint8_t r, uint8_t g, uint8_t b);
-		static Color trace(Ray &ray, int bounces, ScenePtr scene);
 		void packetTrace(std::vector<Ray> &corners, std::vector<RayInfo>& rays, int bounces, const ScenePtr scene);
 		void handleInput();
 
