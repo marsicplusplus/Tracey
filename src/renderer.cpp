@@ -290,18 +290,15 @@ bool Renderer::corePathTracing(int horizontalTiles, int verticalTiles, int tWidt
 								int x = col + tWidth * tileCol;
 								int y = row + tHeight * tileRow;
 								if (cam) {
-									for(int s = 0; s < samples; ++s){
-										float u = static_cast<float>(x + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wWidth - 1);
-										float v = static_cast<float>(y + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wHeight - 1);
-										Ray ray = cam->generateCameraRay(u, v);
-										if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
-										pxColor += Color(0, 0, 0);
-										} else {
-											pxColor += Core::tracePath(ray, bounces, scene, rng);
-										}
+									float u = static_cast<float>(x + Random::RandomFloat(rng)) / static_cast<float>(wWidth - 1);
+									float v = static_cast<float>(y + Random::RandomFloat(rng)) / static_cast<float>(wHeight - 1);
+									Ray ray = cam->generateCameraRay(u, v);
+									if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
+									pxColor += Color(0, 0, 0);
+									} else {
+										pxColor += Core::tracePath(ray, bounces, scene, rng);
 									}
 								}
-								pxColor = pxColor / static_cast<float>(samples);
 								int idx = wWidth * y + x;
 								Color newCol {
 									pxColor.x + accumulator[idx].x * frames,
@@ -351,7 +348,6 @@ bool Renderer::start() {
 	while(!glfwWindowShouldClose(this->window)){
 
 		if(scene && (this->isBufferInvalid || shouldAverage)) {
-			if(this->isBufferInvalid) frames=0;
 			//this->coreRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
 			this->corePathTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
 			//this->corePacketRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
@@ -377,7 +373,11 @@ bool Renderer::start() {
 			double xpos, ypos;
 			glfwGetCursorPos(this->window, &xpos, &ypos);
 			InputManager::Instance()->setMouseState(xpos, ypos);
-			if(scene) this->isBufferInvalid = this->scene->update(dt);
+			if(scene && this->scene->update(dt)){
+				this->isBufferInvalid = true;
+				frames = 0;
+				memset(accumulator, 0, wWidth*wHeight*sizeof(Color));
+			}
 		}
 		
 		uint32_t* buffer = applyPostProcessing();
