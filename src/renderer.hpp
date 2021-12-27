@@ -18,6 +18,7 @@ public:
 	inline Renderer(std::string  _title) : title{std::move( _title )}, isBufferInvalid(false), shouldAverage(true) {
 			this->frameBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 			this->secondaryBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
+			this->accumulator = new Color[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 		};
 		~Renderer();
 
@@ -46,6 +47,7 @@ public:
 		std::string title;
 		uint32_t *frameBuffer;
 		uint32_t *secondaryBuffer;
+		Color *accumulator;
 		unsigned int VBO, VAO, EBO;
 		unsigned int shader;
 		unsigned int texture;
@@ -69,6 +71,7 @@ public:
 		float vignettingSlider;
 		bool guiAberration;
 		bool shouldAverage;
+		int frames = 0;
 		glm::vec3 aberrationOffset;
 		float guiFisheyeAngle;
 		int nSamples;

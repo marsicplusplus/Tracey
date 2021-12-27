@@ -203,7 +203,15 @@ bool Renderer::corePacketRayTracing(int horizontalTiles, int verticalTiles, int 
 						}
 						Core::packetTrace(corners, packet, bounces, scene, rng);
 						for (auto& rayInfo : packet) {
-							putPixel(frameBuffer, wWidth * (rayInfo.y) + (rayInfo.x), rayInfo.pxColor);
+								int idx = wWidth * (rayInfo.y) + (rayInfo.x);
+								Color newCol {
+									rayInfo.pxColor.x + accumulator[idx].x * frames,
+									rayInfo.pxColor.y + accumulator[idx].y * frames,
+									rayInfo.pxColor.z + accumulator[idx].z * frames
+								};
+								newCol /= frames+1;
+								accumulator[idx] = newCol;
+								putPixel(frameBuffer, idx, newCol);
 						}
 			}));
 		}
@@ -245,7 +253,15 @@ bool Renderer::coreRayTracing(int horizontalTiles, int verticalTiles, int tWidth
 									}
 								}
 								pxColor = pxColor / static_cast<float>(samples);
-								putPixel(frameBuffer, wWidth * (y)+(x), pxColor);
+								int idx = wWidth * y + x;
+								Color newCol {
+									pxColor.x + accumulator[idx].x * frames,
+									pxColor.y + accumulator[idx].y * frames,
+									pxColor.z + accumulator[idx].z * frames
+								};
+								newCol /= frames+1;
+								accumulator[idx] = newCol;
+								putPixel(frameBuffer, idx, newCol);
 							}
 						}
 					}));
@@ -268,8 +284,6 @@ bool Renderer::corePathTracing(int horizontalTiles, int verticalTiles, int tWidt
 			int bounces = this->nBounces;
 			futures.push_back(Threading::pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
 						CameraPtr cam = scene->getCamera();
-						//std::vector<RayInfo> packet(tHeight * tWidth);
-						//std::vector<Ray> corners(4);
 						for (int row = 0; row < tHeight; ++row) {
 							for (int col = 0; col < tWidth; ++col) {
 								Color pxColor(0,0,0);
@@ -288,7 +302,15 @@ bool Renderer::corePathTracing(int horizontalTiles, int verticalTiles, int tWidt
 									}
 								}
 								pxColor = pxColor / static_cast<float>(samples);
-								putPixel(frameBuffer, wWidth * (y)+(x), pxColor);
+								int idx = wWidth * y + x;
+								Color newCol {
+									pxColor.x + accumulator[idx].x * frames,
+									pxColor.y + accumulator[idx].y * frames,
+									pxColor.z + accumulator[idx].z * frames
+								};
+								newCol /= frames+1;
+								accumulator[idx] = newCol;
+								putPixel(frameBuffer, idx, newCol);
 							}
 						}
 					}));
@@ -322,18 +344,18 @@ bool Renderer::start() {
 
 	const int horizontalTiles = wWidth / tWidth;
 	const int verticalTiles = wHeight / tHeight;
-	bool firstRender = true;
 
 #ifdef DEBUG
 	std::deque<float> averageFrameTime;
 #endif
 	while(!glfwWindowShouldClose(this->window)){
 
-		if(scene && (this->isBufferInvalid || firstRender)) {
-			firstRender = false;
+		if(scene && (this->isBufferInvalid || shouldAverage)) {
+			if(this->isBufferInvalid) frames=0;
 			//this->coreRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
 			this->corePathTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
 			//this->corePacketRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
+			frames++;
 			std::cout << "Last frameTime: " << lasttime << "s" << std::endl;
 #ifdef DEBUG
 			averageFrameTime.push_back(lasttime);
@@ -357,7 +379,7 @@ bool Renderer::start() {
 			InputManager::Instance()->setMouseState(xpos, ypos);
 			if(scene) this->isBufferInvalid = this->scene->update(dt);
 		}
-
+		
 		uint32_t* buffer = applyPostProcessing();
 		glBindTexture(GL_TEXTURE_2D, this->texture);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wWidth, wHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, buffer);
@@ -498,12 +520,6 @@ void Renderer::renderGUI() {
 			if (ImGui::CollapsingHeader("Rendering Settings")) {
 				ImGui::Spacing();
 				ImGui::Spacing();
-
-				if (ImGui::Checkbox("Render Continuously", &guiContinuousRender)) {
-					if (guiContinuousRender) {
-						this->scene->getCamera()->update(0, true);
-					}
-				}
 
 				if (ImGui::Checkbox("Packet Traversal", &guiPacketTraversal)) {
 					this->nSamples = 1;
