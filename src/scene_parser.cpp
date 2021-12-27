@@ -7,6 +7,7 @@
 #include "materials/material_dielectric.hpp"
 #include "materials/material_mirror.hpp"
 #include "materials/material_diffuse.hpp"
+#include "materials/material_emissive.hpp"
 #include "animation.hpp"
 #include "glm/trigonometric.hpp"
 
@@ -271,6 +272,12 @@ namespace SceneParser {
 		if (texture == -1) throw std::invalid_argument("Material doesn't name a valid texture");
 		if (type == "DIFFUSE") {
 			mat = std::make_shared<DiffuseMaterial>(name, texture);
+		}
+		if (type == "EMISSIVE") {
+			float intensity = 1.0f;
+			if(m.contains("intensity")) intensity = m.at("intensity");
+			std::cout << intensity;
+			mat = std::make_shared<EmissiveMaterial>(name, texture, intensity);
 		}
 		else if (type == "MIRROR") {
 			float ref = m.contains("reflect") ? m["reflect"].get<float>() : 1.0f;

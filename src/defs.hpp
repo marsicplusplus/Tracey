@@ -10,6 +10,7 @@
 #include <memory>
 
 const float PI = 3.141592653589793238463f;
+const float INVPI = 0.3183098861837907f;
 const float INF = std::numeric_limits<float>::infinity();
 
 #define CHECK_ERROR(COND, MESSAGE, RET) if(!(COND)){\
@@ -122,7 +123,7 @@ inline uint32_t calcZOrder(int xPos, int yPos)
 	const uint32_t result = x | (y << 1);
 	return result;
 }
-
+#include <iostream>
 namespace Random {
 	inline uint32_t xorshift32( uint32_t& state ){
 		state ^= state << 13;
@@ -133,6 +134,18 @@ namespace Random {
 
 	inline float RandomFloat( uint32_t& s ) 
 	{ return xorshift32(s) * 2.3283064365387e-10f; }
+
+	inline glm::fvec3 RandomInHemisphere(uint32_t &s, glm::fvec3 N){
+		glm::fvec3 randVec;
+		while(true){
+			randVec.x = -1.0f + (2.0f)*RandomFloat(s);
+			randVec.y = -1.0f + (2.0f)*RandomFloat(s);
+			randVec.z = -1.0f + (2.0f)*RandomFloat(s);
+			if(glm::dot(randVec, N) < 0) randVec = -randVec;
+			if(glm::length2(randVec) <= 1) break;
+		}
+		return randVec;
+	}
 };
 
 #endif

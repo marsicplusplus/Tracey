@@ -15,7 +15,7 @@
 
 class Renderer{
 public:
-	inline Renderer(std::string  _title) : title{std::move( _title )}, isBufferInvalid(false) {
+	inline Renderer(std::string  _title) : title{std::move( _title )}, isBufferInvalid(false), shouldAverage(true) {
 			this->frameBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 			this->secondaryBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 		};
@@ -28,6 +28,10 @@ public:
 		void setScene(ScenePtr scene);
 
 	private:
+		bool corePathTracing(int horizontalTiles, int verticalTiles, int tWidth, int tHeight, int wWidth, int wHeight);
+		bool coreRayTracing(int horizontalTiles, int verticalTiles, int tWidth, int tHeight, int wWidth, int wHeight);
+		bool corePacketRayTracing(int horizontalTiles, int verticalTiles, int tWidth, int tHeight, int wWidth, int wHeight);
+
 		static void putPixel(uint32_t fb[], int idx, Color &color);
 		static void putPixel(uint32_t fb[], int idx, uint8_t r, uint8_t g, uint8_t b);
 		void packetTrace(std::vector<Ray> &corners, std::vector<RayInfo>& rays, int bounces, const ScenePtr scene);
@@ -64,6 +68,7 @@ public:
 		bool guiVignetting;
 		float vignettingSlider;
 		bool guiAberration;
+		bool shouldAverage;
 		glm::vec3 aberrationOffset;
 		float guiFisheyeAngle;
 		int nSamples;

@@ -9,8 +9,10 @@
 class DielectricMaterial : public Material {
 
 	public: 
-		DielectricMaterial(std::string name, int albedoIdx, float _ior = 1.0f, Color _absorption = Color(0, 0, 0)) : Material{name}, ior{_ior}, absorption{_absorption}{
+		DielectricMaterial(std::string name, int albedoIdx, float _ior = 1.0f, Color _absorption = Color(0, 0, 0)) : Material{name} {
 			albedo = albedoIdx;
+			absorption = _absorption;
+			ior = _ior;
 		}
 
 		inline Materials getType() const override { return Materials::DIELECTRIC; }
@@ -63,8 +65,6 @@ class DielectricMaterial : public Material {
 		}
 
 	private: 
-		float ior;
-		Color absorption;
 };
 
 #endif
