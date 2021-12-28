@@ -274,9 +274,15 @@ namespace SceneParser {
 			mat = std::make_shared<DiffuseMaterial>(name, texture);
 		}
 		if (type == "EMISSIVE") {
-			float intensity = 1.0f;
-			if(m.contains("intensity")) intensity = m.at("intensity");
-			std::cout << intensity;
+			glm::fvec3 intensity{1.0f};
+			if(m.contains("intensity")) {
+				if(m.at("intensity").is_array())
+					intensity = parseVec3(m.at("intensity"));
+				else {
+					float i = m.at("intensity");
+					intensity = glm::fvec3(i, i, i);
+				}
+			}
 			mat = std::make_shared<EmissiveMaterial>(name, texture, intensity);
 		}
 		else if (type == "MIRROR") {

@@ -14,8 +14,7 @@ class MirrorMaterial : public Material {
 
 		inline Materials getType() const override { return Materials::MIRROR; }
 
-		inline bool reflect(const Ray& in, const HitRecord &r, Ray &reflectedRay, float &reflectance) const override {
-			reflectance = reflectionIdx;
+		inline bool reflect(const Ray& in, const HitRecord &r, Ray &reflectedRay) const override {
 			auto reflectedDir = glm::reflect(in.getDirection(), r.normal);
 			reflectedRay = Ray(r.p + 0.001f * reflectedDir, reflectedDir);
 			return true;

@@ -2,6 +2,7 @@
 #include "GLFW/glfw3.h"
 #include "input_manager.hpp"
 #include "scene_parser.hpp"
+#include "textures/solid_color.hpp"
 #include "glm/trigonometric.hpp"
 
 #include <fstream>
@@ -12,7 +13,13 @@ Scene::Scene(std::filesystem::path sceneFile){
 	std::filesystem::current_path(sceneFile.parent_path());
 	std::ifstream i(sceneFile.filename());
 	auto j = nlohmann::json::parse(i);
-
+	if(j.contains("background")){
+		if(j.at("background").is_array()){
+			this->background = std::make_unique<SolidColor>("Background", SceneParser::parseVec3(j.at("background")));
+		}
+	} else {
+			this->background = std::make_unique<SolidColor>("Background", 0.0f, 0.0f, 0.0f);
+	}
 	std::vector<int> emissiveMaterials;
 	auto camera = SceneParser::parseCamera(j["camera"]);
 	setCamera(camera);
@@ -135,4 +142,9 @@ Color Scene::traceLights(HitRecord &rec) const {
 		}
 	}
 	return illumination;
+}
+
+Color Scene::getBgColor(Ray &ray){
+	glm::fvec3 p;
+	return background->color(0, 0, p);
 }

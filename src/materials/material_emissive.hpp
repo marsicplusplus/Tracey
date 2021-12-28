@@ -7,7 +7,10 @@
 class EmissiveMaterial : public Material {
 
 	public: 
-		EmissiveMaterial(std::string name, int albedoIdx, float _intensity = 1.0f) : Material{name} {
+		EmissiveMaterial(std::string name, int albedoIdx, float r = 1.0f, float g = 1.0f, float b = 1.0f) : Material{name} {
+			EmissiveMaterial(name, albedoIdx, {r, g, b});
+		}
+		EmissiveMaterial(std::string name, int albedoIdx, glm::fvec3 _intensity = glm::fvec3{1.0f}) : Material{name} {
 			albedo = albedoIdx;
 			intensity = _intensity;
 		}

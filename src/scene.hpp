@@ -42,6 +42,8 @@ class Scene {
 			return nTris;
 		}
 
+		Color getBgColor(Ray&);
+
 	private:
 		CameraPtr currentCamera;
 		std::unordered_map<std::string, BVHPtr> meshes;
@@ -51,6 +53,7 @@ class Scene {
 		std::vector<MaterialPtr> materials;
 		std::vector<TexturePtr> textures;
 		BVHPtr topLevelBVH;
+		std::unique_ptr<Texture> background;
 		int nTris = 0;
 
 };
