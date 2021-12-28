@@ -36,7 +36,7 @@ class Material {
 		inline int getAlbedoIdx() const { return albedo; }
 		inline float getIOR() const { return ior; }
 		inline float getIntensity() const { return intensity; }
-		inline float getReflectionIdx() const { return reflectionIdx; }
+		inline float getReflection() const { return reflectionIdx; }
 
 	protected:
 		float reflectionIdx;

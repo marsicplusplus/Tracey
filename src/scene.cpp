@@ -13,6 +13,7 @@ Scene::Scene(std::filesystem::path sceneFile){
 	std::ifstream i(sceneFile.filename());
 	auto j = nlohmann::json::parse(i);
 
+	std::vector<int> emissiveMaterials;
 	auto camera = SceneParser::parseCamera(j["camera"]);
 	setCamera(camera);
 
@@ -26,15 +27,18 @@ Scene::Scene(std::filesystem::path sceneFile){
 		auto mat = SceneParser::parseMaterial(m, textures);
 		if (mat){
 			materials.push_back(mat);
+			if(mat->getType() == Materials::EMISSIVE) emissiveMaterials.emplace_back(materials.size()-1);
 		}
 	}
 
 	if(j.contains("instance_meshes")){
 		for (auto m : j["instance_meshes"]) {
 			std::string name;
+			std::string materialName;
 			auto mesh = SceneParser::parseMeshInstance(m, materials, textures, name);
-			if (mesh)
+			if (mesh){
 				meshes[name] = mesh;
+			}
 		}
 	}
 

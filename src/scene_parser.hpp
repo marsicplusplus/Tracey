@@ -19,8 +19,8 @@ namespace SceneParser {
 
 	glm::fvec4 parseVec4(nlohmann::basic_json<>& arr);
 
-	BVHPtr parseMeshInstance(nlohmann::json& mesh, const std::vector<MaterialPtr>& materials, std::string& name);
 	BVHPtr parseMeshInstance(nlohmann::json& hit, std::vector<MaterialPtr>& materials, std::vector<TexturePtr>& textures, std::string &name);
+
 	Animation parseAnimation(nlohmann::json& animation);
 
 	void parseTransform(nlohmann::basic_json<>& hit, HittablePtr primitive);

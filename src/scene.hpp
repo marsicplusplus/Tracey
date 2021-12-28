@@ -46,6 +46,7 @@ class Scene {
 		CameraPtr currentCamera;
 		std::unordered_map<std::string, BVHPtr> meshes;
 		std::unordered_map<std::string, std::list<BVHPtr>> BVHs;
+		std::vector<std::string> emitters;
 		std::vector<LightObjectPtr> lights;
 		std::vector<MaterialPtr> materials;
 		std::vector<TexturePtr> textures;

@@ -5,7 +5,7 @@ namespace Core {
 		HitRecord hr;
 		hr.p = {INF, INF, INF};
 		if(!scene || bounces <= 0)
-			return Color{0,0,0};
+			return Color{0.2,0.8,0.5};
 		if(scene->traverse(ray, 0.001f, INF, hr)) {
 			/* Evaluate light equations if hitted object is not emitting light */
 			/* IF it's an emissive surface, stop the recursion */
@@ -14,23 +14,32 @@ namespace Core {
 			if(mat->getType() == Materials::EMISSIVE){
 				return mat->getIntensity() * attenuation;
 			}
+			if(mat->getType() == Materials::MIRROR){
+				if(Random::RandomFloat(rng) < mat->getReflection()){
+					Ray refl;
+					float r;
+					mat->reflect(ray, hr, refl, r);
+					return attenuation * tracePath(refl, bounces - 1, scene, rng);
+				}
+			}
+			if(mat->getType() == Materials::DIELECTRIC){
+				Ray refl;
+				float reflectance;
+				mat->reflect(ray, hr, refl, reflectance);
+				if(Random::RandomFloat(rng) < reflectance) {
+					return attenuation * tracePath(refl, bounces - 1, scene, rng);
+				} else {
+					mat->refract(ray, hr, refl, reflectance);
+					return attenuation * tracePath(refl, bounces - 1, scene, rng);
+				}
+			}
+			auto BRDF = attenuation * INVPI;
 			glm::fvec3 newDir = Random::RandomInHemisphere(rng, hr.normal);
 			Ray newRay(hr.p + 0.001f * newDir, newDir);
-			auto BRDF = attenuation * INVPI;
 			auto Ei = tracePath(newRay, bounces-1, scene, rng) * glm::dot(hr.normal, newDir);
 			return PI * 2.0f * BRDF * Ei;
-			//HitRecord rayToLight;
-			//if(scene->traverse(newRay, 0.001f, INF, rayToLight)){
-				//MaterialPtr lightMat = scene->getMaterial(rayToLight.material);
-				//if(lightMat->getType() == Materials::EMISSIVE){
-					//glm::fvec3 BRDF = attenuation * INVPI;
-					//Color lightColor = scene->getTextureColor(lightMat->getAlbedoIdx(), rayToLight.u, rayToLight.v, rayToLight.p);
-					//float cos_i = glm::dot( newDir, rayToLight.normal );
-					//return 2.0f * PI * BRDF * lightColor * cos_i;
-				//}
-			//}
 		}
-		return Color(0.0f,0.0f,0.0f);
+		return Color(0.2f,0.8f,0.5f);
 	}
 
 	Color traceWhitted(Ray &ray, int bounces, ScenePtr scene, uint32_t &rng) {
