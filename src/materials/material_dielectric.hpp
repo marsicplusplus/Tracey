@@ -23,7 +23,7 @@ class DielectricMaterial : public Material {
 			return true;
 		}
 
-		virtual inline float getFresnel(Ray& in, HitRecord& r) const override { 
+		inline float getFresnel(Ray& in, HitRecord& r) const { 
 			float n1 = (r.frontFace) ? 1.0f : ior;
 			float n2 = (r.frontFace) ? ior : 1.0f;
 			float cosThetai = glm::dot(-in.getDirection(), r.normal);
@@ -67,6 +67,8 @@ class DielectricMaterial : public Material {
 		}
 
 	private: 
+		glm::fvec3 absorption;
+		float ior;
 };
 
 #endif

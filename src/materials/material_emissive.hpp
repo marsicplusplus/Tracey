@@ -15,7 +15,10 @@ class EmissiveMaterial : public Material {
 			intensity = _intensity;
 		}
 		inline Materials getType() const override { return Materials::EMISSIVE; }
+
+		inline glm::fvec3 getIntensity() const { return intensity; }
 	private: 
+		glm::fvec3 intensity;
 };
 
 #endif

@@ -7,9 +7,8 @@
 class MirrorMaterial : public Material {
 
 	public: 
-		MirrorMaterial(std::string name, int albedoIdx, float _reflective = 1.0f) : Material{name} {
+		MirrorMaterial(std::string name, int albedoIdx, float _reflective = 1.0f) : Material{name}, reflectionIdx{_reflective} {
 			albedo = albedoIdx;
-			reflectionIdx = _reflective;
 		}
 
 		inline Materials getType() const override { return Materials::MIRROR; }
@@ -20,7 +19,10 @@ class MirrorMaterial : public Material {
 			return true;
 		}
 
+		inline float getReflection() const { return reflectionIdx; }
+
 	private: 
+		float reflectionIdx;
 };
 
 #endif

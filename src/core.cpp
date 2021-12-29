@@ -1,4 +1,8 @@
 #include "core.hpp"
+#include "materials/material_emissive.hpp"
+#include "materials/material_mirror.hpp"
+#include "materials/material_diffuse.hpp"
+#include "materials/material_dielectric.hpp"
 
 namespace Core {
 	Color tracePath(Ray &ray, int bounces, ScenePtr scene, uint32_t &rng) {
@@ -12,22 +16,24 @@ namespace Core {
 			MaterialPtr mat = scene->getMaterial(hr.material);
 			Color attenuation = scene->getTextureColor(mat->getAlbedoIdx(), hr.u, hr.v, hr.p);
 			if(mat->getType() == Materials::EMISSIVE){
-				return mat->getIntensity() * attenuation;
+				return std::dynamic_pointer_cast<EmissiveMaterial>(mat)->getIntensity() * attenuation;
 			}
 			if(mat->getType() == Materials::MIRROR){
-				if(Random::RandomFloat(rng) < mat->getReflection()){
+				auto mirrorMat = std::dynamic_pointer_cast<MirrorMaterial>(mat);
+				if(Random::RandomFloat(rng) < mirrorMat->getReflection()){
 					Ray refl;
-					mat->reflect(ray, hr, refl);
+					mirrorMat->reflect(ray, hr, refl);
 					return attenuation * tracePath(refl, bounces - 1, scene, rng);
 				}
 			} else if(mat->getType() == Materials::DIELECTRIC){
-				if(Random::RandomFloat(rng) < mat->getFresnel(ray, hr)) {
+				auto dielectricMat = std::dynamic_pointer_cast<DielectricMaterial>(mat);
+				if(Random::RandomFloat(rng) < dielectricMat->getFresnel(ray, hr)) {
 					Ray refl;
-					mat->reflect(ray, hr, refl);
+					dielectricMat->reflect(ray, hr, refl);
 					return attenuation * tracePath(refl, bounces - 1, scene, rng);
 				} else {
 					Ray refl;
-					mat->refract(ray, hr, refl);
+					dielectricMat->refract(ray, hr, refl);
 					return attenuation * tracePath(refl, bounces - 1, scene, rng);
 				}
 			} /* Else we are just diffuse */
@@ -49,35 +55,32 @@ namespace Core {
 			Ray reflectedRay;
 			MaterialPtr mat = scene->getMaterial(hr.material);
 			Color attenuation = scene->getTextureColor(mat->getAlbedoIdx(), hr.u, hr.v, hr.p);
-			float reflectance = 1;
+			float reflectance = 1.0f;
 
 			if (mat->getType() == Materials::DIFFUSE || mat->getType() == Materials::EMISSIVE) {
 				return attenuation * scene->traceLights(hr);
 			} else if (mat->getType() == Materials::MIRROR) {
-
-				reflectance = mat->getReflection();
-				mat->reflect(ray, hr, reflectedRay);
+				auto mirrorMat = std::dynamic_pointer_cast<MirrorMaterial>(mat);
+				reflectance = mirrorMat->getReflection();
+				mirrorMat->reflect(ray, hr, reflectedRay);
 				if (reflectance == 1.0f)
 					return attenuation * (Core::traceWhitted(reflectedRay, bounces - 1, scene, rng));
 				else
 					return attenuation * (reflectance * Core::traceWhitted(reflectedRay, bounces - 1, scene, rng) + (1.0f - reflectance) * scene->traceLights(hr));
 			} else if(mat->getType() == Materials::DIELECTRIC) {
-
+				auto dielectricMat = std::dynamic_pointer_cast<DielectricMaterial>(mat);
 				Color refractionColor(0.0f);
 				Color reflectionColor(0.0f);
-				float reflectance = mat->getFresnel(ray, hr);
-				mat->reflect(ray, hr, reflectedRay);
+				float reflectance = dielectricMat->getFresnel(ray, hr);
+				dielectricMat->reflect(ray, hr, reflectedRay);
 				reflectionColor = Core::traceWhitted(reflectedRay, bounces - 1, scene, rng);
 
 				if(reflectance < 1.0f){
 					Ray refractedRay;
-					float refractance;
-					mat->refract(ray, hr, refractedRay);
+					dielectricMat->refract(ray, hr, refractedRay);
 					refractionColor = Core::traceWhitted(refractedRay, bounces-1, scene, rng);
 				}
-
 				mat->absorb(ray, hr, attenuation);
-
 				return attenuation * (reflectionColor * reflectance + refractionColor * (1 - reflectance));
 			}
 			return Color{0,0,0};
@@ -103,8 +106,9 @@ namespace Core {
 				continue;
 			}
 			else if (mat->getType() == Materials::MIRROR) {
-				reflectance = mat->getReflection();
-				mat->reflect(rayInfo.ray, hr, reflectedRay);
+				auto mirrorMat = std::dynamic_pointer_cast<MirrorMaterial>(mat);
+				reflectance = mirrorMat->getReflection();
+				mirrorMat->reflect(rayInfo.ray, hr, reflectedRay);
 				if (reflectance == 1.0f) {
 					rayInfo.pxColor = attenuation * (traceWhitted(reflectedRay, bounces - 1, scene, rng));
 					continue;
@@ -115,21 +119,21 @@ namespace Core {
 				}
 			}
 			else if (mat->getType() == Materials::DIELECTRIC) {
-
+				auto dielectricMat = std::dynamic_pointer_cast<DielectricMaterial>(mat);
 				Color refractionColor(0.0f);
 				Color reflectionColor(0.0f);
-				float reflectance = mat->getFresnel(rayInfo.ray, hr);
-				mat->reflect(rayInfo.ray, hr, reflectedRay);
+				float reflectance = dielectricMat->getFresnel(rayInfo.ray, hr);
+				dielectricMat->reflect(rayInfo.ray, hr, reflectedRay);
 				reflectionColor = traceWhitted(reflectedRay, bounces - 1, scene, rng);
 
 				if (reflectance < 1.0f) {
 					Ray refractedRay;
-					float refractance = mat->getFresnel(rayInfo.ray, hr);
-					mat->refract(rayInfo.ray, hr, refractedRay);
+					float refractance = dielectricMat->getFresnel(rayInfo.ray, hr);
+					dielectricMat->refract(rayInfo.ray, hr, refractedRay);
 					refractionColor = traceWhitted(refractedRay, bounces - 1, scene, rng);
 				}
 
-				mat->absorb(rayInfo.ray, hr, attenuation);
+				dielectricMat->absorb(rayInfo.ray, hr, attenuation);
 
 				rayInfo.pxColor = attenuation * (reflectionColor * reflectance + refractionColor * (1 - reflectance));
 			}
