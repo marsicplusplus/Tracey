@@ -13,6 +13,7 @@ Scene::Scene(std::filesystem::path sceneFile){
 	std::filesystem::current_path(sceneFile.parent_path());
 	std::ifstream i(sceneFile.filename());
 	auto j = nlohmann::json::parse(i);
+	i.close();
 	if(j.contains("background")){
 		if(j.at("background").is_array()){
 			this->background = std::make_unique<SolidColor>("Background", SceneParser::parseVec3(j.at("background")));
@@ -42,9 +43,9 @@ Scene::Scene(std::filesystem::path sceneFile){
 		for (auto m : j["instance_meshes"]) {
 			std::string name;
 			std::string materialName;
-			auto mesh = SceneParser::parseMeshInstance(m, materials, textures, name);
+			auto mesh = SceneParser::parseMeshInstance(m, materials, textures, meshes, name);
 			if (mesh){
-				meshes[name] = mesh;
+				meshesBVH[name] = mesh;
 			}
 		}
 	}
@@ -54,7 +55,7 @@ Scene::Scene(std::filesystem::path sceneFile){
 		if(light)
 			lights.push_back(std::move(light));
 	}
-	topLevelBVH = SceneParser::parseSceneGraph(j["scenegraph"], materials, meshes, BVHs, nTris);
+	topLevelBVH = SceneParser::parseSceneGraph(j["scenegraph"], materials, meshesBVH, BVHs, nTris);
 	std::cout << "Total Number of triangles: " << nTris << std::endl;
 	std::filesystem::current_path(currPath);
 }
@@ -105,7 +106,7 @@ const CameraPtr Scene::getCamera() const {
 
 bool Scene::update(float dt){
 	bool ret = false;
-	for(auto &m : meshes){
+	for(auto &m : meshesBVH){
 		if(m.second->update(dt)){
 			auto instanceList = BVHs[m.first];
 			for(auto &i : instanceList){

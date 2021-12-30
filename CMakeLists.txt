@@ -7,9 +7,19 @@ set( GLFW_BUILD_EXAMPLES OFF CACHE BOOL "GLFW lib only" FORCE)
 set( GLFW_BUILD_TESTS OFF CACHE BOOL "GLFW lib only" FORCE)
 set( GLFW_INSTALL OFF CACHE BOOL "GLFW lib only" FORCE)
 
+set(ASSIMP_BUILD_TESTS OFF)
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
+set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF)
+set(ASSIMP_BUILD_OBJ_IMPORTER TRUE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF)
+# Needed for compilation?
+set(ASSIMP_BUILD_ASSBIN_EXPORTER TRUE)
+set(ASSIMP_BUILD_ASSXML_EXPORTER TRUE)
+
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(ALLOW_DUPLICATE_CUSTOM_TARGETS TRUE)
 add_subdirectory( external/glfw )
+add_subdirectory( external/assimp )
 
 include_directories(
     external/glfw/include
@@ -35,6 +45,7 @@ set( SRC
 	external/imgui/backends/imgui_impl_opengl3.cpp
 	external/glad/src/glad.c
 	src/hittables/triangle.cpp
+	src/hittables/triangle_mesh.cpp
 	src/textures/image_texture.cpp
 	src/tracey.cpp
 	src/core.cpp
@@ -57,11 +68,13 @@ if (UNIX)
 		dl
 		pthread
 		glfw
+		assimp
 		)
 else()
 	set (
 		LIBS
 		glfw
+		assimp
 		)
 endif()
 

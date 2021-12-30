@@ -10,14 +10,19 @@
 #include "materials/material_emissive.hpp"
 #include "animation.hpp"
 #include "glm/trigonometric.hpp"
-
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
+#include "assimp/Importer.hpp"
+#include "assimp/scene.h"
+#include "assimp/postprocess.h"
 
 #include <iostream>
 #include <fstream>
 
 namespace SceneParser {
+
+	std::vector<std::shared_ptr<Hittable>> createTriangleMesh(const int nTriangles, const int nVertices, 
+			const glm::vec3 *p, const glm::vec3 *n, const glm::vec2 uv){
+		return std::vector<std::shared_ptr<Hittable>>();
+	}
 
 	Animation parseAnimation(nlohmann::json& animation){
 		bool loop = false;
@@ -77,7 +82,7 @@ namespace SceneParser {
 		return glm::fvec4(arr[0].get<float>(), arr[1].get<float>(), arr[2].get<float>(), arr[3].get<float>());
 	}
 
-	std::shared_ptr<BVH> parseMeshInstance(nlohmann::json& hit, std::vector<MaterialPtr>& materials, std::vector<TexturePtr>& textures, std::string &name) {
+	std::shared_ptr<BVH> parseMeshInstance(nlohmann::json& hit, std::vector<MaterialPtr>& materials, std::vector<TexturePtr>& textures, std::vector<std::shared_ptr<TriangleMesh>> meshes, std::string &name) {
 		name = hit.at("name");
 
 		if (!hit.contains("path")) {
@@ -85,105 +90,71 @@ namespace SceneParser {
 		}
 	
 		std::filesystem::path meshPath = hit.at("path");
+		
+		std::vector<std::shared_ptr<Hittable>> triangles;
+		Assimp::Importer importer;
+		const aiScene* scene = importer.ReadFile(meshPath.string(), aiProcess_Triangulate | aiProcess_GenNormals);
 
-		tinyobj::ObjReaderConfig reader_config;
-		reader_config.triangulate = true;
-		reader_config.mtl_search_path = meshPath.parent_path().string(); // Path to material files
-
-		tinyobj::ObjReader reader;
-		if (!reader.ParseFromFile(meshPath.string(), reader_config)) {
-			if (!reader.Error().empty()) std::cerr << "TinyObjReader: " << reader.Error();
-			return nullptr;
-		}
-		if (!reader.Warning().empty()) std::cout << "TinyObjReader: " << reader.Warning();
-
-		auto& attrib = reader.GetAttrib();
-		auto& shapes = reader.GetShapes();
-		auto& mats = reader.GetMaterials();
-
-		std::vector<glm::fvec3> pos;
-		std::vector<glm::fvec3> norm;
-		std::vector<glm::fvec2> uv;
-		std::vector<HittablePtr> triangles;
-		std::vector<DiffuseMaterial> diffuseMats;
-
-		float minX = INF, minY = INF, minZ = INF, maxX = -INF, maxY = -INF, maxZ = -INF;
-
-		for (size_t i = 0; i < attrib.vertices.size(); i += 3) {
-			auto xVal = attrib.vertices[i];
-			auto yVal = attrib.vertices[i + 1];
-			auto zVal = attrib.vertices[i + 2];
-
-			minX = min(minX, xVal);
-			minY = min(minY, yVal);
-			minZ = min(minZ, zVal);
-			maxX = max(maxX, xVal);
-			maxY = max(maxY, yVal);
-			maxZ = max(maxZ, zVal);
-
-			pos.emplace_back(
-				attrib.vertices[i],
-				attrib.vertices[i + 1],
-				attrib.vertices[i + 2]
-			);
-		}
-
-		for (size_t i = 0; i < attrib.normals.size(); i += 3) {
-			norm.emplace_back(
-				attrib.normals[i],
-				attrib.normals[i + 1],
-				attrib.normals[i + 2]
-			);
-		}
-		for (size_t i = 0; i < attrib.texcoords.size(); i += 2) {
-			uv.push_back(glm::dvec2{
-				attrib.texcoords[i],
-				attrib.texcoords[i + 1]
-			});
-		}
-
-		int materialIdx = -1;
-		if (hit.contains("material")){
-			std::string matName = hit.at("material");
-			materialIdx = findMaterial(matName, materials);
-		} else if(!mats.empty()) {
-			for (size_t i = 0; i < mats.size(); ++i) {
-				TexturePtr t;
-				if(mats[i].diffuse_texname.empty()){
-					t = std::make_unique<SolidColor>(meshPath / ("Diffuse"), mats[i].diffuse[0], mats[i].diffuse[1], mats[i].diffuse[2]);
-				} else {
-					std::filesystem::path texturePath = meshPath.parent_path();
-					texturePath /= mats[i].diffuse_texname;
-					t = std::make_unique<ImageTexture>(mats[i].diffuse_texname, texturePath);
-				}
-				textures.emplace_back(std::move(t));
-				materials.emplace_back(std::make_shared<DiffuseMaterial>(mats[i].name, textures.size() - 1));
+		if(!scene) 
+			throw std::invalid_argument("Failed parsing the obj file");
+		/* TODO: Parse materials */
+		for(int i = 0; i < scene->mNumMeshes; ++i){
+			auto mesh = scene->mMeshes[i];
+			std::vector<glm::fvec3> verts(mesh->mNumVertices);
+			std::vector<glm::fvec3> norms;
+			std::vector<glm::fvec2> uvs;
+			std::vector<unsigned int> indices(mesh->mNumFaces*3);
+			std::string meshName = mesh->mName.C_Str();
+			for(int j = 0; j < verts.size(); ++j){
+				verts[j] = glm::fvec3(mesh->mVertices[j].x, mesh->mVertices[j].y, mesh->mVertices[j].z);
 			}
-		} else throw std::invalid_argument("Mesh doesn't name a valid material");
-
-		for (auto& shape : shapes) {
-			const std::vector<tinyobj::index_t> idx = shape.mesh.indices;
-			const std::vector<int>& mat_ids = shape.mesh.material_ids;
-			for (size_t face_ind = 0; face_ind < mat_ids.size(); face_ind++) {
-				int material;
-				if(materialIdx == -1){
-					auto name = mats[mat_ids[face_ind]].name;
-					material = findMaterial(name, materials);
-				} else {
-					material = materialIdx;
+			if(mesh->HasNormals()){
+				norms.resize(mesh->mNumVertices);
+				for(int j = 0; j < norms.size(); ++j){
+					norms[j] = glm::fvec3(mesh->mNormals[j].x, mesh->mNormals[j].y, mesh->mNormals[j].z);
 				}
-				auto tri = std::make_shared<Triangle>(
-					glm::ivec3{ idx[3 * face_ind].vertex_index, 	idx[3 * face_ind + 1].vertex_index, 	idx[3 * face_ind + 2].vertex_index },
-					glm::ivec3{ idx[3 * face_ind].normal_index, 	idx[3 * face_ind + 1].normal_index, 	idx[3 * face_ind + 2].normal_index },
-					glm::ivec3{ idx[3 * face_ind].texcoord_index, 	idx[3 * face_ind + 1].texcoord_index, 	idx[3 * face_ind + 2].texcoord_index },
-					material,
-					pos,
-					norm,
-					uv
-				);
-				triangles.push_back(tri);
+			}
+			if(mesh->HasTextureCoords(0)){
+				uvs.resize(mesh->mNumVertices);
+				for(int j = 0; j < verts.size(); ++j){
+					uvs[j] = glm::fvec2(mesh->mTextureCoords[0][j].x, mesh->mTextureCoords[0][j].y);
+				}
+			}
+			int faceIdx = 0;
+			for(unsigned int j = 0; j < mesh->mNumFaces; ++j){
+				indices[faceIdx++] = mesh->mFaces[j].mIndices[0];
+				indices[faceIdx++] = mesh->mFaces[j].mIndices[1];
+				indices[faceIdx++] = mesh->mFaces[j].mIndices[2];
+			}
+			auto triMesh = std::make_shared<TriangleMesh>(mesh->mNumFaces, mesh->mNumVertices, indices.data(), verts.data(), norms.data(), uvs.data());
+			//meshes.emplace_back(triMesh);
+			auto material = scene->mMaterials[mesh->mMaterialIndex];
+			std::string matName;
+			if(hit.contains("material")) matName = hit.at("material");
+			else matName = material->GetName().C_Str();
+			if(matName.empty()) matName = name + "_material";
+			auto matIdx = findMaterial(matName, materials);
+			if(matIdx == -1){
+				TexturePtr text;
+				int numTextures = material->GetTextureCount(aiTextureType_DIFFUSE);
+				if(numTextures > 0){
+					aiString textureName;
+					material->GetTexture(aiTextureType_DIFFUSE, 0, &textureName);
+					text = std::make_unique<ImageTexture>(textureName.C_Str(), meshPath.parent_path() / textureName.C_Str());
+				} else {
+					aiColor4D color{0.0,0.0,0.0,0.0};
+					aiGetMaterialColor(material,AI_MATKEY_COLOR_DIFFUSE,&color);
+					text = std::make_unique<SolidColor>(matName, color.r, color.g, color.b);
+				}
+				textures.emplace_back(std::move(text));
+				materials.emplace_back(std::make_shared<DiffuseMaterial>(matName, textures.size() - 1));
+				matIdx = materials.size() - 1;
+			}
+			for(unsigned int k = 0; k < mesh->mNumFaces; ++k){
+				triangles.emplace_back(std::make_shared<Triangle>(triMesh, k, matIdx));
 			}
 		}
+
 		Heuristic heuristic = Heuristic::SAH;
 		if(hit.contains("bvh")){
 			if(hit.at("bvh") == "MIDPOINT") heuristic = Heuristic::MIDPOINT;
@@ -192,7 +163,6 @@ namespace SceneParser {
 		if(hit.contains("refit")){
 			refit = hit.at("refit");
 		}
-		AABB bbox{ minX, minY, minZ, maxX, maxY, maxZ };
 		return std::make_shared<BVH>(triangles, heuristic, refit);
 	}
 

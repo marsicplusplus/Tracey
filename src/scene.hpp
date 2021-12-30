@@ -4,6 +4,7 @@
 #include "camera.hpp"
 #include "light_object.hpp"
 #include "hittables/hittable.hpp"
+#include "hittables/triangle_mesh.hpp"
 #include "json.hpp"
 #include "bvh.hpp"
 
@@ -46,12 +47,13 @@ class Scene {
 
 	private:
 		CameraPtr currentCamera;
-		std::unordered_map<std::string, BVHPtr> meshes;
+		std::unordered_map<std::string, BVHPtr> meshesBVH;
 		std::unordered_map<std::string, std::list<BVHPtr>> BVHs;
 		std::vector<std::string> emitters;
 		std::vector<LightObjectPtr> lights;
 		std::vector<MaterialPtr> materials;
 		std::vector<TexturePtr> textures;
+		std::vector<std::shared_ptr<TriangleMesh>> meshes;
 		BVHPtr topLevelBVH;
 		std::unique_ptr<Texture> background;
 		int nTris = 0;

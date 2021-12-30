@@ -280,9 +280,8 @@ bool Renderer::corePathTracing(int horizontalTiles, int verticalTiles, int tWidt
 	for(int tileRow = 0; tileRow < verticalTiles; ++tileRow){
 		for(int tileCol = 0; tileCol < horizontalTiles; ++tileCol){
 			/* Launch thread */
-			int samples = this->nSamples;
 			int bounces = this->nBounces;
-			futures.push_back(Threading::pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
+			futures.push_back(Threading::pool.queue([&, tileRow, tileCol, bounces](uint32_t &rng){
 						CameraPtr cam = scene->getCamera();
 						for (int row = 0; row < tHeight; ++row) {
 							for (int col = 0; col < tWidth; ++col) {
@@ -332,8 +331,6 @@ bool Renderer::start() {
 	
 	glClearColor(0,0,0,0);
 
-	const int maxBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
-	const int samples = OptionsMap::Instance()->getOption(Options::SAMPLES);
 	const float fpsLimit = 1.0 / static_cast<float>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
 	this->lastUpdateTime = glfwGetTime();  // number of seconds since the last loop
 	float frameTime = 0.0f;
