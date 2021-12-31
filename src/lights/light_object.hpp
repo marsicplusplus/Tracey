@@ -10,6 +10,7 @@ enum class LightType : int {
 	LIGHT_POINT					= 1 << 1,
 	LIGHT_SPOT					= 1 << 2,
 	LIGHT_AMBIENT				= 1 << 3,
+	LIGHT_AREA					= 1 << 4,
 };
 
 class LightObject {
