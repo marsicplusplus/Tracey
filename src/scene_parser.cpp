@@ -8,6 +8,10 @@
 #include "materials/material_mirror.hpp"
 #include "materials/material_diffuse.hpp"
 #include "materials/material_emissive.hpp"
+#include "lights/directional_light.hpp"
+#include "lights/ambient_light.hpp"
+#include "lights/point_light.hpp"
+#include "lights/spot_light.hpp"
 #include "animation.hpp"
 #include "glm/trigonometric.hpp"
 #include "assimp/Importer.hpp"
@@ -203,27 +207,26 @@ namespace SceneParser {
 		return std::make_shared<Camera>(pos, dir, up, fov);
 	}
 
-	LightObjectPtr parseLight(nlohmann::json& l) {
+	std::shared_ptr<LightObject> parseLight(nlohmann::json& l) {
 		if (!l.contains("type")) throw std::invalid_argument("LightObject doesn't name a type");
 		std::string type = l.at("type");
 		Color color = (l.contains("color")) ? (parseVec3(l["color"])) : Color(1.0f);
-		float intensity = (l.contains("intensity")) ? (float)(l.at("intensity")) : 1.0f;
 		if (type == "POINT") {
 			glm::fvec3 pos(parseVec3(l["position"]));
-			return (std::make_unique<PointLight>(pos, intensity, color));
+			return (std::make_shared<PointLight>(pos, color));
 		}
 		else if (type == "DIRECTIONAL") {
 			glm::fvec3 dir(parseVec3(l["direction"]));
-			return (std::make_unique<DirectionalLight>(dir, intensity, color));
+			return (std::make_shared<DirectionalLight>(dir, color));
 		}
 		else if (type == "AMBIENT") {
-			return (std::make_unique<AmbientLight>(intensity, color));
+			return (std::make_shared<AmbientLight>(color));
 		}
 		else if (type == "SPOT") {
 			glm::fvec3 pos(parseVec3(l["position"]));
 			glm::fvec3 dir(parseVec3(l["direction"]));
 			float cutoff = l.contains("cutoffAngle") ? (float)l.at("cutoffAngle") : 45.0f;
-			return (std::make_unique<SpotLight>(pos, dir, glm::radians(cutoff), intensity, color));
+			return (std::make_shared<SpotLight>(pos, dir, glm::radians(cutoff), color));
 		}
 		else {
 			throw std::invalid_argument("LightObject doesn't name a valid type");

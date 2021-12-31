@@ -7,7 +7,6 @@
 #include "hittables/hittable.hpp"
 #include "hittables/triangle_mesh.hpp"
 #include "glm/gtx/norm.hpp"
-#include "tiny_obj_loader.h"
 
 class Triangle : public Hittable {
 	public:

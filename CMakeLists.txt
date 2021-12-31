@@ -46,6 +46,10 @@ set( SRC
 	external/glad/src/glad.c
 	src/hittables/triangle.cpp
 	src/hittables/triangle_mesh.cpp
+	src/lights/spot_light.cpp
+	src/lights/ambient_light.cpp
+	src/lights/directional_light.cpp
+	src/lights/point_light.cpp
 	src/textures/image_texture.cpp
 	src/tracey.cpp
 	src/core.cpp

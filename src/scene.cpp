@@ -53,7 +53,7 @@ Scene::Scene(std::filesystem::path sceneFile){
 	for(auto l : j["lights"]){
 		auto light = SceneParser::parseLight(l);
 		if(light)
-			lights.push_back(std::move(light));
+			lights.push_back(light);
 	}
 	topLevelBVH = SceneParser::parseSceneGraph(j["scenegraph"], materials, meshesBVH, BVHs, nTris);
 	std::cout << "Total Number of triangles: " << nTris << std::endl;
@@ -62,8 +62,8 @@ Scene::Scene(std::filesystem::path sceneFile){
 
 Scene::~Scene(){}
 
-void Scene::addLight(LightObjectPtr light){
-	this->lights.push_back(std::move(light));
+void Scene::addLight(std::shared_ptr<LightObject> light){
+	this->lights.push_back(light);
 }
 
 bool Scene::traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) const {

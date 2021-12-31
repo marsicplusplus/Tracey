@@ -2,7 +2,7 @@
 #define __SCENE_HPP__
 
 #include "camera.hpp"
-#include "light_object.hpp"
+#include "lights/light_object.hpp"
 #include "hittables/hittable.hpp"
 #include "hittables/triangle_mesh.hpp"
 #include "json.hpp"
@@ -26,7 +26,7 @@ class Scene {
 		Color traceLights(HitRecord &rec) const;
 		bool update(float dt);
 
-		void addLight(LightObjectPtr light);
+		void addLight(std::shared_ptr<LightObject> light);
 
 		inline const MaterialPtr getMaterial(int idx) {
 			if (idx > materials.size())
@@ -50,7 +50,7 @@ class Scene {
 		std::unordered_map<std::string, BVHPtr> meshesBVH;
 		std::unordered_map<std::string, std::list<BVHPtr>> BVHs;
 		std::vector<std::string> emitters;
-		std::vector<LightObjectPtr> lights;
+		std::vector<std::shared_ptr<LightObject>> lights;
 		std::vector<MaterialPtr> materials;
 		std::vector<TexturePtr> textures;
 		std::vector<std::shared_ptr<TriangleMesh>> meshes;

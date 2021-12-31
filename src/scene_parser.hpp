@@ -2,7 +2,7 @@
 #define __SCENEPARSER_HPP__
 
 #include "camera.hpp"
-#include "light_object.hpp"
+#include "lights/light_object.hpp"
 #include "hittables/hittable.hpp"
 #include "hittables/triangle_mesh.hpp"
 #include "json.hpp"
@@ -28,7 +28,7 @@ namespace SceneParser {
 
 	CameraPtr parseCamera(nlohmann::json& cam);
 
-	LightObjectPtr parseLight(nlohmann::json& l);
+	std::shared_ptr<LightObject> parseLight(nlohmann::json& l);
 
 	std::shared_ptr<Material> parseMaterial(nlohmann::json& m, std::vector<TexturePtr>& textures);
 
