@@ -6,7 +6,7 @@
 class EnviromentalLight : public LightObject {
 
 	public:
-		EnviromentalLight(glm::fvec3 pos, glm::fvec3 i, const std::shared_ptr<texture> &texture);
+		EnviromentalLight(glm::fvec3 pos, glm::fvec3 i, const std::shared_ptr<Texture> &texture);
 
 		Ray getRay(const HitRecord &rec, float &tMax) const override;
 

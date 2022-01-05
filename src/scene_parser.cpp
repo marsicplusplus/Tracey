@@ -12,6 +12,7 @@
 #include "lights/ambient_light.hpp"
 #include "lights/point_light.hpp"
 #include "lights/spot_light.hpp"
+#include "lights/area_light.hpp"
 #include "animation.hpp"
 #include "glm/trigonometric.hpp"
 #include "assimp/Importer.hpp"
@@ -109,6 +110,7 @@ namespace SceneParser {
 			std::vector<glm::fvec2> uvs;
 			std::vector<unsigned int> indices(mesh->mNumFaces*3);
 			std::string meshName = mesh->mName.C_Str();
+			if(meshName.empty()) meshName = name;
 			for(int j = 0; j < verts.size(); ++j){
 				verts[j] = glm::fvec3(mesh->mVertices[j].x, mesh->mVertices[j].y, mesh->mVertices[j].z);
 			}
@@ -130,8 +132,9 @@ namespace SceneParser {
 				indices[faceIdx++] = mesh->mFaces[j].mIndices[1];
 				indices[faceIdx++] = mesh->mFaces[j].mIndices[2];
 			}
-			auto triMesh = std::make_shared<TriangleMesh>(mesh->mNumFaces, mesh->mNumVertices, indices.data(), verts.data(), norms.data(), uvs.data());
-			//meshes.emplace_back(triMesh);
+			auto triMesh = std::make_shared<TriangleMesh>(meshName, mesh->mNumFaces, mesh->mNumVertices, indices.data(), verts.data(), norms.data(), uvs.data());
+			meshes.emplace_back(triMesh);
+			/* Get Material */
 			auto material = scene->mMaterials[mesh->mMaterialIndex];
 			std::string matName;
 			if(hit.contains("material")) matName = hit.at("material");
@@ -144,7 +147,8 @@ namespace SceneParser {
 				if(numTextures > 0){
 					aiString textureName;
 					material->GetTexture(aiTextureType_DIFFUSE, 0, &textureName);
-					text = std::make_unique<ImageTexture>(textureName.C_Str(), meshPath.parent_path() / textureName.C_Str());
+					std::filesystem::path fp = meshPath.parent_path() / std::filesystem::path(textureName.C_Str());
+					text = std::make_unique<ImageTexture>(textureName.C_Str(), fp);
 				} else {
 					aiColor4D color{0.0,0.0,0.0,0.0};
 					aiGetMaterialColor(material,AI_MATKEY_COLOR_DIFFUSE,&color);
@@ -154,8 +158,10 @@ namespace SceneParser {
 				materials.emplace_back(std::make_shared<DiffuseMaterial>(matName, textures.size() - 1));
 				matIdx = materials.size() - 1;
 			}
+			/* Create mesh' triangles */
 			for(unsigned int k = 0; k < mesh->mNumFaces; ++k){
-				triangles.emplace_back(std::make_shared<Triangle>(triMesh, k, matIdx));
+				auto tri = std::make_shared<Triangle>(triMesh, k, matIdx);
+				triangles.emplace_back(tri);
 			}
 		}
 
@@ -316,16 +322,16 @@ namespace SceneParser {
 			if (obj.contains("meshes")) {
 				for (auto& m : obj["meshes"]) {
 					auto instance = SceneParser::parseInstance(m, materials, meshes, numTri);
-						bool animate = false;
-						std::vector<HittablePtr> hittableVec;
-						hittableVec.push_back(instance.second);
-						auto bvh = std::make_shared<BVH>(hittableVec);
-						parseTransform(m, bvh);
-						if(m.contains("animation")){
-							Animation anim = SceneParser::parseAnimation(m.at("animation"));
-							bvh->setAnimation(anim);
-						}
-						BVHs[instance.first].push_back(bvh);
+					bool animate = false;
+					std::vector<HittablePtr> hittableVec;
+					hittableVec.push_back(instance.second);
+					auto bvh = std::make_shared<BVH>(hittableVec);
+					parseTransform(m, bvh);
+					if(m.contains("animation")){
+						Animation anim = SceneParser::parseAnimation(m.at("animation"));
+						bvh->setAnimation(anim);
+					}
+					BVHs[instance.first].push_back(bvh);
 				}
 			}
 		}

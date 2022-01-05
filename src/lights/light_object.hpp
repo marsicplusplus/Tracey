@@ -31,6 +31,13 @@ class LightObject {
 			}
 			return illumination;
 		};
+	/*	
+		virtual Color sampleLi() const = 0;
+		virtual float pdfLi() const = 0;
+	*/
+		virtual void setTransform(const Transform &t){
+			transform = t;
+		}
 
 		const int type;
 		const glm::fvec3 intensity;

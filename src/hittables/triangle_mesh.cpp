@@ -1,7 +1,7 @@
 #include "triangle_mesh.hpp"
 
-TriangleMesh::TriangleMesh(unsigned int nTri, unsigned int nVerts, const unsigned int *vertexIndices, const glm::vec3 *P, const glm::vec3 *N, const glm::vec2 *UV) : 
-	nTriangles{nTri}, nVertices{nVerts}, 
+TriangleMesh::TriangleMesh(const std::string &name, unsigned int nTri, unsigned int nVerts, const unsigned int *vertexIndices, const glm::vec3 *P, const glm::vec3 *N, const glm::vec2 *UV) : 
+	nTriangles{nTri}, nVertices{nVerts}, name{name},
 	vertexIndices(vertexIndices, vertexIndices + 3 * nVerts) {
 	p.reset(new glm::vec3[nVertices]);
 	for(int i = 0; i < nVertices; ++i){
@@ -19,5 +19,4 @@ TriangleMesh::TriangleMesh(unsigned int nTri, unsigned int nVerts, const unsigne
 			n[i] = N[i];
 		}
 	}
-
 }

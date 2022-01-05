@@ -13,6 +13,9 @@ class Triangle : public Hittable {
 		Triangle(const std::shared_ptr<TriangleMesh> &mesh, unsigned int triangleNumber, int material);
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
 
+		float getArea() override;
+		float pdf() override;
+
 	private:
 		void getUV(glm::vec2 uv[3]) const;
 

@@ -137,7 +137,7 @@ Color Scene::traceLights(HitRecord &rec) const {
 		}
 
 		HitRecord obstruction;
-		if(!traverse(shadowRay, 0.0001f, tMax, obstruction)){
+		if(!traverse(shadowRay, EPS, tMax, obstruction)){
 			auto contribution = light->getLight(rec, shadowRay);
 			illumination += light->attenuate(contribution, rec.p);
 		}

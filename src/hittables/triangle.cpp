@@ -55,7 +55,7 @@ bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const
 	glm::fvec3 v0v2 = *v2 - *v0;
 	glm::fvec3 p = glm::cross(transformedRay.getDirection(), v0v2);
 	float det = glm::dot(v0v1, p);
-	if (std::fabs(det) < 0.00001f) return false;
+	if (std::fabs(det) < EPS) return false;
 	float inv = 1.0f / det;
 
 	glm::fvec3 tv = transformedRay.getOrigin() - *v0;
@@ -96,4 +96,21 @@ bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const
 	}
 
 	return false;
+}
+
+float Triangle::getArea() {
+	glm::fvec3 *v0 = &(this->mesh->p.get())[vIdx[0]];
+	glm::fvec3 *v1 = &(this->mesh->p.get())[vIdx[1]];
+	glm::fvec3 *v2 = &(this->mesh->p.get())[vIdx[2]];
+	return abs((v0->x * v1->y + 
+				v1->x * v2->y + 
+				v2->x * v0->y -
+				v0->y * v1->x -
+				v1->y * v2->x -
+				v2->y * v0->x)
+			/2.0f);
+}
+
+float Triangle::pdf() {
+	return 1.0f/getArea();
 }

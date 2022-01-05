@@ -56,6 +56,9 @@ public:
 		updateWorldBBox();
 	}
 
+	virtual float getArea() { return 0.0f; };
+	virtual float pdf() { return 0.0f; };
+
 protected:
 	inline void updateWorldBBox() {
 		std::vector<glm::fvec4> localVertices;
