@@ -32,26 +32,28 @@ Scene::Scene(std::filesystem::path sceneFile){
 	if(j.contains("instance_meshes")){
 		for (auto m : j["instance_meshes"]) {
 			std::string name;
-			auto mesh = SceneParser::parseMeshInstance(m, materials, textures, name);
-			if (mesh)
-				meshes[name] = mesh;
+			std::string materialName;
+			auto mesh = SceneParser::parseMeshInstance(m, materials, textures, meshes, name);
+			if (mesh){
+				meshesBVH[name] = mesh;
+			}
 		}
 	}
 
 	for(auto l : j["lights"]){
 		auto light = SceneParser::parseLight(l);
 		if(light)
-			lights.push_back(std::move(light));
+			lights.push_back(light);
 	}
-	topLevelBVH = SceneParser::parseSceneGraph(j["scenegraph"], materials, meshes, BVHs, nTris);
+	topLevelBVH = SceneParser::parseSceneGraph(j["scenegraph"], materials, meshesBVH, BVHs, nTris);
 	std::cout << "Total Number of triangles: " << nTris << std::endl;
 	std::filesystem::current_path(currPath);
 }
 
 Scene::~Scene(){}
 
-void Scene::addLight(LightObjectPtr light){
-	this->lights.push_back(std::move(light));
+void Scene::addLight(std::shared_ptr<LightObject> light){
+	this->lights.push_back(light);
 }
 
 bool Scene::traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) const {
@@ -94,7 +96,7 @@ const CameraPtr Scene::getCamera() const {
 
 bool Scene::update(float dt){
 	bool ret = false;
-	for(auto &m : meshes){
+	for(auto &m : meshesBVH){
 		if(m.second->update(dt)){
 			auto instanceList = BVHs[m.first];
 			for(auto &i : instanceList){
@@ -125,7 +127,7 @@ Color Scene::traceLights(HitRecord &rec) const {
 		}
 
 		HitRecord obstruction;
-		if(!traverse(shadowRay, 0.0001f, tMax, obstruction)){
+		if(!traverse(shadowRay, EPS, tMax, obstruction)){
 			auto contribution = light->getLight(rec, shadowRay);
 			illumination += light->attenuate(contribution, rec.p);
 		}

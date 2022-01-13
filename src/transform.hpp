@@ -23,6 +23,10 @@ class Transform {
 		void translate(float x, float y, float z);
 		void translate(glm::vec3 &tran);
 
+		inline const glm::vec3& getTranslation() const { return t; }
+		inline const glm::vec3& getScale() const { return s; }
+		inline const glm::quat& getRotation() const { return r; }
+
 	private:
 		glm::vec3 s;
 		glm::vec3 t;

@@ -10,7 +10,9 @@
 #include <memory>
 
 const float PI = 3.141592653589793238463f;
+const float INVPI = 0.3183098861837907f;
 const float INF = std::numeric_limits<float>::infinity();
+const float EPS = std::numeric_limits<float>::epsilon();
 
 #define CHECK_ERROR(COND, MESSAGE, RET) if(!(COND)){\
 	std::cerr << (MESSAGE);\

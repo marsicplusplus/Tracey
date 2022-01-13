@@ -4,7 +4,6 @@
 #include "materials/material_mirror.hpp"
 #include "textures/checkered.hpp"
 #include "textures/image_texture.hpp"
-#include "light_object.hpp"
 #include "renderer.hpp"
 #include "options_manager.hpp"
 #include <algorithm>

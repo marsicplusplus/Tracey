@@ -162,47 +162,19 @@ void Renderer::initGui() {
 	this->fBrowser.SetTypeFilters({".json"});
 }
 
-bool Renderer::start() {
-	const int tWidth = OptionsMap::Instance()->getOption(Options::TILE_WIDTH);
-	const int tHeight = OptionsMap::Instance()->getOption(Options::TILE_HEIGHT);
-	const int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
-	const int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
-	if(wWidth % tWidth != 0 || wHeight % tHeight != 0){
-		throw new std::invalid_argument("Window width and height must be multiples of tiles size!");
-	}
-	
-	glClearColor(0,0,0,0);
-
-	const int maxBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
-	const int samples = OptionsMap::Instance()->getOption(Options::SAMPLES);
-	const float fpsLimit = 1.0 / static_cast<float>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
-	this->lastUpdateTime = glfwGetTime();  // number of seconds since the last loop
-	float frameTime = 0.0f;
-	float lasttime = 0.0f;
-
-	const int horizontalTiles = wWidth / tWidth;
-	const int verticalTiles = wHeight / tHeight;
-	bool firstRender = true;
-
-#ifdef DEBUG
-	std::deque<float> averageFrameTime;
-#endif
-	while(!glfwWindowShouldClose(this->window)){
-
-		if(scene && (this->isBufferInvalid || firstRender)) {
-			firstRender = false;
-			std::vector<std::future<void>> futures;
-			for(int tileRow = 0; tileRow < verticalTiles; ++tileRow){
-				for(int tileCol = 0; tileCol < horizontalTiles; ++tileCol){
-					/* Launch thread */
-					int samples = this->nSamples;
-					int bounces = this->nBounces;
-					futures.push_back(Threading::pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
+bool Renderer::corePacketRayTracing(int horizontalTiles, int verticalTiles, int tWidth, int tHeight, int wWidth, int wHeight) {
+	std::vector<std::future<void>> futures;
+	for(int tileRow = 0; tileRow < verticalTiles; ++tileRow){
+		for(int tileCol = 0; tileCol < horizontalTiles; ++tileCol){
+			/* Launch thread */
+			int samples = this->nSamples;
+			int bounces = this->nBounces;
+			futures.push_back(Threading::pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
 						CameraPtr cam = scene->getCamera();
 						std::vector<RayInfo> packet(tHeight * tWidth);
 						std::vector<Ray> corners(4);
 						for (int row = 0; row < tHeight; ++row) {
-							for (int col = 0; col < tWidth; ++col) {
+						for (int col = 0; col < tWidth; ++col) {
 								Color pxColor(0,0,0);
 								int x = col + tWidth * tileCol;
 								int y = row + tHeight * tileRow;
@@ -223,33 +195,99 @@ bool Renderer::start() {
 												packet[zIndex].ray = ray;
 												packet[zIndex].x = x;
 												packet[zIndex].y = y;
-											} else {
-												pxColor += Core::traceWhitted(ray, bounces, scene);
 											}
 										}
 									}
 								}
-								if (!guiPacketTraversal) {
-									pxColor = pxColor / static_cast<float>(samples);
-									putPixel(frameBuffer, wWidth * (y)+(x), pxColor);
-								}
-
 							}
 						}
-						if (guiPacketTraversal) {
-							Core::packetTrace(corners, packet, bounces, scene);
-							for (auto& rayInfo : packet) {
-								putPixel(frameBuffer, wWidth * (rayInfo.y) + (rayInfo.x), rayInfo.pxColor);
+						Core::packetTrace(corners, packet, bounces, scene, rng);
+						for (auto& rayInfo : packet) {
+								int idx = wWidth * (rayInfo.y) + (rayInfo.x);
+								putPixel(frameBuffer, idx, rayInfo.pxColor);
+						}
+			}));
+		}
+	}
+
+	for (auto& f : futures) 
+		f.get();
+
+	isBufferInvalid = false;
+	return true;
+}
+
+bool Renderer::coreRayTracing(int horizontalTiles, int verticalTiles, int tWidth, int tHeight, int wWidth, int wHeight) {
+	std::vector<std::future<void>> futures;
+	for(int tileRow = 0; tileRow < verticalTiles; ++tileRow){
+		for(int tileCol = 0; tileCol < horizontalTiles; ++tileCol){
+			/* Launch thread */
+			int samples = this->nSamples;
+			int bounces = this->nBounces;
+			futures.push_back(Threading::pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
+						CameraPtr cam = scene->getCamera();
+						//std::vector<RayInfo> packet(tHeight * tWidth);
+						//std::vector<Ray> corners(4);
+						for (int row = 0; row < tHeight; ++row) {
+							for (int col = 0; col < tWidth; ++col) {
+								Color pxColor(0,0,0);
+								int x = col + tWidth * tileCol;
+								int y = row + tHeight * tileRow;
+								if (cam) {
+									for(int s = 0; s < samples; ++s){
+										float u = static_cast<float>(x + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wWidth - 1);
+										float v = static_cast<float>(y + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wHeight - 1);
+										Ray ray = cam->generateCameraRay(u, v);
+										if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
+										pxColor += Color(0, 0, 0);
+										} else {
+											pxColor += Core::traceWhitted(ray, bounces, scene, rng);
+										}
+									}
+								}
+								pxColor = pxColor / static_cast<float>(samples);
+								int idx = wWidth * y + x;
+								putPixel(frameBuffer, idx, pxColor);
 							}
 						}
 					}));
-				}
-			}
+		}
+	}
 
-			for (auto& f : futures) 
-				f.get();
+	for (auto& f : futures) 
+		f.get();
 
-			isBufferInvalid = false;
+	isBufferInvalid = false;
+	return true;
+}
+
+bool Renderer::start() {
+	const int tWidth = OptionsMap::Instance()->getOption(Options::TILE_WIDTH);
+	const int tHeight = OptionsMap::Instance()->getOption(Options::TILE_HEIGHT);
+	const int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
+	const int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
+	if(wWidth % tWidth != 0 || wHeight % tHeight != 0){
+		throw new std::invalid_argument("Window width and height must be multiples of tiles size!");
+	}
+	
+	glClearColor(0,0,0,0);
+
+	const float fpsLimit = 1.0 / static_cast<float>(OptionsMap::Instance()->getOption(Options::FPS_LIMIT));
+	this->lastUpdateTime = glfwGetTime();  // number of seconds since the last loop
+	float frameTime = 0.0f;
+	float lasttime = 0.0f;
+
+	const int horizontalTiles = wWidth / tWidth;
+	const int verticalTiles = wHeight / tHeight;
+
+#ifdef DEBUG
+	std::deque<float> averageFrameTime;
+#endif
+	while(!glfwWindowShouldClose(this->window)){
+
+		if(scene && (this->isBufferInvalid)) {
+			this->coreRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
+			//this->corePacketRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
 			std::cout << "Last frameTime: " << lasttime << "s" << std::endl;
 #ifdef DEBUG
 			averageFrameTime.push_back(lasttime);

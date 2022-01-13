@@ -48,7 +48,7 @@ namespace Threading{
 	inline void ThreadPool::init(std::size_t n){
 		for (std::size_t i = 0; i < n; ++i){
 			workers.emplace_back([this] {
-					auto gen32 = uint32_t(time(NULL));
+					auto gen32 = uint32_t(std::hash<std::thread::id>{}(std::this_thread::get_id()) * time(NULL));
 					for(;;) {
 					std::packaged_task<void(uint32_t&)> task;
 					{
