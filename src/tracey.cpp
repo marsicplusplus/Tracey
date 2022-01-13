@@ -48,12 +48,16 @@ void printHelp(char *name){
 int main(int argc, char *args[]){
 	std::string scenePath = "";
 	std::string configPath = "";
+	bool save = false;
 	for(int i = 1; i < argc; i++){
 		if(strncmp("config=", args[i], strlen("config=")) == 0){
 			configPath = (&args[i][strlen("config=")]);
 		}
 		if(strncmp("scene=", args[i], strlen("scene=")) == 0){
 			scenePath = (&args[i][strlen("scene=")]);
+		}
+		if(strncmp("--save", args[i], strlen("--save")) == 0){
+			save = true;
 		}
 	}
 	stbi_set_flip_vertically_on_load(true);
@@ -76,7 +80,7 @@ int main(int argc, char *args[]){
 	auto ms_int = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1);
 	std::cout << "Scene parsed in " << ms_int.count() << "us" << std::endl;
 
-	Renderer renderer("TraceyGL");
+	Renderer renderer("TraceyGL", save);
 	if(scene) renderer.setScene(scene);
 	renderer.init();
 	renderer.start();

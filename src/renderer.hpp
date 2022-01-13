@@ -15,9 +15,10 @@
 
 class Renderer{
 public:
-	inline Renderer(std::string  _title) : title{std::move( _title )}, isBufferInvalid(false) {
+	inline Renderer(std::string  _title, bool saveFrames = false) : title{std::move( _title )}, isBufferInvalid(false), saveFrames(saveFrames) {
 			this->frameBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 			this->secondaryBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
+			nFrames = 0;
 		};
 		~Renderer();
 
@@ -40,6 +41,7 @@ public:
 		static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 		void renderGUI();
 		uint32_t* applyPostProcessing();
+		void saveCurrentFrame(int frame);
 
 		GLFWwindow *window;
 		std::string title;
@@ -67,10 +69,12 @@ public:
 		bool guiVignetting;
 		float vignettingSlider;
 		bool guiAberration;
+		bool saveFrames;
 		glm::vec3 aberrationOffset;
 		float guiFisheyeAngle;
 		int nSamples;
 		int nBounces;
+		int nFrames;
 		ImGui::FileBrowser fBrowser;
 };
 

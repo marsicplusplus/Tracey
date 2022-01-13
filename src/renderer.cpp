@@ -258,6 +258,7 @@ bool Renderer::coreRayTracing(int horizontalTiles, int verticalTiles, int tWidth
 		f.get();
 
 	isBufferInvalid = false;
+	if(saveFrames) saveCurrentFrame(this->nFrames++);
 	return true;
 }
 
@@ -486,30 +487,7 @@ void Renderer::renderGUI() {
 			}
 			ImGui::Spacing();
 			if (ImGui::Button("Save current Frame")) {
-				time_t rawtime;
-				struct tm * timeinfo;
-				char buffer[80];
-
-				time (&rawtime);
-				timeinfo = localtime(&rawtime);
-
-				strftime(buffer,80,"%d-%m-%Y-%H-%M-%S.png",timeinfo);
-				std::string str(buffer);
-
-				int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
-				int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
-				auto *bitmap = new uint8_t[3*wWidth * wHeight];
-				int i = 0;
-				int k = 0;
-				uint32_t *fb = applyPostProcessing();
-				while(i < wWidth * wHeight){
-					bitmap[k++] = static_cast<uint8_t>(fb[i] >> 16);
-					bitmap[k++] = static_cast<uint8_t>(fb[i] >> 8);
-					bitmap[k++] = static_cast<uint8_t>(fb[i] >> 0);
-					i++;
-				}
-				stbi_write_png(buffer, wWidth, wHeight, 3, bitmap, 3* wWidth);
-				delete[] bitmap;
+				saveCurrentFrame(this->nFrames++);
 			}
 
 			if (guiContinuousRender) {
@@ -578,4 +556,30 @@ uint32_t* Renderer::applyPostProcessing(){
 		return this->secondaryBuffer;
 	}
 	return this->frameBuffer;
+}
+void Renderer::saveCurrentFrame(int frame){
+	time_t rawtime;
+	struct tm * timeinfo;
+	char buffer[80];
+
+	time (&rawtime);
+	timeinfo = localtime(&rawtime);
+
+	strftime(buffer,80,"%d%m%Y",timeinfo);
+	sprintf(buffer, "%s_%d.png", buffer, frame);
+
+	int wWidth = OptionsMap::Instance()->getOption(Options::W_WIDTH);
+	int wHeight = OptionsMap::Instance()->getOption(Options::W_HEIGHT);
+	auto *bitmap = new uint8_t[3*wWidth * wHeight];
+	int i = 0;
+	int k = 0;
+	uint32_t *fb = applyPostProcessing();
+	while(i < wWidth * wHeight){
+		bitmap[k++] = static_cast<uint8_t>(fb[i] >> 16);
+		bitmap[k++] = static_cast<uint8_t>(fb[i] >> 8);
+		bitmap[k++] = static_cast<uint8_t>(fb[i] >> 0);
+		i++;
+	}
+	stbi_write_png(buffer, wWidth, wHeight, 3, bitmap, 3 * wWidth);
+	delete[] bitmap;
 }
