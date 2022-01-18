@@ -14,6 +14,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <sstream>
+#include <fstream>
 
 namespace{
 	const char *vertexShaderSource = "#version 450 core\n"
@@ -40,7 +41,7 @@ namespace{
 bool Renderer::init(){
 	CHECK_ERROR(glfwInit(), "ERROR::Renderer::initSystems > Cannot initialize glfw\n", false)
 
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_SAMPLES, 4);
@@ -80,14 +81,16 @@ bool Renderer::init(){
 	unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
 	glCompileShader(fragmentShader);
-	this->shader = glCreateProgram();
-	glAttachShader(this->shader, vertexShader);
-	glAttachShader(this->shader, fragmentShader);
-	glLinkProgram(this->shader);
+	this->quadShader = glCreateProgram();
+	glAttachShader(this->quadShader, vertexShader);
+	glAttachShader(this->quadShader, fragmentShader);
+	glLinkProgram(this->quadShader);
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-	glUseProgram(this->shader);
+	glUseProgram(this->quadShader);
+
+	useComputeShader = loadComputeShaders();
 
 	/* Quad */
 	float vertices[] = {
@@ -287,8 +290,38 @@ bool Renderer::start() {
 	while(!glfwWindowShouldClose(this->window)){
 
 		if(scene && (this->isBufferInvalid)) {
-			this->coreRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
-			//this->corePacketRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
+			if(this->useComputeShader){
+				/* TODO: Send data to the shader ofc */
+				glUseProgram(this->megaKernel);
+				glDispatchCompute(wWidth, wHeight, 1);
+				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+				/*  Should we use memoryBarrier between "the waves"? The guidelines on https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glMemoryBarrier.xhtml say:
+				 * - Data that are read-only or constant may be accessed without using coherent variables or calling MemoryBarrier(). 
+				 * 		Updates to the read-only data via API calls such as glBufferSubData will invalidate shader caches implicitly as required.
+				 * - Data that are shared between shader invocations at a fine granularity (e.g., written by one invocation, consumed by another invocation) should use coherent variables to read and write the shared data.
+				 * - Data written by one shader invocation and consumed by other shader invocations launched as a result of its execution ("dependent invocations") should 
+				 *   	use coherent variables in the producing shader invocation and call memoryBarrier() after the last write. The consuming shader invocation should also use coherent variables.
+				 * - Data written to image variables in one rendering pass and read by the shader in a later pass need not use coherent variables or memoryBarrier(). 
+				 *   	Calling glMemoryBarrier with the SHADER_IMAGE_ACCESS_BARRIER_BIT set in barriers between passes is necessary.
+				 * - Data written by the shader in one rendering pass and read by another mechanism (e.g., vertex or index buffer pulling) 
+				 *   	in a later pass need not use coherent variables or memoryBarrier(). Calling glMemoryBarrier with the appropriate bits set in barriers between passes is necessary. 
+				*/
+				//glUseProgram(this->generateKernel);
+				//glDispatchCompute(wWidth, wHeight, 1);
+				//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+				//glUseProgram(this->extendKernel);
+				//glDispatchCompute(wWidth, wHeight, 1);
+				//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+				//glUseProgram(this->shadeKernel);
+				//glDispatchCompute(wWidth, wHeight, 1);
+				//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+				//glUseProgram(this->connectKernel);
+				//glDispatchCompute(wWidth, wHeight, 1);
+				//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+			} else {
+				this->coreRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
+				//this->corePacketRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
+			}
 			std::cout << "Last frameTime: " << lasttime << "s" << std::endl;
 #ifdef DEBUG
 			averageFrameTime.push_back(lasttime);
@@ -314,6 +347,7 @@ bool Renderer::start() {
 		}
 
 		uint32_t* buffer = applyPostProcessing();
+		glUseProgram(this->quadShader);
 		glBindTexture(GL_TEXTURE_2D, this->texture);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wWidth, wHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, buffer);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -514,7 +548,12 @@ Renderer::~Renderer() {
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 	glfwDestroyWindow(this->window);
-	glDeleteShader(this->shader);
+	glDeleteShader(this->quadShader);
+	glDeleteShader(this->megaKernel);
+	//glDeleteShader(this->generateKernel);
+	//glDeleteShader(this->extendKernel);
+	//glDeleteShader(this->shadeKernel);
+	//glDeleteShader(this->connectKernel);
 	glDeleteBuffers(1, &this->VBO);
 	glDeleteVertexArrays(1, &this->VAO);
 }
@@ -582,4 +621,38 @@ void Renderer::saveCurrentFrame(int frame){
 	}
 	stbi_write_png(buffer, wWidth, wHeight, 3, bitmap, 3 * wWidth);
 	delete[] bitmap;
+}
+const char* Renderer::readShader(std::string path) {
+	if(!std::filesystem::exists(path)){
+		std::cerr << "Cannot open shader file: " << path << std::endl;
+		return nullptr;
+	}
+	std::string code;
+	std::ifstream shaderFile;
+	std::stringstream shaderStream;
+	shaderFile.open(path);
+	if(!shaderStream){
+		std::cerr << "Cannot read shader file: " << path << std::endl;
+		return nullptr;
+	}
+	shaderStream << shaderFile.rdbuf();
+	shaderFile.close();
+	code = shaderStream.str();
+	const char* codeChar = code.c_str();
+	return codeChar;
+}
+
+bool Renderer::loadComputeShaders(){
+	const char* codeChar = readShader("kernels/mega_kernel.glsl");
+	if(codeChar == nullptr) return false;
+	unsigned int megaKernelShader = glCreateShader(GL_COMPUTE_SHADER);
+	glShaderSource(megaKernelShader, 1, &codeChar, NULL);
+	glCompileShader(megaKernelShader);
+	megaKernel = glCreateProgram();
+	glAttachShader(megaKernel, megaKernelShader);
+	glLinkProgram(megaKernel);
+
+	glDeleteShader(megaKernelShader);
+
+	return true;
 }

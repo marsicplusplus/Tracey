@@ -36,6 +36,8 @@ public:
 		static void putPixel(uint32_t fb[], int idx, uint8_t r, uint8_t g, uint8_t b);
 		void packetTrace(std::vector<Ray> &corners, std::vector<RayInfo>& rays, int bounces, const ScenePtr scene);
 		void handleInput();
+		bool loadComputeShaders(); /* If false is returned, do not use GPU rendering */
+		const char* readShader(std::string path);
 
 		static void mouseCallback(GLFWwindow* window, int button, int action, int mods);
 		static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
@@ -48,10 +50,16 @@ public:
 		uint32_t *frameBuffer;
 		uint32_t *secondaryBuffer;
 		unsigned int VBO, VAO, EBO;
-		unsigned int shader;
+		unsigned int quadShader;
+		unsigned int megaKernel;
+		//unsigned int generateKernel;
+		//unsigned int extendKernel;
+		//unsigned int shadeKernel;
+		//unsigned int connectKernel;
 		unsigned int texture;
 		ScenePtr scene;
 		bool isBufferInvalid;
+		bool useComputeShader;
 
 		bool showGui;
 		int guiFOV;
