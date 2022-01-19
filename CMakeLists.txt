@@ -91,7 +91,7 @@ if( UNIX )
         create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/src/kernels ${CMAKE_BINARY_DIR}/kernels)
 else()
     file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/kernels" _dstDir)
-    file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/kernels" _srcDir)
+    file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/kernels" _srcDir)
     execute_process(COMMAND cmd.exe /c mklink /J "${_dstDir}" "${_srcDir}")
 endif()
 

@@ -648,6 +648,27 @@ bool Renderer::loadComputeShaders(){
 	unsigned int megaKernelShader = glCreateShader(GL_COMPUTE_SHADER);
 	glShaderSource(megaKernelShader, 1, &codeChar, NULL);
 	glCompileShader(megaKernelShader);
+
+	GLint isCompiled = 0;
+	glGetShaderiv(megaKernelShader, GL_COMPILE_STATUS, &isCompiled);
+	if (isCompiled == GL_FALSE)
+	{
+		GLint maxLength = 0;
+		glGetShaderiv(megaKernelShader, GL_INFO_LOG_LENGTH, &maxLength);
+
+		// The maxLength includes the NULL character
+		std::vector<GLchar> errorLog(maxLength);
+		glGetShaderInfoLog(megaKernelShader, maxLength, &maxLength, &errorLog[0]);
+
+		// Provide the infolog in whatever manor you deem best.
+		// Exit with failure.
+		glDeleteShader(megaKernelShader); // Don't leak the shader.
+		for (char i : errorLog)
+			std::cout << i;
+		std::cout << std::endl;
+		return false;
+	}
+
 	megaKernel = glCreateProgram();
 	glAttachShader(megaKernel, megaKernelShader);
 	glLinkProgram(megaKernel);
