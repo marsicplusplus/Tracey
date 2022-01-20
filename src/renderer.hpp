@@ -47,6 +47,7 @@ public:
 
 		GLFWwindow *window;
 		std::string title;
+		unsigned int textFrameBuffer;
 		uint32_t *frameBuffer;
 		uint32_t *secondaryBuffer;
 		unsigned int VBO, VAO, EBO;

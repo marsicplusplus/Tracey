@@ -41,8 +41,8 @@ namespace{
 bool Renderer::init(){
 	CHECK_ERROR(glfwInit(), "ERROR::Renderer::initSystems > Cannot initialize glfw\n", false)
 
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
@@ -56,7 +56,6 @@ bool Renderer::init(){
 	} else {
 		CHECK_ERROR(this->window = glfwCreateWindow(OptionsMap::Instance()->getOption(Options::W_WIDTH)*OptionsMap::Instance()->getOption(Options::SCALING), OptionsMap::Instance()->getOption(Options::W_HEIGHT)*OptionsMap::Instance()->getOption(Options::SCALING), title.c_str(), NULL, NULL), "ERROR::Renderer::initSystems > could not create GLFW3 window\n", false)
 	}
-
 	glfwMakeContextCurrent(this->window);
 	glfwSetMouseButtonCallback(this->window, mouseCallback);
 	glfwSetScrollCallback(this->window, scrollCallback);
@@ -88,9 +87,19 @@ bool Renderer::init(){
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-	glUseProgram(this->quadShader);
-
-	useComputeShader = loadComputeShaders();
+	if(loadComputeShaders()){
+		useComputeShader = true;
+		glGenTextures(1, &textFrameBuffer);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textFrameBuffer);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 
+				0, GL_RGBA, GL_FLOAT, NULL);
+		glBindImageTexture(0, textFrameBuffer, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	}
 
 	/* Quad */
 	float vertices[] = {
@@ -345,11 +354,16 @@ bool Renderer::start() {
 			InputManager::Instance()->setMouseState(xpos, ypos);
 			if(scene) this->isBufferInvalid = this->scene->update(dt);
 		}
-
-		uint32_t* buffer = applyPostProcessing();
 		glUseProgram(this->quadShader);
-		glBindTexture(GL_TEXTURE_2D, this->texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wWidth, wHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, buffer);
+		if(useComputeShader){
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, this->textFrameBuffer);
+			glClear(GL_COLOR_BUFFER_BIT);
+		} else {
+			uint32_t* buffer = applyPostProcessing();
+			glBindTexture(GL_TEXTURE_2D, this->texture);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wWidth, wHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, buffer);
+		}
 		glClear(GL_COLOR_BUFFER_BIT);
 		glBindVertexArray(this->VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
