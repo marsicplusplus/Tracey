@@ -11,14 +11,10 @@ enum class Heuristic {
 };
 
 struct BVHNode {
-	glm::fvec4 minAABBLeftFirst;
-	glm::fvec4 maxAABBCount;
-};
-
-struct StackNode
-{
-	BVHNode* node;
-	int first;
+	glm::fvec3 minAABB;
+	glm::fvec3 maxAABB;
+	int leftFirst;
+	int count;
 };
 
 struct Bin {
@@ -44,11 +40,7 @@ class BVH : public Hittable {
 		~BVH();
 
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
-		void packetHit(std::vector<RayInfo>& rays, Frustum frustum, float tMin, int first, int last) override;
-		void packetTraverse(std::vector<RayInfo>& rays, Frustum frustum, BVHNode* node, float& tMin, int first);
 		bool frustumIntersectsAABB(Frustum frustum, const glm::fvec4& minBBox, const glm::fvec4& maxBBox);
-		void getFirstHit(std::vector<RayInfo> packet, Frustum F, const glm::fvec4& minBBox, const glm::fvec4& maxBBox, int& first);
-		int getLastHit(std::vector<RayInfo> packet, const glm::fvec4& minBBox, const glm::fvec4& maxBBox, int first);
 		bool update(float dt) override;
 		const std::vector<HittablePtr>& getHittable() const {
 			return hittables;

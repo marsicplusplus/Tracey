@@ -186,8 +186,10 @@ void Scene::getMeshBuffer(std::vector<CompactTriangle> &ctris, std::vector<BVHNo
 
 		for(int i=0; i < size; ++i){
 			BVHNode node;
-			node.maxAABBCount = nodes[i].maxAABBCount;
-			node.minAABBLeftFirst = nodes[i].minAABBLeftFirst;
+			node.maxAABB = nodes[i].maxAABB;
+			node.count = nodes[i].count;
+			node.minAABB = nodes[i].minAABB;
+			node.leftFirst = nodes[i].leftFirst;
 			bvhs.push_back(node);
 		}
 	}

@@ -109,7 +109,7 @@ Ray transformRay(Ray origRay, mat4 transform) {
 }
 
 
-bool hitAABB(Ray ray, vec4 minAABB, vec4 maxAABB, out float distance) {
+bool hitAABB(Ray ray, vec3 minAABB, vec3 maxAABB, out float distance) {
 	float tmin = -INFINITY, tmax = INFINITY;
 
 	float tx1 = (minAABB.x - ray.origin.x) * ray.invDirection.x;
@@ -207,8 +207,11 @@ BVH DEFINITON AND METHODS
 ********************************************************************/
 
 struct Node {
-	vec4 minAABBLeftFirst;
-	vec4 maxAABBCount;
+	vec3 minAABB;
+	vec3 maxAABB;
+	int leftFirst;
+	int count;
+
 };
 
 
@@ -232,8 +235,8 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 
 	while(stackPtr != 0){
 		Node currNode = nodestack[--stackPtr];
-		if(currNode.maxAABBCount.w != 0.0) {// I'm a leaf
-			for (int i = firstTri + int(currNode.minAABBLeftFirst.w); i < firstTri + int(currNode.minAABBLeftFirst.w + currNode.maxAABBCount.w); ++i) {
+		if(currNode.count != 0) {// I'm a leaf
+			for (int i = firstTri + int(currNode.leftFirst); i < firstTri + currNode.leftFirst + currNode.count; ++i) {
 				Triangle tri = triangles[i];
 				if (hitTriangle(ray, tri, tMin, closest, tmp)) {
 					rec = tmp;
@@ -243,16 +246,16 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 			}
 			tMax = closest;
 		} else {
-			int idx1 = firstNode + currNode.minAABBLeftFirst.w;
-			int idx2 = firstNode + currNode.minAABBLeftFirst.w + 1;
+			int idx1 = firstNode + currNode.leftFirst;
+			int idx2 = firstNode + currNode.leftFirst + 1;
 			Node firstNode = nodes[idx1];
 			Node secondNode = nodes[idx2];
 
 			float firstDistance = 0.0;
 			float secondDistance = 0.0;
 
-			bool hitAABBFirst = hitAABB(ray, firstNode.minAABBLeftFirst, firstNode.maxAABBCount, firstDistance);
-			bool hitAABBSecond = hitAABB(ray, secondNode.minAABBLeftFirst, secondNode.maxAABBCount, secondDistance);
+			bool hitAABBFirst = hitAABB(ray, firstNode.minAABB, firstNode.maxAABB, firstDistance);
+			bool hitAABBSecond = hitAABB(ray, secondNode.minAABB, secondNode.maxAABB, secondDistance);
 
 			if (hitAABBFirst && hitAABBSecond) {
 				if(firstDistance < secondDistance && firstDistance < tMax){

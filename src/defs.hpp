@@ -89,11 +89,11 @@ inline bool hitAABB(const Ray& ray, const AABB& bbox, float& distance) {
 	return (tmax >= distance);
 }
 
-inline bool hitAABB(const Ray& ray, const glm::fvec4& minAABB, const glm ::fvec4& maxAABB, float& distance) {
+inline bool hitAABB(const Ray& ray, const glm::fvec3& minAABB, const glm ::fvec3& maxAABB, float& distance) {
 	return hitAABB(ray, { minAABB.x, minAABB.y, minAABB.z, maxAABB.x, maxAABB.y, maxAABB.z }, distance);
 }
 
-inline bool hitAABB(const Ray& ray, const glm::fvec4& minAABB, const glm::fvec4& maxAABB) {
+inline bool hitAABB(const Ray& ray, const glm::fvec3& minAABB, const glm::fvec3& maxAABB) {
 	float distance = 0.0f;
 	return hitAABB(ray, minAABB, maxAABB, distance);
 }
