@@ -15,6 +15,10 @@ class DielectricMaterial : public Material {
 
 		inline Materials getType() const override { return Materials::DIELECTRIC; }
 
+		inline float getIOR() const { return ior; }
+
+		inline Color getAbsorption() const { return absorption; }
+
 		inline bool reflect(const Ray& in, const HitRecord &r, Ray &reflectedRay, float &reflectance) const override {
 			float n1 = (r.frontFace) ? 1.0f : ior;
 			float n2 = (r.frontFace) ? ior : 1.0f;

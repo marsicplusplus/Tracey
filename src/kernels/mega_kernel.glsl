@@ -6,6 +6,7 @@ layout(binding = 0, rgba32f) uniform image2D framebufferImage;
 
 const float INFINITY = 1. / 0.;
 const float EPSILON = 1e-10;
+const uint NILL = 0x00000000u;
 
 /*******************************************************************
 
@@ -271,8 +272,8 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 
 bool intersectBVH(Ray ray, Instance instance, float tMin, float tMax, out HitRecord rec) {
 	mat4 transformInv = instance.transformInv;
-	mat4 transposeInv = transform.transposeInv;
-	mat4 transformMat = transform.transformMat;
+	mat4 transposeInv = instance.transposeInv;
+	mat4 transformMat = instance.transformMat;
 	Ray transformedRay = transformRay(ray, transformInv);
 
 	HitRecord tmp;
@@ -292,18 +293,17 @@ MATERIAL DEFINITON AND METHODS
 
 ********************************************************************/
 
-const uint NILL = 0x00000001u;
-const uint DIFFUSE = 0x00000002u;
-const uint DIELECTRIC  = 0x00000004u;
-const uint MIRROR  = 0x00000008u;
+const uint DIFFUSE = 0x00000001u;
+const uint DIELECTRIC  = 0x00000002u;
+const uint MIRROR  = 0x00000004u;
 
 struct Material {
+	uint type;
 	int albedoIdx;
 	int bump;
-	uint type;
 	float reflectionIdx;
-	float ior;
 	vec3 absorption;
+	float ior;
 };
 
 layout(std430, binding = 6) readonly buffer Materials {
@@ -372,18 +372,19 @@ LIGHT DEFINITION AND METHODS
 
 ********************************************************************/
 
-const uint POINT = 0x00000001u;
-const uint SPOT = 0x00000002u;
-const uint DIRECTIONAL = 0x00000004u;
+const uint DIRECTIONAL = 0x00000001u;
+const uint POINT = 0x00000002u;
+const uint SPOT = 0x00000004u;
 const uint AMBIENT = 0x00000008u;
 
+
 struct Light {
-  float intensity;
-  vec3 color;
-  vec3 position;
-  vec3 direction;
   uint type;
+  vec3 color;
+  float intensity;
+  vec3 position;
   float cutoffAngle;
+  vec3 direction;
 };
 
 layout(std430, binding = 7) readonly buffer Lights {

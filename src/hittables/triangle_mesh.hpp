@@ -6,6 +6,14 @@
 #include <string>
 #include "glm/vec3.hpp"
 #include "glm/vec2.hpp"
+#include "glm/mat4x4.hpp"
+
+struct Instance {
+	int meshIdx;
+	glm::mat4x4 transformMat;
+	glm::mat4x4 transformInv;
+	glm::mat4x4 transposeInv;
+};
 
 struct CompactMesh {
 	int firstTri;

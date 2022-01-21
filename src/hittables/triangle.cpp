@@ -4,7 +4,7 @@ Triangle::Triangle(const std::shared_ptr<TriangleMesh> &mesh, unsigned int trian
 	vIdx = &mesh->vertexIndices[triangleNumber * 3];
 	glm::fvec3 *v0 = &(this->mesh->p.get())[vIdx[0]];
 	glm::fvec3 *v1 = &(this->mesh->p.get())[vIdx[1]];
-	glm::fvec3 *v2 = &(this->mesh->p.get())[vIdx[2]]; //wtf vIdx[2] = 4156242528 ???
+	glm::fvec3 *v2 = &(this->mesh->p.get())[vIdx[2]];
 	const glm::vec3 xVal = {v0->x, v1->x, v2->x};
 	const glm::vec3 yVal = {v0->y, v1->y, v2->y};
 	const glm::vec3 zVal = {v0->z, v1->z, v2->z};

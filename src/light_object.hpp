@@ -7,11 +7,20 @@
 // light.intensity * dot(n,l)/(length(N) * length(L))
 
 enum class Lights {
-	NILL,
-	DIRECTIONAL,
-	POINT,
-	SPOT,
-	AMBIENT
+	NILL = 0,
+	DIRECTIONAL = 0x00000001u,
+	POINT = 0x00000002u,
+	SPOT = 0x00000004u,
+	AMBIENT = 0x00000008u
+};
+
+struct CompactLight {
+	unsigned int type;
+	glm::vec3 color;
+	float intensity;
+	glm::vec3 position;
+	float cutoffAngle;
+	glm::vec3 direction;
 };
 
 class LightObject {
@@ -22,11 +31,15 @@ class LightObject {
 
 		virtual inline Lights getType() {return Lights::NILL; }
 
-		virtual Ray getRay(const HitRecord &rec, float &tMax) const = 0;
+		virtual Ray getRay(const HitRecord& rec, float& tMax) const = 0;
+
+		inline Color getColor() const { return color; }
+
+		inline float getIntensity() const { return intensity; }
 
 		virtual Color attenuate(Color color, const glm::fvec3& p) { return color; };
 
-		virtual inline Color getLight(const HitRecord &rec, Ray& ray) const {
+		virtual inline Color getLight(const HitRecord& rec, Ray& ray) const {
 			Color illumination(0.0f);
 			float nd = glm::dot(rec.normal, ray.getDirection());
 			if(nd > 0.0f){
@@ -49,6 +62,8 @@ class PointLight : public LightObject {
 		PointLight(glm::fvec3 pos, float i, Color c) : LightObject(i, c), position{pos}{}
 
 		inline Lights getType() override {return Lights::POINT; }
+
+		inline glm::fvec3 getPosition() { return position; }
 
 		inline Ray getRay(const HitRecord &rec, float &tMax) const override {
 			tMax = glm::distance(this->position, rec.p);
@@ -73,6 +88,13 @@ public:
 	SpotLight(glm::fvec3 pos, glm::fvec3 dir, float cutoff, float i, Color c) : LightObject(i, c), position{pos}, direction{dir}, cutoffAngle{cutoff} {}
 
 	inline Lights getType() override { return Lights::SPOT; }
+
+	inline glm::fvec3 getPosition() { return position; }
+
+	inline glm::fvec3 getDirection() { return direction; }
+
+	inline float getCutoffAngle() { return cutoffAngle; }
+
 
 	inline Ray getRay(const HitRecord& rec, float& tMax) const override {
 		tMax = glm::distance(this->position, rec.p);
@@ -103,7 +125,9 @@ class DirectionalLight : public LightObject {
 	public:
 		DirectionalLight(glm::fvec3 dir, float i, Color c) : LightObject(i, c), direction{dir}{}
 
-		inline Lights getType() override {return Lights::DIRECTIONAL; }
+		inline Lights getType() override { return Lights::DIRECTIONAL; }
+
+		inline glm::fvec3 getDirection() { return direction; }
 
 		inline Ray getRay(const HitRecord &rec, float &tMax) const override {
 			tMax = INF;

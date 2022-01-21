@@ -55,6 +55,9 @@ public:
 		transform = t;
 		updateWorldBBox();
 	}
+	inline Transform getTransform() const {
+		return transform;
+	}
 
 protected:
 	inline void updateWorldBBox() {

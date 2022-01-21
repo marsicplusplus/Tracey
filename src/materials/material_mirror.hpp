@@ -13,6 +13,8 @@ class MirrorMaterial : public Material {
 
 		inline Materials getType() const override { return Materials::MIRROR; }
 
+		inline float getReflectionIdx() const { return reflectionIdx; }
+
 		inline bool reflect(const Ray& in, const HitRecord &r, Ray &reflectedRay, float &reflectance) const override {
 			reflectance = reflectionIdx;
 			auto reflectedDir = glm::reflect(in.getDirection(), r.normal);

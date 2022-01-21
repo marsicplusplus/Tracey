@@ -6,6 +6,8 @@
 #include "textures/image_texture.hpp"
 #include "textures/solid_color.hpp"
 #include "textures/checkered.hpp"
+#include "materials/material_dielectric.hpp"
+#include "materials/material_mirror.hpp"
 
 #include <fstream>
 
@@ -141,7 +143,7 @@ Color Scene::traceLights(HitRecord &rec) const {
 void Scene::getTextureBuffer(std::vector<CompactTexture> &compactTextures, std::vector<unsigned char> &imgs) {
 	for(const auto &text : textures) {
 		CompactTexture txt;
-		txt.type = (unsigned int) text->getType();
+		txt.type = toUnderlyingType(text->getType());
 		if(text->getType() == TextureType::TEXTURE_SOLID){
 			auto imgT = std::static_pointer_cast<SolidColor>(text);
 			txt.color = imgT->c;
@@ -179,10 +181,81 @@ void Scene::getMeshBuffer(std::vector<CompactTriangle> &ctris, std::vector<BVHNo
 		auto nodes = m.second->getNodes(size);
 		cmesh.firstNode = bvhs.size();
 		cmesh.lastNode = bvhs.size() + size - 1;
+		meshes.push_back(cmesh);
+
 		for(int i=0; i < size; ++i){
 			BVHNode node;
 			node.maxAABBCount = nodes[i].maxAABBCount;
 			node.minAABBLeftFirst = nodes[i].minAABBLeftFirst;
+			bvhs.push_back(node);
 		}
+	}
+}
+
+void Scene::getInstanceBuffer(std::vector<Instance>& instances) {
+	std::vector<std::string> meshNames;
+
+	auto index = 0;
+	for (const auto& imap : this->BVHs) {
+		auto bvhs = imap.second;
+		for (const auto& bvh : bvhs) {
+			auto transform = bvh->getTransform();
+			Instance instance;
+			instance.meshIdx = index;
+			instance.transformMat = transform.getMatrix();
+			instance.transformInv = transform.getInverse();
+			instance.transposeInv = transform.getTransposeInverse();
+		}
+		index++;
+	}
+}
+
+void Scene::getLightBuffer(std::vector<CompactLight>& compLights) {
+
+	for (auto& light : lights) {
+		CompactLight compLight;
+		compLight.type = toUnderlyingType(light->getType());
+		compLight.color = light->getColor();
+		compLight.intensity = light->getIntensity();
+
+		if (light->getType() == Lights::DIRECTIONAL) {
+			auto dirLight = std::static_pointer_cast<DirectionalLight>(light);
+			compLight.direction = dirLight->getDirection();
+
+		} else if (light->getType() == Lights::SPOT) {
+			auto spotLight = std::static_pointer_cast<SpotLight>(light);
+			compLight.cutoffAngle = spotLight->getCutoffAngle();
+			compLight.position = spotLight->getPosition();
+			compLight.direction = spotLight->getDirection();
+
+		} else if (light->getType() == Lights::POINT) {
+			auto spotLight = std::static_pointer_cast<PointLight>(light);
+			compLight.position = spotLight->getPosition();
+
+		}
+		compLights.push_back(compLight);
+	}
+}
+
+void Scene::getMaterialBuffer(std::vector<CompactMaterial>& compMaterials) {
+
+	for (auto& mat : materials) {
+		CompactMaterial compMat;
+		compMat.type = toUnderlyingType(mat->getType());
+		compMat.bump = mat->getBump();
+		compMat.albedoIdx = mat->getAlbedoIdx();
+
+		if (mat->getType() == Materials::MIRROR) {
+			auto mirMat = std::static_pointer_cast<MirrorMaterial>(mat);
+			compMat.reflectionIdx = mirMat->getReflectionIdx();
+
+		} else if (mat->getType() == Materials::DIELECTRIC) {
+			auto dielMat = std::static_pointer_cast<DielectricMaterial>(mat);
+			compMat.absorption = dielMat->getAbsorption();
+			compMat.ior = dielMat->getIOR();
+
+		}
+
+		compMaterials.push_back(compMat);
 	}
 }

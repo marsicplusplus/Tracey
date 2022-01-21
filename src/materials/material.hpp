@@ -12,10 +12,19 @@ struct HitRecord;
 typedef glm::fvec3 Color;
 
 enum class Materials {
-	NILL,
-	DIFFUSE,
-	DIELECTRIC,
-	MIRROR
+	NILL = 0,
+	DIFFUSE = 0x00000001u,
+	DIELECTRIC = 0x00000002u,
+	MIRROR = 0x00000004u
+};
+
+struct CompactMaterial {
+	unsigned int type;
+	int albedoIdx;
+	int bump;
+	float reflectionIdx;
+	glm::vec3 absorption;
+	float ior;
 };
 
 class Material {
@@ -47,6 +56,10 @@ class Material {
 
 		inline int getAlbedoIdx() const {
 			return albedo;
+		}
+
+		inline int getBump() const {
+			return bump;
 		}
 
 	protected:

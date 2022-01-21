@@ -92,13 +92,17 @@ namespace SceneParser {
 		
 		std::vector<std::shared_ptr<Hittable>> triangles;
 		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(meshPath.string(), aiProcess_Triangulate | aiProcess_GenNormals);
+		const aiScene* scene = importer.ReadFile(meshPath.string(), aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_SortByPType);
 
 		if(!scene) 
 			throw std::invalid_argument("Failed parsing the obj file");
 		/* TODO: Parse materials */
 		for(int i = 0; i < scene->mNumMeshes; ++i){
 			auto mesh = scene->mMeshes[i];
+			if (!(mesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE)) {
+				continue;
+			}
+
 			std::vector<glm::fvec3> verts(mesh->mNumVertices);
 			std::vector<glm::fvec3> norms;
 			std::vector<glm::fvec2> uvs;
@@ -127,6 +131,7 @@ namespace SceneParser {
 				indices[faceIdx++] = mesh->mFaces[j].mIndices[2];
 			}
 			auto triMesh = std::make_shared<TriangleMesh>(meshName, mesh->mNumFaces, mesh->mNumVertices, indices.data(), verts.data(), norms.data(), uvs.data());
+
 			meshes.emplace_back(triMesh);
 			/* Get Material */
 			auto material = scene->mMaterials[mesh->mMaterialIndex];

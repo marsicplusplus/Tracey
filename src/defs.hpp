@@ -137,4 +137,10 @@ namespace Random {
 	{ return xorshift32(s) * 2.3283064365387e-10f; }
 };
 
+template<typename Enumerator>
+constexpr auto toUnderlyingType(Enumerator e)
+{
+	return static_cast<typename std::underlying_type<Enumerator>::type>(e);
+}
+
 #endif
