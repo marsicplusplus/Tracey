@@ -38,6 +38,7 @@ public:
 		void handleInput();
 		bool loadComputeShaders(); /* If false is returned, do not use GPU rendering */
 		void bindBuffers();
+		void genBuffers();
 		const char* readShader(std::string path);
 
 		static void mouseCallback(GLFWwindow* window, int button, int action, int mods);
@@ -87,7 +88,22 @@ public:
 		int nFrames;
 		ImGui::FileBrowser fBrowser;
 
-		bool buffersBound = false;
+		std::vector<CompactMesh> meshes;
+		unsigned int meshSSBO;
+		std::vector<CompactTriangle> tris;
+		unsigned int triSSBO;
+		std::vector<BVHNode> nodes;
+		unsigned int nodeSSBO;
+		std::vector<Instance> instances;
+		unsigned int instanceSSBO;
+		std::vector<CompactTexture> textures;
+		unsigned int textureSSBO;
+		std::vector<uint8_t> imgs;
+		unsigned int imageSSBO;
+		std::vector<CompactMaterial> materials;
+		unsigned int materialSSBO;
+		std::vector<CompactLight> lights;
+		unsigned int lightSSBO;
 };
 
 #endif

@@ -243,8 +243,10 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 			}
 			tMax = closest;
 		} else {
-			Node firstNode = nodes[firstNode + int(currNode.minAABBLeftFirst.w)];
-			Node secondNode = nodes[firstNode + int(currNode.minAABBLeftFirst.w) + 1];
+			int idx1 = firstNode + currNode.minAABBLeftFirst.w;
+			int idx2 = firstNode + currNode.minAABBLeftFirst.w + 1;
+			Node firstNode = nodes[idx1];
+			Node secondNode = nodes[idx2];
 
 			float firstDistance = 0.0;
 			float secondDistance = 0.0;
@@ -311,7 +313,7 @@ layout(std430, binding = 6) readonly buffer Materials {
 };
 
 
-void reflect(Material mat, Ray ray, HitRecord hr, out Ray reflectedRay, out float reflectance) {
+void material_reflect(Material mat, Ray ray, HitRecord hr, out Ray reflectedRay, out float reflectance) {
 	if (mat.type == MIRROR) {
 		reflectance = mat.reflectionIdx;
 	} else if (mat.type == DIELECTRIC) {
@@ -339,7 +341,7 @@ void reflect(Material mat, Ray ray, HitRecord hr, out Ray reflectedRay, out floa
 	reflectedRay.invDirection = 1.0 / reflectedDir;
 }
 
-void refract(Ray ray, HitRecord hr, float ior, out Ray refractedRay, out float refractance) {
+void material_refract(Ray ray, HitRecord hr, float ior, out Ray refractedRay, out float refractance) {
 	float cosi = dot(ray.direction, hr.normal);
 	float n1 = hr.frontFace ? 1.0 : ior;
 	float n2 = hr.frontFace ? ior : 1.0;
@@ -355,7 +357,7 @@ void refract(Ray ray, HitRecord hr, float ior, out Ray refractedRay, out float r
 	}
 }
 
-void absorb(Ray ray, HitRecord hr, vec3 absorption, out vec3 attenuation) {
+void material_absorb(Ray ray, HitRecord hr, vec3 absorption, out vec3 attenuation) {
 	if (!hr.frontFace) {
 		float distance = distance(ray.origin, hr.p);
 		attenuation.r *= exp(-absorption.x * distance);
@@ -502,29 +504,28 @@ vec3 trace(Ray ray, int bounces) {
 		if (mat.type == DIFFUSE) {
 			return attenuation * traceLights(hr);
 		} else if (mat.type == MIRROR) {
-
-			reflect(mat, ray, hr, reflectedRay, reflectance);
+			material_reflect(mat, ray, hr, reflectedRay, reflectance);
 			if (reflectance == 1.0)
-				return attenuation * traceWhitted(reflectedRay, bounces - 1);
+				return attenuation * trace(reflectedRay, bounces - 1);
 			else
-				return attenuation * (reflectance * traceWhitted(reflectedRay, bounces - 1) + (1.0 - reflectance) * traceLights(hr));
+				return attenuation * (reflectance * trace(reflectedRay, bounces - 1) + (1.0 - reflectance) * traceLights(hr));
 		} else if (mat.type == DIELECTRIC) {
 
 			vec3 refractionColor = vec3(0.0);
 			vec3 reflectionColor = vec3(0.0);
 			float reflectance;
 
-			reflect(mat, ray, hr, reflectedRay, reflectance);
-			reflectionColor = traceWhitted(reflectedRay, bounces - 1);
+			material_reflect(mat, ray, hr, reflectedRay, reflectance);
+			reflectionColor = trace(reflectedRay, bounces - 1);
 
 			if (reflectance < 1.0) {
 				Ray refractedRay;
 				float refractance;
-				refract(ray, hr, mat.ior, refractedRay, refractance);
-				refractionColor = traceWhitted(refractedRay, bounces-1);
+				material_refract(ray, hr, mat.ior, refractedRay, refractance);
+				refractionColor = trace(refractedRay, bounces-1);
 			}
 
-			absorb(ray, hr, mat.absorption, attenuation);
+			material_absorb(ray, hr, mat.absorption, attenuation);
 			return attenuation * (reflectionColor * reflectance + refractionColor * (1.0 - reflectance));
 		}
 		return vec3(0.0, 0.0, 0.0);

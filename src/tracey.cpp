@@ -81,8 +81,8 @@ int main(int argc, char *args[]){
 	std::cout << "Scene parsed in " << ms_int.count() << "us" << std::endl;
 
 	Renderer renderer("TraceyGL", save);
-	if(scene) renderer.setScene(scene);
 	renderer.init();
+	if(scene) renderer.setScene(scene);
 	renderer.start();
 	Threading::pool.cancel_pending();
 }

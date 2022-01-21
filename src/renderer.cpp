@@ -100,7 +100,7 @@ bool Renderer::init(){
 				0, GL_RGBA, GL_FLOAT, NULL);
 		glBindImageTexture(0, textFrameBuffer, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-		glUseProgram(this->megaKernel);
+		//glUseProgram(this->megaKernel);
 		//glUniform1i(glGetUniformLocation(this->megaKernel, "framebufferImage"), 0); ??
 	}
 
@@ -294,14 +294,6 @@ bool Renderer::start() {
 	const int horizontalTiles = wWidth / tWidth;
 	const int verticalTiles = wHeight / tHeight;
 
-	if (scene) {
-
-
-	}
-
-
-
-
 #ifdef DEBUG
 	std::deque<float> averageFrameTime;
 #endif
@@ -309,11 +301,7 @@ bool Renderer::start() {
 
 		if(scene && (this->isBufferInvalid)) {
 			if(this->useComputeShader){
-
-				if (!buffersBound) {
-					bindBuffers();
-				}
-				/* TODO: Send data to the shader ofc */
+				bindBuffers();
 				glDispatchCompute(wWidth, wHeight, 1);
 				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 				/*  Should we use memoryBarrier between "the waves"? The guidelines on https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glMemoryBarrier.xhtml say:
@@ -401,6 +389,12 @@ void Renderer::putPixel(uint32_t fb[], int idx, Color& color){
 void Renderer::setScene(ScenePtr scene){
 	this->scene = scene;
 	this->isBufferInvalid = true;
+	scene->getMeshBuffer(tris, nodes, meshes);
+	scene->getInstanceBuffer(instances);
+	scene->getTextureBuffer(textures, imgs);
+	scene->getMaterialBuffer(materials);
+	scene->getLightBuffer(lights);
+	genBuffers();
 }
 
 void Renderer::mouseCallback(GLFWwindow* window, int button, int action, int mods) {
@@ -706,65 +700,54 @@ bool Renderer::loadComputeShaders(){
 
 void Renderer::bindBuffers() {
 
-	std::vector<CompactMesh> meshes;
-	std::vector<CompactTriangle> tris;
-	std::vector<BVHNode> nodes;
-	scene->getMeshBuffer(tris, nodes, meshes);
+}
 
-	std::vector<Instance> instances;
-	scene->getInstanceBuffer(instances);
-
-	std::vector<CompactTexture> textures;
-	std::vector<uint8_t> imgs;
-	scene->getTextureBuffer(textures, imgs);
-
-	std::vector<CompactMaterial> materials;
-	scene->getMaterialBuffer(materials);
-
-	std::vector<CompactLight> lights;
-	scene->getLightBuffer(lights);
-
-	GLuint ssbo;
-	glGenBuffers(1, &ssbo);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+void Renderer::genBuffers() {
+	glGenBuffers(1, &meshSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, meshSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactMesh) * meshes.size(), &meshes[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, meshSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
 
-	glGenBuffers(2, &ssbo);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glGenBuffers(1, &instanceSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, instanceSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Instance) * instances.size(), &instances[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, instanceSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
 
-	glGenBuffers(3, &ssbo);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glGenBuffers(1, &textureSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, textureSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactTexture) * textures.size(), &textures[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, textureSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
 
-	glGenBuffers(4, &ssbo);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glGenBuffers(1, &triSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, triSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactTriangle) * tris.size(), &tris[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, triSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
 
-	glGenBuffers(5, &ssbo);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glGenBuffers(1, &nodeSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, nodeSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(BVHNode) * nodes.size(), &nodes[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, nodeSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
 
-	glGenBuffers(6, &ssbo);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glGenBuffers(1, &materialSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, materialSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactMaterial) * materials.size(), &materials[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, materialSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
 
-	glGenBuffers(7, &ssbo);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glGenBuffers(7, &lightSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactLight) * lights.size(), &lights[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, lightSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
-
-	buffersBound = true;
 }
