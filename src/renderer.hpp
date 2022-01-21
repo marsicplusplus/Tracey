@@ -37,6 +37,7 @@ public:
 		void packetTrace(std::vector<Ray> &corners, std::vector<RayInfo>& rays, int bounces, const ScenePtr scene);
 		void handleInput();
 		bool loadComputeShaders(); /* If false is returned, do not use GPU rendering */
+		void bindBuffers();
 		const char* readShader(std::string path);
 
 		static void mouseCallback(GLFWwindow* window, int button, int action, int mods);
@@ -85,6 +86,8 @@ public:
 		int nBounces;
 		int nFrames;
 		ImGui::FileBrowser fBrowser;
+
+		bool buffersBound = false;
 };
 
 #endif

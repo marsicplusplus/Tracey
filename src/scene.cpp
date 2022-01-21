@@ -162,6 +162,7 @@ void Scene::getTextureBuffer(std::vector<CompactTexture> &compactTextures, std::
 				imgs.push_back(img[i]);
 			}
 		}
+		compactTextures.push_back(txt);
 	}
 }
 
@@ -205,6 +206,7 @@ void Scene::getInstanceBuffer(std::vector<Instance>& instances) {
 			instance.transformMat = transform.getMatrix();
 			instance.transformInv = transform.getInverse();
 			instance.transposeInv = transform.getTransposeInverse();
+			instances.push_back(instance);
 		}
 		index++;
 	}

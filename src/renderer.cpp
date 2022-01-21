@@ -99,6 +99,9 @@ bool Renderer::init(){
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 
 				0, GL_RGBA, GL_FLOAT, NULL);
 		glBindImageTexture(0, textFrameBuffer, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+		glUseProgram(this->megaKernel);
+		//glUniform1i(glGetUniformLocation(this->megaKernel, "framebufferImage"), 0); ??
 	}
 
 	/* Quad */
@@ -237,32 +240,30 @@ bool Renderer::coreRayTracing(int horizontalTiles, int verticalTiles, int tWidth
 			int samples = this->nSamples;
 			int bounces = this->nBounces;
 			futures.push_back(Threading::pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
-						CameraPtr cam = scene->getCamera();
-						//std::vector<RayInfo> packet(tHeight * tWidth);
-						//std::vector<Ray> corners(4);
-						for (int row = 0; row < tHeight; ++row) {
-							for (int col = 0; col < tWidth; ++col) {
-								Color pxColor(0,0,0);
-								int x = col + tWidth * tileCol;
-								int y = row + tHeight * tileRow;
-								if (cam) {
-									for(int s = 0; s < samples; ++s){
-										float u = static_cast<float>(x + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wWidth - 1);
-										float v = static_cast<float>(y + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wHeight - 1);
-										Ray ray = cam->generateCameraRay(u, v);
-										if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
-										pxColor += Color(0, 0, 0);
-										} else {
-											pxColor += Core::traceWhitted(ray, bounces, scene, rng);
-										}
-									}
+				CameraPtr cam = scene->getCamera();
+				for (int row = 0; row < tHeight; ++row) {
+					for (int col = 0; col < tWidth; ++col) {
+						Color pxColor(0,0,0);
+						int x = col + tWidth * tileCol;
+						int y = row + tHeight * tileRow;
+						if (cam) {
+							for(int s = 0; s < samples; ++s){
+								float u = static_cast<float>(x + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wWidth - 1);
+								float v = static_cast<float>(y + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wHeight - 1);
+								Ray ray = cam->generateCameraRay(u, v);
+								if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
+									pxColor += Color(0, 0, 0);
+								} else {
+									pxColor += Core::traceWhitted(ray, bounces, scene, rng);
 								}
-								pxColor = pxColor / static_cast<float>(samples);
-								int idx = wWidth * y + x;
-								putPixel(frameBuffer, idx, pxColor);
 							}
 						}
-					}));
+						pxColor = pxColor / static_cast<float>(samples);
+						int idx = wWidth * y + x;
+						putPixel(frameBuffer, idx, pxColor);
+					}
+				}
+			}));
 		}
 	}
 
@@ -293,6 +294,14 @@ bool Renderer::start() {
 	const int horizontalTiles = wWidth / tWidth;
 	const int verticalTiles = wHeight / tHeight;
 
+	if (scene) {
+
+
+	}
+
+
+
+
 #ifdef DEBUG
 	std::deque<float> averageFrameTime;
 #endif
@@ -300,8 +309,11 @@ bool Renderer::start() {
 
 		if(scene && (this->isBufferInvalid)) {
 			if(this->useComputeShader){
+
+				if (!buffersBound) {
+					bindBuffers();
+				}
 				/* TODO: Send data to the shader ofc */
-				glUseProgram(this->megaKernel);
 				glDispatchCompute(wWidth, wHeight, 1);
 				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 				/*  Should we use memoryBarrier between "the waves"? The guidelines on https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glMemoryBarrier.xhtml say:
@@ -690,4 +702,69 @@ bool Renderer::loadComputeShaders(){
 	glDeleteShader(megaKernelShader);
 
 	return true;
+}
+
+void Renderer::bindBuffers() {
+
+	std::vector<CompactMesh> meshes;
+	std::vector<CompactTriangle> tris;
+	std::vector<BVHNode> nodes;
+	scene->getMeshBuffer(tris, nodes, meshes);
+
+	std::vector<Instance> instances;
+	scene->getInstanceBuffer(instances);
+
+	std::vector<CompactTexture> textures;
+	std::vector<uint8_t> imgs;
+	scene->getTextureBuffer(textures, imgs);
+
+	std::vector<CompactMaterial> materials;
+	scene->getMaterialBuffer(materials);
+
+	std::vector<CompactLight> lights;
+	scene->getLightBuffer(lights);
+
+	GLuint ssbo;
+	glGenBuffers(1, &ssbo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactMesh) * meshes.size(), &meshes[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+
+
+	glGenBuffers(2, &ssbo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Instance) * instances.size(), &instances[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+
+
+	glGenBuffers(3, &ssbo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactTexture) * textures.size(), &textures[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+
+
+	glGenBuffers(4, &ssbo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactTriangle) * tris.size(), &tris[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+
+
+	glGenBuffers(5, &ssbo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(BVHNode) * nodes.size(), &nodes[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+
+
+	glGenBuffers(6, &ssbo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactMaterial) * materials.size(), &materials[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+
+
+	glGenBuffers(7, &ssbo);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactLight) * lights.size(), &lights[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+
+	buffersBound = true;
 }
