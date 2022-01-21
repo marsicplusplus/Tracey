@@ -657,7 +657,6 @@ const char* Renderer::readShader(std::string path) {
 }
 
 bool Renderer::loadComputeShaders(){
-	return false;
 	const char* codeChar = readShader("kernels/mega_kernel.glsl");
 	if(codeChar == nullptr) return false;
 	unsigned int megaKernelShader = glCreateShader(GL_COMPUTE_SHADER);
