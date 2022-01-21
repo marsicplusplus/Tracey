@@ -24,3 +24,7 @@ Color ImageTexture::color(float u, float v, const glm::fvec3 &p) const{
 	unsigned char *pixel = img + j * slice + i * bpp;
 	return Color(pixel[0]/static_cast<float>(255.0f),pixel[1]/static_cast<float>(255.0f),pixel[2]/static_cast<float>(255.0f));
 }
+
+const TextureType ImageTexture::getType() const {
+	return TextureType::TEXTURE_IMAGE;
+}

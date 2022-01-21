@@ -53,6 +53,10 @@ class BVH : public Hittable {
 		const std::vector<HittablePtr>& getHittable() const {
 			return hittables;
 		};
+		const BVHNode* getNodes(int &tsize) const {
+			tsize = this->size;
+			return nodePool;
+		}
 
 		void constructTopLevelBVH();
 		void constructSubBVH();
@@ -94,6 +98,7 @@ class BVH : public Hittable {
 		bool mustRefit;
 		int refitCounter;
 		Animation animationManager;
+		int size;
 };
 
 typedef std::shared_ptr<BVH> BVHPtr;

@@ -27,7 +27,8 @@ BVH::~BVH(){
 
 void BVH::constructTopLevelBVH() {
 	delete[] this->nodePool;
-	this->nodePool = new BVHNode[hittables.size() * 2];
+	this->size = hittables.size() * 2;
+	this->nodePool = new BVHNode[size];
 	this->hittableIdxs.clear();
 	for (int i = 0; i < hittables.size(); ++i) {
 		this->hittableIdxs.push_back(i);
@@ -109,7 +110,8 @@ void BVH::constructTopLevelBVH() {
 void BVH::constructSubBVH() {
 	if(this->nodePool != nullptr)
 		delete[] this->nodePool;
-	this->nodePool = new BVHNode[hittables.size() * 2];
+	this->size = hittables.size() * 2;
+	this->nodePool = new BVHNode[size];
 	this->hittableIdxs.clear();
 	for (int i = 0; i < hittables.size(); ++i) {
 		this->hittableIdxs.push_back(i);

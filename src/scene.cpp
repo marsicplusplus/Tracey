@@ -3,6 +3,9 @@
 #include "input_manager.hpp"
 #include "scene_parser.hpp"
 #include "glm/trigonometric.hpp"
+#include "textures/image_texture.hpp"
+#include "textures/solid_color.hpp"
+#include "textures/checkered.hpp"
 
 #include <fstream>
 
@@ -133,4 +136,53 @@ Color Scene::traceLights(HitRecord &rec) const {
 		}
 	}
 	return illumination;
+}
+
+void Scene::getTextureBuffer(std::vector<CompactTexture> &compactTextures, std::vector<unsigned char> &imgs) {
+	for(const auto &text : textures) {
+		CompactTexture txt;
+		txt.type = (unsigned int) text->getType();
+		if(text->getType() == TextureType::TEXTURE_SOLID){
+			auto imgT = std::static_pointer_cast<SolidColor>(text);
+			txt.color = imgT->c;
+		} else if(text->getType() == TextureType::TEXTURE_CHECKERED){
+			auto imgT = std::static_pointer_cast<Checkered>(text);
+			txt.color = imgT->c1;
+			txt.sec_color = imgT->c2;
+		} else if(text->getType() == TextureType::TEXTURE_IMAGE){
+			auto imgT = std::static_pointer_cast<ImageTexture>(text);
+			txt.bpp = imgT->bpp;
+			txt.w = imgT->width;
+			txt.h = imgT->height;
+			auto img = imgT->img;
+			txt.idx = imgs.size(); // from imgs.size to imgs.size + txt.w * txt.h * txt.bpp;
+			for(int i = 0; i < txt.w * txt.h * txt.bpp; ++i){
+				imgs.push_back(img[i]);
+			}
+		}
+	}
+}
+
+void Scene::getMeshBuffer(std::vector<CompactTriangle> &ctris, std::vector<BVHNode> &bvhs, std::vector<CompactMesh> &meshes){
+	for(const auto &m : this->meshesBVH){
+		auto tris = m.second->getHittable();
+		CompactMesh cmesh;
+		cmesh.firstTri = ctris.size();
+		cmesh.lastTri = ctris.size() + tris.size() - 1;
+		for(auto t : tris){
+			auto tri = std::static_pointer_cast<Triangle>(t);
+			CompactTriangle ct;
+			tri->copyTri(&ct);
+			ctris.push_back(ct);
+		}
+		int size;
+		auto nodes = m.second->getNodes(size);
+		cmesh.firstNode = bvhs.size();
+		cmesh.lastNode = bvhs.size() + size - 1;
+		for(int i=0; i < size; ++i){
+			BVHNode node;
+			node.maxAABBCount = nodes[i].maxAABBCount;
+			node.minAABBLeftFirst = nodes[i].minAABBLeftFirst;
+		}
+	}
 }

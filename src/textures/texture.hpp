@@ -9,6 +9,24 @@
 
 typedef glm::fvec3 Color;
 
+enum class TextureType {
+	TEXTURE_NIL			= 0,
+	TEXTURE_IMAGE		= 0x00000001u,
+	TEXTURE_SOLID		= 0x00000002u,
+	TEXTURE_CHECKERED	= 0x00000004u,
+};
+
+struct CompactTexture{
+	unsigned int type;
+	int idx;
+	int w;
+	int h;
+	int slice;
+	int bpp;
+	glm::vec3 color;
+	glm::vec3 sec_color;
+};
+
 class Texture {
 	public:
 		Texture(std::string _name) : name(_name) {img = nullptr;}
@@ -20,12 +38,15 @@ class Texture {
 		inline const std::string& getName() const {
 			return name;
 		}
+		virtual inline const TextureType getType() const {
+			return TextureType::TEXTURE_NIL;
+		}
+
+		unsigned char *img;
 
 	private:
 		std::string name;
-	protected:
-		unsigned char *img;
 };
 
-typedef std::unique_ptr<Texture> TexturePtr;
+typedef std::shared_ptr<Texture> TexturePtr;
 #endif

@@ -12,7 +12,9 @@ class Checkered : public Texture {
 			auto sines = sin(10.0f*p.x)*sin(10.0f*p.y)*sin(10.0f*p.z);
 			return (sines < 0.0f) ? c1 : c2;
 		}
-	private:
+		inline const TextureType getType() const override {
+			return TextureType::TEXTURE_CHECKERED;
+		}
 		Color c1;
 		Color c2;
 };

@@ -97,3 +97,25 @@ bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const
 
 	return false;
 }
+
+void Triangle::copyTri(CompactTriangle *ct) {
+	ct->mat = this->mat;
+	ct->v0 = (this->mesh->p.get())[vIdx[0]];
+	ct->v1 = (this->mesh->p.get())[vIdx[1]];
+	ct->v2 = (this->mesh->p.get())[vIdx[2]];
+
+	ct->n0 = (this->mesh->n.get())[vIdx[0]];
+	ct->n1 = (this->mesh->n.get())[vIdx[1]];
+	ct->n2 = (this->mesh->n.get())[vIdx[2]];
+
+	if(mesh->uv){
+		ct->u0 = mesh->uv[vIdx[0]];
+		ct->u1 = mesh->uv[vIdx[1]];
+		ct->u2 = mesh->uv[vIdx[2]];
+	} else {
+		ct->u0 = glm::fvec2{0, 0};
+		ct->u1 = glm::fvec2{1, 0};
+		ct->u2 = glm::fvec2{1, 1};
+	}
+
+}

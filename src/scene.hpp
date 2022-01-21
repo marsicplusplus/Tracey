@@ -4,6 +4,7 @@
 #include "camera.hpp"
 #include "light_object.hpp"
 #include "hittables/hittable.hpp"
+#include "hittables/triangle.hpp"
 #include "hittables/triangle_mesh.hpp"
 #include "json.hpp"
 #include "bvh.hpp"
@@ -43,6 +44,8 @@ class Scene {
 			return nTris;
 		}
 
+		void getTextureBuffer(std::vector<CompactTexture> &textures, std::vector<unsigned char> &imgs);
+		void getMeshBuffer(std::vector<CompactTriangle> &tris, std::vector<BVHNode> &bvhs, std::vector<CompactMesh> &meshes);
 	private:
 		CameraPtr currentCamera;
 		std::unordered_map<std::string, BVHPtr> meshesBVH;

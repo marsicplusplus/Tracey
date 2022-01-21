@@ -7,6 +7,13 @@
 #include "glm/vec3.hpp"
 #include "glm/vec2.hpp"
 
+struct CompactMesh {
+	int firstTri;
+	int lastTri;
+	int firstNode;
+	int lastNode;
+};
+
 class TriangleMesh {
 	public:
 		TriangleMesh(const std::string& name, unsigned int nTri, unsigned int nVerts, const unsigned int *vertexIndices, const glm::vec3 *p, const glm::vec3 *n, const glm::vec2 *uv);

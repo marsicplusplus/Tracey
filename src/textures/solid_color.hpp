@@ -11,7 +11,9 @@ class SolidColor : public Texture {
 		Color color(float u, float v, const glm::fvec3 &p) const override {
 			return c;
 		}
-	private:
+		inline const TextureType getType() const override {
+			return TextureType::TEXTURE_SOLID;
+		}
 		Color c;
 };
 

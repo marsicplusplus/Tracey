@@ -11,7 +11,9 @@ class ImageTexture : public Texture {
 		ImageTexture(std::string name, std::string filePath);
 		~ImageTexture();
 		Color color(float u, float v, const glm::fvec3 &p) const override;
-	private:
+
+		const TextureType getType() const override;
+
 		int width;
 		int height;
 		int slice;

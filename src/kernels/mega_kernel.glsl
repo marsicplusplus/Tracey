@@ -18,7 +18,7 @@ struct Mesh {
 	int lastTri;
 	int firstNode;
 	int lastNode;
-}
+};
 
 layout(std430, binding = 1) readonly buffer Meshes {
 	Mesh[] meshes;
@@ -47,14 +47,14 @@ const uint IMAGE = 0x00000002u;
 const uint CHECKERED = 0x00000004u;
 
 struct Texture {
-//	int width;
-//	int height;
-//	int slice;
-//	int bpp;
-	vec3 color1;
-//	vec3 color2;
 	uint type;
-//	uint image[];
+	int idx;
+	int width;
+	int height;
+	int slice;
+	int bpp;
+	vec3 color1;
+	vec3 color2;
 };
 
 layout(std430, binding = 3) readonly buffer Textures {
