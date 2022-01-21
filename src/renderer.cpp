@@ -99,9 +99,7 @@ bool Renderer::init(){
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 
 				0, GL_RGBA, GL_FLOAT, NULL);
 		glBindImageTexture(0, textFrameBuffer, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-
 		//glUseProgram(this->megaKernel);
-		//glUniform1i(glGetUniformLocation(this->megaKernel, "framebufferImage"), 0); ??
 	}
 
 	/* Quad */
@@ -301,6 +299,7 @@ bool Renderer::start() {
 
 		if(scene && (this->isBufferInvalid)) {
 			if(this->useComputeShader){
+				glUseProgram(this->megaKernel);
 				bindBuffers();
 				glDispatchCompute(wWidth, wHeight, 1);
 				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -699,7 +698,21 @@ bool Renderer::loadComputeShaders(){
 }
 
 void Renderer::bindBuffers() {
+	glBindImageTexture(0, textFrameBuffer, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, meshSSBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, instanceSSBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, textureSSBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, triSSBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, nodeSSBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, materialSSBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, lightSSBO);
 
+	auto cam = this->scene->getCamera();
+	glUniform3f(glGetUniformLocation(megaKernel, "camPosition"), cam->position[0], cam->position[1], cam->position[2]);
+	glUniform3f(glGetUniformLocation(megaKernel, "llCorner"), cam->llCorner[0], cam->llCorner[1], cam->llCorner[2]);
+	glUniform3f(glGetUniformLocation(megaKernel, "horizontal"), cam->horizontal[0], cam->horizontal[1], cam->horizontal[2]);
+	glUniform3f(glGetUniformLocation(megaKernel, "vertical"), cam->vertical[0], cam->vertical[1], cam->vertical[2]);
+	glUniform1i(glGetUniformLocation(megaKernel, "bounces"), nBounces);
 }
 
 void Renderer::genBuffers() {

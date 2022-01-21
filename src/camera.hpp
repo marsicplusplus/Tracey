@@ -33,10 +33,6 @@ class Camera{
 
 		glm::fvec2 Distort(float u, float v);
 		glm::fvec3 Fisheye(float u, float v);
-	private:
-		void updateVectors();
-
-		CameraType cameraType;
 
 		glm::fvec3 up;
 		glm::fvec3 right;
@@ -46,6 +42,9 @@ class Camera{
 		glm::fvec3 vertical;
 		glm::fvec3 llCorner;
 
+	private:
+		void updateVectors();
+		CameraType cameraType;
 		glm::mat3x3 cameraMatrix;
 
 		float fov;
