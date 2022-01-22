@@ -15,12 +15,12 @@ enum class Lights {
 };
 
 struct CompactLight {
-	unsigned int type;
 	glm::vec3 color;
-	float intensity;
 	glm::vec3 position;
-	float cutoffAngle;
 	glm::vec3 direction;
+	unsigned int type;
+	float intensity;
+	float cutoffAngle;
 };
 
 class LightObject {

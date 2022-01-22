@@ -9,10 +9,10 @@
 #include "glm/mat4x4.hpp"
 
 struct Instance {
-	int meshIdx;
 	glm::mat4x4 transformMat;
 	glm::mat4x4 transformInv;
 	glm::mat4x4 transposeInv;
+	int meshIdx; float __padding[3];
 };
 
 struct CompactMesh {

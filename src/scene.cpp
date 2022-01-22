@@ -205,9 +205,9 @@ void Scene::getInstanceBuffer(std::vector<Instance>& instances) {
 			auto transform = bvh->getTransform();
 			Instance instance;
 			instance.meshIdx = index;
-			instance.transformMat = transform.getMatrix();
-			instance.transformInv = transform.getInverse();
-			instance.transposeInv = transform.getTransposeInverse();
+			//instance.transformMat = transform.getMatrix();
+			//instance.transformInv = transform.getInverse();
+			//instance.transposeInv = transform.getTransposeInverse();
 			instances.push_back(instance);
 		}
 		index++;

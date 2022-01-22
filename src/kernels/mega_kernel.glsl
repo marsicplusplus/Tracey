@@ -1,6 +1,6 @@
 #version 450 core
 
-layout (local_size_x=32, local_size_y=32) in;
+layout (local_size_x=8, local_size_y=8) in;
 
 layout(binding = 0, rgba32f) uniform image2D framebufferImage;
 
@@ -26,10 +26,10 @@ layout(std430, binding = 1) readonly buffer Meshes {
 };
 
 struct Instance{
-	int meshIdx;
 	mat4 transformMat;
 	mat4 transformInv;
 	mat4 transposeInv;
+	int meshIdx;
 };
 
 layout(std430, binding = 2) readonly buffer Instances {
@@ -110,6 +110,7 @@ Ray transformRay(Ray origRay, mat4 transform) {
 
 
 bool hitAABB(Ray ray, vec3 minAABB, vec3 maxAABB, out float distance) {
+	return true;
 	float tmin = -INFINITY, tmax = INFINITY;
 
 	float tx1 = (minAABB.x - ray.origin.x) * ray.invDirection.x;
@@ -150,10 +151,10 @@ TRIANGLE DEFINITON AND METHODS
 ********************************************************************/
 
 struct Triangle {
-	int matIdx;
-	vec2 uv0, uv1, uv2;
-	vec3 v0, v1, v2;
-	vec3 n0, n1, n2;
+	vec2 uv0, uv1, uv2; //24
+	vec3 v0, v1, v2; //36
+	vec3 n0, n1, n2; //36
+	int matIdx; // 4
 };
 
 
@@ -162,7 +163,6 @@ layout(std430, binding = 4) readonly buffer Triangles {
 };
 
 bool hitTriangle(Ray ray, Triangle tri, float tMin, float tMax, HitRecord rec) {
-
 	vec3 v0v1 = tri.v1 - tri.v0;
 	vec3 v0v2 = tri.v2 - tri.v0;
 	vec3 p = cross(ray.direction, v0v2);
@@ -211,7 +211,6 @@ struct Node {
 	vec3 maxAABB;
 	int leftFirst;
 	int count;
-
 };
 
 
@@ -233,6 +232,7 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 	int stackPtr = 0;
 	nodestack[stackPtr++] = nodes[firstNode]; // Push the root into the stack
 
+	int i = 0;
 	while(stackPtr != 0){
 		Node currNode = nodestack[--stackPtr];
 		if(currNode.count != 0) {// I'm a leaf
@@ -298,16 +298,16 @@ MATERIAL DEFINITON AND METHODS
 
 ********************************************************************/
 
-const uint DIFFUSE = 0x00000001u;
-const uint DIELECTRIC  = 0x00000002u;
-const uint MIRROR  = 0x00000004u;
+const uint DIFFUSE 		= 0x00000001u;
+const uint DIELECTRIC  	= 0x00000002u;
+const uint MIRROR  		= 0x00000004u;
 
 struct Material {
+	vec3 absorption;
 	uint type;
 	int albedoIdx;
 	int bump;
 	float reflectionIdx;
-	vec3 absorption;
 	float ior;
 };
 
@@ -384,12 +384,12 @@ const uint AMBIENT = 0x00000008u;
 
 
 struct Light {
-  uint type;
   vec3 color;
-  float intensity;
   vec3 position;
-  float cutoffAngle;
   vec3 direction;
+  uint type;
+  float intensity;
+  float cutoffAngle;
 };
 
 layout(std430, binding = 7) readonly buffer Lights {
@@ -459,6 +459,7 @@ bool traceScene(const Ray ray, float tMin, float tMax, out HitRecord rec) {
 	for (int i = 0; i < instances.length(); i++) {
 		Instance instance = instances[i];
 		if (intersectBVH(ray, instance, tMin, closest, tmp)) {
+			return true;
 			hasHit = true;
 			closest = tmp.t;
 			rec = tmp;
@@ -497,7 +498,8 @@ vec3 trace(Ray ray, int bounces) {
 	Ray current = ray;
 	float frac = 1.0f;
 	while(bounces > 0){
-		if (traceScene(current, 0.001f, INFINITY, hr)) {
+		if (traceScene(current, EPSILON, INFINITY, hr)) {
+			return vec3(1.0, 0.0, 0.0);
 			Ray reflectedRay;
 			Material mat = materials[hr.material];
 			vec3 attenuation = getTextureColor(mat.albedoIdx, hr.u, hr.v, hr.p);
@@ -515,9 +517,11 @@ vec3 trace(Ray ray, int bounces) {
 				if(reflectance == 0.0f) break;
 				continue;
 			} else {
+				return vec3(1.0f);
 				break;
 			}
 		}else{
+			return vec3(0.0f, 0.0f, 1.0f);
 			break;
 		}
 	}
@@ -530,14 +534,15 @@ uniform int bounces;
 void main() {
 	Ray ray;
 
-	ivec2 px = ivec2(gl_GlobalInvocationID.xy);
-	ivec2 size = imageSize(framebufferImage);
-	if (any(greaterThanEqual(px, size)))
-		return;
+	vec2 px = vec2(gl_GlobalInvocationID.xy);
+	vec2 size = imageSize(framebufferImage);
 
-	ray.direction = normalize(llCorner + px.x * horizontal + px.y * vertical - camPosition);
+	ray.direction = normalize(llCorner + px.x / (size.x - 1) * horizontal + px.y / (size.y - 1) * vertical - camPosition);
 	ray.origin = camPosition;
 
+	//float t = 0.5 * (ray.direction.y + 1.0);
+	//vec3 color = (1.0 - t) * vec3(1.0, 0.0, 0.0) + t * vec3(0.0, 0.0, 0.0);
+	
 	vec3 color = trace(ray, bounces);
-	imageStore(framebufferImage, px, vec4(color, 1.0));
+	imageStore(framebufferImage, ivec2(px), vec4(color, 1.0));
 }

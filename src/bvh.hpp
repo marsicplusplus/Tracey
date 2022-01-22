@@ -14,7 +14,7 @@ struct BVHNode {
 	glm::fvec3 minAABB;
 	glm::fvec3 maxAABB;
 	int leftFirst;
-	int count;
+	int count; float __padding;
 };
 
 struct Bin {
