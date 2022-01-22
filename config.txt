@@ -9,4 +9,4 @@ W_HEIGHT=384
 SCALING=2
 THREADS=-1
 # 0 for false, true otherwise
-USE_GPU=0
+USE_GPU=1

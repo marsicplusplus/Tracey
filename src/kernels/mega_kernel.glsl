@@ -491,50 +491,37 @@ vec3 traceLights(HitRecord rec) {
 }
 
 vec3 trace(Ray ray, int bounces) {
-
 	HitRecord hr;
 	hr.p = vec3(INFINITY, INFINITY, INFINITY);
-	if(bounces <= 0)
-		return vec3(0,0,0);
+	vec3 c = vec3(0.0f,0.0f,0.0f);
+	Ray current = ray;
+	float frac = 1.0f;
+	while(bounces > 0){
+		if (traceScene(current, 0.001f, INFINITY, hr)) {
+			Ray reflectedRay;
+			Material mat = materials[hr.material];
+			vec3 attenuation = getTextureColor(mat.albedoIdx, hr.u, hr.v, hr.p);
+			float reflectance = 1.0f;
+			if (mat.type == DIFFUSE || mat.type == DIELECTRIC) {
+				c += attenuation * traceLights(hr) * frac;
+				break;
+			} else if(mat.type == MIRROR) {
+				material_reflect(mat, current, hr, reflectedRay, reflectance);
+				current = reflectedRay;
+				bounces--;
 
-	if (traceScene(ray, 0.001, INFINITY, hr)) {
-		Ray reflectedRay;
-		Material mat = materials[hr.material];
-
-		vec3 attenuation = getTextureColor(mat.albedoIdx, hr.u, hr.v, hr.p);
-		float reflectance = 1.0;
-
-		if (mat.type == DIFFUSE) {
-			return attenuation * traceLights(hr);
-		} else if (mat.type == MIRROR) {
-			material_reflect(mat, ray, hr, reflectedRay, reflectance);
-			if (reflectance == 1.0)
-				return attenuation * trace(reflectedRay, bounces - 1);
-			else
-				return attenuation * (reflectance * trace(reflectedRay, bounces - 1) + (1.0 - reflectance) * traceLights(hr));
-		} else if (mat.type == DIELECTRIC) {
-
-			vec3 refractionColor = vec3(0.0);
-			vec3 reflectionColor = vec3(0.0);
-			float reflectance;
-
-			material_reflect(mat, ray, hr, reflectedRay, reflectance);
-			reflectionColor = trace(reflectedRay, bounces - 1);
-
-			if (reflectance < 1.0) {
-				Ray refractedRay;
-				float refractance;
-				material_refract(ray, hr, mat.ior, refractedRay, refractance);
-				refractionColor = trace(refractedRay, bounces-1);
+				c += attenuation * traceLights(hr) * (1.0f - reflectance) * frac;
+				frac *= reflectance;
+				if(reflectance == 0.0f) break;
+				continue;
+			} else {
+				break;
 			}
-
-			material_absorb(ray, hr, mat.absorption, attenuation);
-			return attenuation * (reflectionColor * reflectance + refractionColor * (1.0 - reflectance));
+		}else{
+			break;
 		}
-		return vec3(0.0, 0.0, 0.0);
 	}
-
-	return vec3(0.4, 0.4, 0.4);
+	return c;
 }
 
 uniform vec3 camPosition, llCorner, horizontal, vertical;

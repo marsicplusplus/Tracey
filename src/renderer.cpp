@@ -299,6 +299,7 @@ bool Renderer::start() {
 			if(scene) this->isBufferInvalid = this->scene->update(dt);
 		}
 		glUseProgram(this->quadShader);
+		glBindVertexArray(this->VAO);
 		if(useComputeShader){
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, this->textFrameBuffer);

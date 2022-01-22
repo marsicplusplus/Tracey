@@ -8,44 +8,34 @@ namespace Core {
 	Color traceWhitted(Ray &ray, int bounces, ScenePtr scene, uint32_t &rng) {
 		HitRecord hr;
 		hr.p = {INF, INF, INF};
-		if(!scene || bounces <= 0)
-			return Color{0,0,0};
-		if (scene->traverse(ray, 0.001f, INF, hr)) {
-			Ray reflectedRay;
-			MaterialPtr mat = scene->getMaterial(hr.material);
-			Color attenuation = scene->getTextureColor(mat->getAlbedoIdx(), hr.u, hr.v, hr.p);
-			float reflectance = 1.0f;
+		Color c(0.0,0.0,0.0);
+		Ray current = ray;
+		float frac = 1.0f;
+		while(scene && bounces > 0){
+			if (scene->traverse(current, 0.001f, INF, hr)) {
+				Ray reflectedRay;
+				MaterialPtr mat = scene->getMaterial(hr.material);
+				Color attenuation = scene->getTextureColor(mat->getAlbedoIdx(), hr.u, hr.v, hr.p);
+				float reflectance = 1.0f;
+				if (mat->getType() == Materials::DIFFUSE || mat->getType() == Materials::DIELECTRIC) {
+					c += attenuation * scene->traceLights(hr) * frac;
+					break;
+				} else if(mat->getType() == Materials::MIRROR) {
+					mat->reflect(current, hr, reflectedRay, reflectance);
+					current = reflectedRay;
+					bounces--;
 
-			if (mat->getType() == Materials::DIFFUSE) {
-				return attenuation * scene->traceLights(hr);
-			} else if (mat->getType() == Materials::MIRROR) {
-
-				mat->reflect(ray, hr, reflectedRay, reflectance);
-				if (reflectance == 1.0f)
-					return attenuation * (Core::traceWhitted(reflectedRay, bounces - 1, scene, rng));
-				else
-					return attenuation * (reflectance * Core::traceWhitted(reflectedRay, bounces - 1, scene, rng) + (1.0f - reflectance) * scene->traceLights(hr));
-			} else if(mat->getType() == Materials::DIELECTRIC) {
-
-				Color refractionColor(0.0f);
-				Color reflectionColor(0.0f);
-				float reflectance;
-				mat->reflect(ray, hr, reflectedRay, reflectance);
-				reflectionColor = Core::traceWhitted(reflectedRay, bounces - 1, scene, rng);
-
-				if(reflectance < 1.0f){
-					Ray refractedRay;
-					float refractance;
-					mat->refract(ray, hr, refractedRay, refractance);
-					refractionColor = Core::traceWhitted(refractedRay, bounces-1, scene, rng);
+					c += attenuation * scene->traceLights(hr) * (1.0f - reflectance) * frac;
+					frac *= reflectance;
+					if(reflectance == 0.0f) break;
+					continue;
+				} else {
+					break;
 				}
-
-				mat->absorb(ray, hr, attenuation);
-
-				return attenuation * (reflectionColor * reflectance + refractionColor * (1 - reflectance));
+			}else{
+				break;
 			}
-			return Color{0,0,0};
 		}
-		return Color(0.4,0.4,0.4);
+		return c;
 	}
 };
