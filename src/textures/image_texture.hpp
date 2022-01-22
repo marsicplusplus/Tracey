@@ -9,7 +9,7 @@
 class ImageTexture : public Texture {
 	public:
 		ImageTexture(std::string name, std::string filePath);
-		~ImageTexture();
+		~ImageTexture() override;
 		Color color(float u, float v, const glm::fvec3 &p) const override;
 
 		const TextureType getType() const override;

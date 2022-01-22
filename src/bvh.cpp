@@ -442,14 +442,14 @@ void BVH::partitionBinMulti(BVHNode* node) {
 
 	for(int i = 0; i < bins.size(); ++i){
 		// Join the bins from the N threads;
-		for(int j = 0; j < binnings.size(); ++j){
-			bins[i].count += binnings[j].bins[i].count;
-			bins[i].aabb.maxX = max(binnings[j].bins[i].aabb.maxX, bins[i].aabb.maxX);
-			bins[i].aabb.maxY = max(binnings[j].bins[i].aabb.maxY, bins[i].aabb.maxY);
-			bins[i].aabb.maxZ = max(binnings[j].bins[i].aabb.maxZ, bins[i].aabb.maxZ);
-			bins[i].aabb.minX = min(binnings[j].bins[i].aabb.minX, bins[i].aabb.minX);
-			bins[i].aabb.minY = min(binnings[j].bins[i].aabb.minY, bins[i].aabb.minY);
-			bins[i].aabb.minZ = min(binnings[j].bins[i].aabb.minZ, bins[i].aabb.minZ);
+		for(auto & binning : binnings){
+			bins[i].count += binning.bins[i].count;
+			bins[i].aabb.maxX = max(binning.bins[i].aabb.maxX, bins[i].aabb.maxX);
+			bins[i].aabb.maxY = max(binning.bins[i].aabb.maxY, bins[i].aabb.maxY);
+			bins[i].aabb.maxZ = max(binning.bins[i].aabb.maxZ, bins[i].aabb.maxZ);
+			bins[i].aabb.minX = min(binning.bins[i].aabb.minX, bins[i].aabb.minX);
+			bins[i].aabb.minY = min(binning.bins[i].aabb.minY, bins[i].aabb.minY);
+			bins[i].aabb.minZ = min(binning.bins[i].aabb.minZ, bins[i].aabb.minZ);
 		}
 	}
 

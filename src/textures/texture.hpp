@@ -2,10 +2,11 @@
 #define __TEXTURE_HPP__
 
 #include "defs.hpp"
-#include "stb_image.h"
 #include "glm/vec3.hpp"
+#include "stb_image.h"
 #include <memory>
 #include <string>
+#include <utility>
 
 typedef glm::fvec3 Color;
 
@@ -29,7 +30,7 @@ struct CompactTexture{
 
 class Texture {
 	public:
-		Texture(std::string _name) : name(_name) {img = nullptr;}
+		Texture(std::string _name) : name(std::move(_name)) {img = nullptr;}
 		virtual ~Texture() {
 			stbi_image_free(img);
 		}

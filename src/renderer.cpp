@@ -87,19 +87,21 @@ bool Renderer::init(){
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-	if(loadComputeShaders()){
-		useComputeShader = true;
-		glGenTextures(1, &textFrameBuffer);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textFrameBuffer);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 
-				0, GL_RGBA, GL_FLOAT, NULL);
-		glBindImageTexture(0, textFrameBuffer, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-		//glUseProgram(this->megaKernel);
+	if(OptionsMap::Instance()->getOption(Options::USE_GPU) > 0){
+		if(loadComputeShaders()){
+			useComputeShader = true;
+			glGenTextures(1, &textFrameBuffer);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, textFrameBuffer);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 
+					0, GL_RGBA, GL_FLOAT, NULL);
+			glBindImageTexture(0, textFrameBuffer, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+			//glUseProgram(this->megaKernel);
+		}
 	}
 
 	/* Quad */
@@ -169,65 +171,9 @@ void Renderer::initGui() {
 	this->aberrationOffset = glm::fvec3(0.0f, 0.0f, 0.0f);
 	this->guiVignetting = false;
 	this->vignettingSlider = 1.0f;
-	this->guiPacketTraversal = false;
 	this->fBrowser.SetTitle("Choose a scene");
 	this->fBrowser.SetWindowSize(500, 300);
 	this->fBrowser.SetTypeFilters({".json"});
-}
-
-bool Renderer::corePacketRayTracing(int horizontalTiles, int verticalTiles, int tWidth, int tHeight, int wWidth, int wHeight) {
-	std::vector<std::future<void>> futures;
-	for(int tileRow = 0; tileRow < verticalTiles; ++tileRow){
-		for(int tileCol = 0; tileCol < horizontalTiles; ++tileCol){
-			/* Launch thread */
-			int samples = this->nSamples;
-			int bounces = this->nBounces;
-			futures.push_back(Threading::pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
-						CameraPtr cam = scene->getCamera();
-						std::vector<RayInfo> packet(tHeight * tWidth);
-						std::vector<Ray> corners(4);
-						for (int row = 0; row < tHeight; ++row) {
-						for (int col = 0; col < tWidth; ++col) {
-								Color pxColor(0,0,0);
-								int x = col + tWidth * tileCol;
-								int y = row + tHeight * tileRow;
-								if (cam) {
-									for(int s = 0; s < samples; ++s){
-										float u = static_cast<float>(x + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wWidth - 1);
-										float v = static_cast<float>(y + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wHeight - 1);
-										Ray ray = cam->generateCameraRay(u, v);
-										if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
-											pxColor += Color(0, 0, 0);
-										} else {
-											if (guiPacketTraversal) {
-												if(row == 0 && col == 0) corners.push_back(ray);
-												if(row == 0 && col == tWidth-1) corners.push_back(ray);
-												if(row == tHeight-1 && col == 0) corners.push_back(ray);
-												if(row == tHeight-1 && col == tWidth-1) corners.push_back(ray);
-												auto zIndex = calcZOrder(col, row);
-												packet[zIndex].ray = ray;
-												packet[zIndex].x = x;
-												packet[zIndex].y = y;
-											}
-										}
-									}
-								}
-							}
-						}
-						Core::packetTrace(corners, packet, bounces, scene, rng);
-						for (auto& rayInfo : packet) {
-								int idx = wWidth * (rayInfo.y) + (rayInfo.x);
-								putPixel(frameBuffer, idx, rayInfo.pxColor);
-						}
-			}));
-		}
-	}
-
-	for (auto& f : futures) 
-		f.get();
-
-	isBufferInvalid = false;
-	return true;
 }
 
 bool Renderer::coreRayTracing(int horizontalTiles, int verticalTiles, int tWidth, int tHeight, int wWidth, int wHeight) {
@@ -328,7 +274,6 @@ bool Renderer::start() {
 				//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 			} else {
 				this->coreRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
-				//this->corePacketRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
 			}
 			std::cout << "Last frameTime: " << lasttime << "s" << std::endl;
 #ifdef DEBUG
@@ -388,12 +333,14 @@ void Renderer::putPixel(uint32_t fb[], int idx, Color& color){
 void Renderer::setScene(ScenePtr scene){
 	this->scene = scene;
 	this->isBufferInvalid = true;
-	scene->getMeshBuffer(tris, nodes, meshes);
-	scene->getInstanceBuffer(instances);
-	scene->getTextureBuffer(textures, imgs);
-	scene->getMaterialBuffer(materials);
-	scene->getLightBuffer(lights);
-	genBuffers();
+	if(useComputeShader){
+		scene->getMeshBuffer(tris, nodes, meshes);
+		scene->getInstanceBuffer(instances);
+		scene->getTextureBuffer(textures, imgs);
+		scene->getMaterialBuffer(materials);
+		scene->getLightBuffer(lights);
+		genBuffers();
+	}
 }
 
 void Renderer::mouseCallback(GLFWwindow* window, int button, int action, int mods) {
@@ -513,15 +460,8 @@ void Renderer::renderGUI() {
 					}
 				}
 
-				if (ImGui::Checkbox("Packet Traversal", &guiPacketTraversal)) {
-					this->nSamples = 1;
-				}
-
 				ImGui::TextWrapped("Samples");
 				ImGui::SliderInt("##SAMPLES", &nSamples, 1, 100);
-				if (nSamples > 1) {
-					guiPacketTraversal = false;
-				}
 				ImGui::TextWrapped("Bounces");
 				ImGui::SliderInt("##BOUNCES", &nBounces, 2, 100);
 			}
@@ -691,7 +631,6 @@ bool Renderer::loadComputeShaders(){
 	megaKernel = glCreateProgram();
 	glAttachShader(megaKernel, megaKernelShader);
 	glLinkProgram(megaKernel);
-
 	glDeleteShader(megaKernelShader);
 
 	return true;
@@ -718,49 +657,43 @@ void Renderer::bindBuffers() {
 void Renderer::genBuffers() {
 	glGenBuffers(1, &meshSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, meshSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactMesh) * meshes.size(), &meshes[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactMesh) * meshes.size(), &meshes[0], GL_DYNAMIC_COPY); 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, meshSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
-
 	glGenBuffers(1, &instanceSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, instanceSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Instance) * instances.size(), &instances[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Instance) * instances.size(), &instances[0], GL_DYNAMIC_COPY); 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, instanceSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
-
 	glGenBuffers(1, &textureSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, textureSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactTexture) * textures.size(), &textures[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactTexture) * textures.size(), &textures[0], GL_DYNAMIC_COPY); 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, textureSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
-
 	glGenBuffers(1, &triSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, triSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactTriangle) * tris.size(), &tris[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactTriangle) * tris.size(), &tris[0], GL_DYNAMIC_COPY); 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, triSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
-
 	glGenBuffers(1, &nodeSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, nodeSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(BVHNode) * nodes.size(), &nodes[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(BVHNode) * nodes.size(), &nodes[0], GL_DYNAMIC_COPY); 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, nodeSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
-
 	glGenBuffers(1, &materialSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, materialSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactMaterial) * materials.size(), &materials[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactMaterial) * materials.size(), &materials[0], GL_DYNAMIC_COPY);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, materialSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
-
 	glGenBuffers(7, &lightSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactLight) * lights.size(), &lights[0], GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactLight) * lights.size(), &lights[0], GL_DYNAMIC_COPY); 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, lightSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 }

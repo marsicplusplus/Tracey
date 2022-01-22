@@ -1,7 +1,8 @@
 #include "animation.hpp"
 #include <algorithm>
+#include <utility>
 
-Animation::Animation(bool _loop, float _start, std::vector<Transform> _frames, std::vector<float> _times, std::vector<EasingType> _easings) : loop(_loop), start(_start), frames(_frames), times(_times), easings(_easings){
+Animation::Animation(bool _loop, float _start, std::vector<Transform> _frames, std::vector<float> _times, std::vector<EasingType> _easings) : loop(_loop), start(_start), frames(std::move(_frames)), times(std::move(_times)), easings(std::move(_easings)){
 	assert(frames.size() == times.size());
 	assert((frames.size()) == easings.size()); // One extra easing method to go from the last frame back to the first;
 	currentFrame = -1;

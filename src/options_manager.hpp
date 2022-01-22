@@ -15,6 +15,7 @@ enum class Options {
 	W_HEIGHT,
 	THREADS,
 	SCALING,
+	USE_GPU,
 };
 
 class OptionsMap{
@@ -47,6 +48,7 @@ class OptionsMap{
 			std::cout << "W_HEIGHT: \t\t" << opts[Options::W_HEIGHT] << std::endl;
 			std::cout << "TILE_WIDTH: \t\t" << opts[Options::TILE_WIDTH] << std::endl;
 			std::cout << "TILE_HEIGHT: \t\t" << opts[Options::TILE_HEIGHT] << std::endl;
+			std::cout << "USE_GPU: \t\t" << ((opts[Options::USE_GPU] == 0) ? "false" : "true") << std::endl;
 			std::cout << "THREADS: \t\t" << opts[Options::THREADS] << std::endl;
 		}
 
@@ -64,6 +66,7 @@ class OptionsMap{
 			opts[Options::TILE_HEIGHT] = 16;
 			opts[Options::SCALING] = 1;
 			opts[Options::THREADS] = 1;
+			opts[Options::USE_GPU] = 0;
 		};
 
 		~OptionsMap(){
