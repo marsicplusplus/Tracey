@@ -197,17 +197,15 @@ void Scene::getMeshBuffer(std::vector<CompactTriangle> &ctris, std::vector<BVHNo
 
 void Scene::getInstanceBuffer(std::vector<Instance>& instances) {
 	std::vector<std::string> meshNames;
-
 	auto index = 0;
-	for (const auto& imap : this->BVHs) {
-		auto bvhs = imap.second;
-		for (const auto& bvh : bvhs) {
+	for(const auto &m : this->meshesBVH){
+		for(const auto& bvh : this->BVHs[m.first]){
 			auto transform = bvh->getTransform();
 			Instance instance;
 			instance.meshIdx = index;
-			//instance.transformMat = transform.getMatrix();
-			//instance.transformInv = transform.getInverse();
-			//instance.transposeInv = transform.getTransposeInverse();
+			instance.transformMat = transform.getMatrix();
+			instance.transformInv = transform.getInverse();
+			instance.transposeInv = transform.getTransposeInverse();
 			instances.push_back(instance);
 		}
 		index++;
@@ -231,7 +229,6 @@ void Scene::getLightBuffer(std::vector<CompactLight>& compLights) {
 			compLight.cutoffAngle = spotLight->getCutoffAngle();
 			compLight.position = spotLight->getPosition();
 			compLight.direction = spotLight->getDirection();
-
 		} else if (light->getType() == Lights::POINT) {
 			auto spotLight = std::static_pointer_cast<PointLight>(light);
 			compLight.position = spotLight->getPosition();
@@ -242,7 +239,6 @@ void Scene::getLightBuffer(std::vector<CompactLight>& compLights) {
 }
 
 void Scene::getMaterialBuffer(std::vector<CompactMaterial>& compMaterials) {
-
 	for (auto& mat : materials) {
 		CompactMaterial compMat;
 		compMat.type = toUnderlyingType(mat->getType());
@@ -257,9 +253,7 @@ void Scene::getMaterialBuffer(std::vector<CompactMaterial>& compMaterials) {
 			auto dielMat = std::static_pointer_cast<DielectricMaterial>(mat);
 			compMat.absorption = dielMat->getAbsorption();
 			compMat.ior = dielMat->getIOR();
-
 		}
-
 		compMaterials.push_back(compMat);
 	}
 }
