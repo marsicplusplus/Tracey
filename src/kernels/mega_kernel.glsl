@@ -52,14 +52,14 @@ const uint IMAGE = 0x00000002u;
 const uint CHECKERED = 0x00000004u;
 
 struct Texture {
-	uint type; // 4
-	int idx; // 8
-	int width; // 12
-	int height; // 16
-	int slice; // 20 
-	int bpp; // 24
-	vec4 color1; // 40
-	vec4 color2; // 56
+	vec4 color1;
+	vec4 color2; 
+	uint type; 
+	int idx; 
+	int width; 
+	int height; 
+	int slice;  
+	int bpp; 
 };
 
 layout(std430, binding = 3) readonly buffer Textures {
@@ -155,9 +155,9 @@ TRIANGLE DEFINITON AND METHODS
 ********************************************************************/
 
 struct Triangle {
-	vec2 uv0, uv1, uv2; // 24
 	vec4 v0, v1, v2; // 48
 	vec4 n0, n1, n2; // 48
+	vec2 uv0, uv1, uv2; // 24
 	int matIdx; // 4
 };
 
@@ -237,8 +237,16 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 	int stackPtr = 0;
 	nodestack[stackPtr++] = nodes[firstNodeIdx]; // Push the root into the stack
 
+
+
 	while(stackPtr != 0){
 		Node currNode = nodestack[--stackPtr];
+
+//		float dist = 0;
+//		if (hitAABB(ray, currNode.minAABB, currNode.maxAABB, dist)) {
+//			return true;
+//		}
+
 		if(currNode.count != 0) {// I'm a leaf
 			for (int i = firstTri + int(currNode.leftFirst); i < firstTri + currNode.leftFirst + currNode.count; ++i) {
 				Triangle tri = triangles[i];

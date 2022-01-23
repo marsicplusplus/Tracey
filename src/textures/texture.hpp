@@ -18,14 +18,14 @@ enum class TextureType {
 };
 
 struct CompactTexture{
+	glm::vec4 color;
+	glm::vec4 sec_color;
 	unsigned int type;
 	int idx;
 	int w;
 	int h;
 	int slice;
 	int bpp;
-	glm::vec4 color;
-	glm::vec4 sec_color;
 	float __padding[2];
 };
 
