@@ -15,7 +15,7 @@
 
 class Renderer{
 public:
-	inline Renderer(std::string  _title, bool saveFrames = false) : title{std::move( _title )}, isBufferInvalid(false), saveFrames(saveFrames) {
+	inline Renderer(std::string  _title, bool saveFrames = false) : title{std::move( _title )}, isBufferInvalid(false), saveFrames(saveFrames), useComputeShader(false) {
 			this->frameBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 			this->secondaryBuffer = new uint32_t[OptionsMap::Instance()->getOption(Options::W_WIDTH) * OptionsMap::Instance()->getOption(Options::W_HEIGHT)];
 			nFrames = 0;
@@ -85,6 +85,7 @@ public:
 		int nFrames;
 		ImGui::FileBrowser fBrowser;
 
+		unsigned int fbSSBO;
 		std::vector<CompactMesh> meshes;
 		unsigned int meshSSBO;
 		std::vector<CompactTriangle> tris;

@@ -90,17 +90,6 @@ bool Renderer::init(){
 	if(OptionsMap::Instance()->getOption(Options::USE_GPU) > 0){
 		if(loadComputeShaders()){
 			useComputeShader = true;
-			glGenTextures(1, &textFrameBuffer);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, textFrameBuffer);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 
-					0, GL_RGBA, GL_FLOAT, NULL);
-			glBindImageTexture(0, textFrameBuffer, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-			//glUseProgram(this->megaKernel);
 		}
 	}
 
@@ -139,7 +128,8 @@ bool Renderer::init(){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, OptionsMap::Instance()->getOption(Options::W_WIDTH), OptionsMap::Instance()->getOption(Options::W_HEIGHT), 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+	glBindImageTexture(0, this->texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	
 	this->nSamples = OptionsMap::Instance()->getOption(Options::SAMPLES);
 	this->nBounces = OptionsMap::Instance()->getOption(Options::MAX_BOUNCES);
@@ -298,18 +288,16 @@ bool Renderer::start() {
 			InputManager::Instance()->setMouseState(xpos, ypos);
 			if(scene) this->isBufferInvalid = this->scene->update(dt);
 		}
+
 		glUseProgram(this->quadShader);
-		glBindVertexArray(this->VAO);
-		if(useComputeShader){
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, this->textFrameBuffer);
-			glClear(GL_COLOR_BUFFER_BIT);
-		} else {
-			uint32_t* buffer = applyPostProcessing();
-			glBindTexture(GL_TEXTURE_2D, this->texture);
+		uint32_t* buffer = applyPostProcessing();
+		glBindTexture(GL_TEXTURE_2D, this->texture);
+		if(!useComputeShader){
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wWidth, wHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, buffer);
 		}
+
 		glClear(GL_COLOR_BUFFER_BIT);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 		glBindVertexArray(this->VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		if (this->showGui)
@@ -638,7 +626,9 @@ bool Renderer::loadComputeShaders(){
 }
 
 void Renderer::bindBuffers() {
-	glBindImageTexture(0, textFrameBuffer, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+	glBindImageTexture(0, this->texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, fbSSBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, meshSSBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, instanceSSBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, textureSSBO);

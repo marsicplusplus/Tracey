@@ -1,10 +1,14 @@
 #version 450 core
 
-layout (local_size_x=8, local_size_y=8) in;
+layout (binding = 0, rgba32f) uniform image2D fb;
 
-layout(binding = 0, rgba32f) uniform image2D framebufferImage;
+layout (local_size_x=32, local_size_y=32) in;
 
-const float INFINITY = 1. / 0.;
+//layout(std430, binding = 0) writeonly buffer frameBuffer {
+	//uint fb[];
+//};
+
+const float INFINITY = 3.402823466e+38;
 const float EPSILON = 1e-10;
 const uint NILL = 0x00000000u;
 
@@ -110,7 +114,7 @@ Ray transformRay(Ray origRay, mat4 transform) {
 
 
 bool hitAABB(Ray ray, vec3 minAABB, vec3 maxAABB, out float distance) {
-	return true;
+
 	float tmin = -INFINITY, tmax = INFINITY;
 
 	float tx1 = (minAABB.x - ray.origin.x) * ray.invDirection.x;
@@ -226,13 +230,13 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 	int meshIdx = instance.meshIdx;
 	Mesh mesh = meshes[meshIdx];
 	int firstTri = mesh.firstTri;
-	int firstNode = mesh.firstNode;
+	int firstNodeIdx = mesh.firstNode;
 
 	Node nodestack[64];
 	int stackPtr = 0;
-	nodestack[stackPtr++] = nodes[firstNode]; // Push the root into the stack
-
-	int i = 0;
+	nodestack[stackPtr++] = nodes[firstNodeIdx]; // Push the root into the stack
+	int k = 0;
+	int j = 0;
 	while(stackPtr != 0){
 		Node currNode = nodestack[--stackPtr];
 		if(currNode.count != 0) {// I'm a leaf
@@ -246,8 +250,8 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 			}
 			tMax = closest;
 		} else {
-			int idx1 = firstNode + currNode.leftFirst;
-			int idx2 = firstNode + currNode.leftFirst + 1;
+			int idx1 = firstNodeIdx + currNode.leftFirst;
+			int idx2 = firstNodeIdx + currNode.leftFirst + 1;
 			Node firstNode = nodes[idx1];
 			Node secondNode = nodes[idx2];
 
@@ -459,7 +463,6 @@ bool traceScene(const Ray ray, float tMin, float tMax, out HitRecord rec) {
 	for (int i = 0; i < instances.length(); i++) {
 		Instance instance = instances[i];
 		if (intersectBVH(ray, instance, tMin, closest, tmp)) {
-			return true;
 			hasHit = true;
 			closest = tmp.t;
 			rec = tmp;
@@ -534,15 +537,16 @@ uniform int bounces;
 void main() {
 	Ray ray;
 
-	vec2 px = vec2(gl_GlobalInvocationID.xy);
-	vec2 size = imageSize(framebufferImage);
+	vec2 px = gl_GlobalInvocationID.xy;
+	vec2 size = gl_NumWorkGroups.xy;
 
-	ray.direction = normalize(llCorner + px.x / (size.x - 1) * horizontal + px.y / (size.y - 1) * vertical - camPosition);
+	ray.direction = normalize(llCorner + px.x / (size.x - 1.0f) * horizontal + px.y / (size.y - 1.0f) * vertical - camPosition);
 	ray.origin = camPosition;
 
-	//float t = 0.5 * (ray.direction.y + 1.0);
-	//vec3 color = (1.0 - t) * vec3(1.0, 0.0, 0.0) + t * vec3(0.0, 0.0, 0.0);
+	float t = 0.5 * (ray.direction.y + 1.0);
+	vec3 color = (1.0 - t) * vec3(1.0, 0.0, 0.0) + t * vec3(0.0, 0.0, 0.0);
 	
-	vec3 color = trace(ray, bounces);
-	imageStore(framebufferImage, ivec2(px), vec4(color, 1.0));
+	//vec3 color = trace(ray, bounces);
+
+	imageStore(fb, ivec2(gl_GlobalInvocationID.xy), vec4(color.rgb, 1.0));
 }
