@@ -146,11 +146,11 @@ void Scene::getTextureBuffer(std::vector<CompactTexture> &compactTextures, std::
 		txt.type = toUnderlyingType(text->getType());
 		if(text->getType() == TextureType::TEXTURE_SOLID){
 			auto imgT = std::static_pointer_cast<SolidColor>(text);
-			txt.color = imgT->c;
+			txt.color = glm::vec4(imgT->c, 0);
 		} else if(text->getType() == TextureType::TEXTURE_CHECKERED){
 			auto imgT = std::static_pointer_cast<Checkered>(text);
-			txt.color = imgT->c1;
-			txt.sec_color = imgT->c2;
+			txt.color = glm::vec4(imgT->c1, 0);
+			txt.sec_color = glm::vec4(imgT->c2, 0);
 		} else if(text->getType() == TextureType::TEXTURE_IMAGE){
 			auto imgT = std::static_pointer_cast<ImageTexture>(text);
 			txt.bpp = imgT->bpp;
@@ -186,10 +186,10 @@ void Scene::getMeshBuffer(std::vector<CompactTriangle> &ctris, std::vector<BVHNo
 
 		for(int i=0; i < size; ++i){
 			BVHNode node;
-			node.maxAABB = nodes[i].maxAABB;
-			node.count = nodes[i].count;
 			node.minAABB = nodes[i].minAABB;
+			node.maxAABB = nodes[i].maxAABB;
 			node.leftFirst = nodes[i].leftFirst;
+			node.count = nodes[i].count;
 			bvhs.push_back(node);
 		}
 	}
@@ -217,21 +217,21 @@ void Scene::getLightBuffer(std::vector<CompactLight>& compLights) {
 	for (auto& light : lights) {
 		CompactLight compLight;
 		compLight.type = toUnderlyingType(light->getType());
-		compLight.color = light->getColor();
+		compLight.color = glm::vec4(light->getColor(), 0);
 		compLight.intensity = light->getIntensity();
 
 		if (light->getType() == Lights::DIRECTIONAL) {
 			auto dirLight = std::static_pointer_cast<DirectionalLight>(light);
-			compLight.direction = dirLight->getDirection();
+			compLight.direction = glm::vec4(dirLight->getDirection(), 0);
 
 		} else if (light->getType() == Lights::SPOT) {
 			auto spotLight = std::static_pointer_cast<SpotLight>(light);
 			compLight.cutoffAngle = spotLight->getCutoffAngle();
-			compLight.position = spotLight->getPosition();
-			compLight.direction = spotLight->getDirection();
+			compLight.position = glm::vec4(spotLight->getPosition(), 0);
+			compLight.direction = glm::vec4(spotLight->getDirection(), 0);
 		} else if (light->getType() == Lights::POINT) {
 			auto spotLight = std::static_pointer_cast<PointLight>(light);
-			compLight.position = spotLight->getPosition();
+			compLight.position = glm::vec4(spotLight->getPosition(), 0);
 
 		}
 		compLights.push_back(compLight);
@@ -251,7 +251,7 @@ void Scene::getMaterialBuffer(std::vector<CompactMaterial>& compMaterials) {
 
 		} else if (mat->getType() == Materials::DIELECTRIC) {
 			auto dielMat = std::static_pointer_cast<DielectricMaterial>(mat);
-			compMat.absorption = dielMat->getAbsorption();
+			compMat.absorption = glm::vec4(dielMat->getAbsorption(), 0);
 			compMat.ior = dielMat->getIOR();
 		}
 		compMaterials.push_back(compMat);

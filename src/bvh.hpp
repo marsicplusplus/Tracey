@@ -11,10 +11,11 @@ enum class Heuristic {
 };
 
 struct BVHNode {
-	glm::fvec3 minAABB;
-	glm::fvec3 maxAABB;
+	glm::fvec4 minAABB;
+	glm::fvec4 maxAABB;
+	int count; 
 	int leftFirst;
-	int count; float __padding;
+	float __padding[2];
 };
 
 struct Bin {
@@ -40,7 +41,6 @@ class BVH : public Hittable {
 		~BVH();
 
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
-		bool frustumIntersectsAABB(Frustum frustum, const glm::fvec4& minBBox, const glm::fvec4& maxBBox);
 		bool update(float dt) override;
 		const std::vector<HittablePtr>& getHittable() const {
 			return hittables;

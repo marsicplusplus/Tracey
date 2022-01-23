@@ -100,13 +100,13 @@ bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const
 
 void Triangle::copyTri(CompactTriangle *ct) {
 	ct->mat = this->mat;
-	ct->v0 = (this->mesh->p.get())[vIdx[0]];
-	ct->v1 = (this->mesh->p.get())[vIdx[1]];
-	ct->v2 = (this->mesh->p.get())[vIdx[2]];
-
-	ct->n0 = (this->mesh->n.get())[vIdx[0]];
-	ct->n1 = (this->mesh->n.get())[vIdx[1]];
-	ct->n2 = (this->mesh->n.get())[vIdx[2]];
+	ct->v0 = glm::vec4((this->mesh->p.get())[vIdx[0]], 0);
+	ct->v1 = glm::vec4((this->mesh->p.get())[vIdx[1]], 0);
+	ct->v2 = glm::vec4((this->mesh->p.get())[vIdx[2]], 0);
+													 
+	ct->n0 = glm::vec4((this->mesh->n.get())[vIdx[0]], 0);
+	ct->n1 = glm::vec4((this->mesh->n.get())[vIdx[1]], 0);
+	ct->n2 = glm::vec4((this->mesh->n.get())[vIdx[2]], 0);
 
 	if(mesh->uv){
 		ct->u0 = mesh->uv[vIdx[0]];

@@ -19,12 +19,12 @@ enum class Materials : unsigned int{
 };
 
 struct CompactMaterial {
-	glm::vec3 absorption;
+	glm::vec4 absorption;
 	unsigned int type;
 	int albedoIdx;
 	int bump;
 	float reflectionIdx;
-	float ior; float __padding;
+	float ior; float __padding[3];
 };
 
 class Material {

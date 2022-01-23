@@ -610,10 +610,10 @@ bool Renderer::loadComputeShaders(){
 
 		// Provide the infolog in whatever manor you deem best.
 		// Exit with failure.
-		glDeleteShader(megaKernelShader); // Don't leak the shader.
 		for (char i : errorLog)
 			std::cout << i;
 		std::cout << std::endl;
+		glDeleteShader(megaKernelShader); // Don't leak the shader.
 		return false;
 	}
 

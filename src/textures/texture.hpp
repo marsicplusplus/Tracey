@@ -24,8 +24,9 @@ struct CompactTexture{
 	int h;
 	int slice;
 	int bpp;
-	glm::vec3 color;
-	glm::vec3 sec_color;
+	glm::vec4 color;
+	glm::vec4 sec_color;
+	float __padding[2];
 };
 
 class Texture {

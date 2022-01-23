@@ -52,21 +52,21 @@ const uint IMAGE = 0x00000002u;
 const uint CHECKERED = 0x00000004u;
 
 struct Texture {
-	uint type;
-	int idx;
-	int width;
-	int height;
-	int slice;
-	int bpp;
-	vec3 color1;
-	vec3 color2;
+	uint type; // 4
+	int idx; // 8
+	int width; // 12
+	int height; // 16
+	int slice; // 20 
+	int bpp; // 24
+	vec4 color1; // 40
+	vec4 color2; // 56
 };
 
 layout(std430, binding = 3) readonly buffer Textures {
 	Texture[] textures;
 };
 
-vec3 getTextureColor(int textureIdx, float u, float v, const vec3 p) {
+vec4 getTextureColor(int textureIdx, float u, float v, const vec3 p) {
 	Texture tex = textures[textureIdx];
 	return tex.color1;
 //	if (tex.type == SOLID) {
@@ -113,7 +113,7 @@ Ray transformRay(Ray origRay, mat4 transform) {
 }
 
 
-bool hitAABB(Ray ray, vec3 minAABB, vec3 maxAABB, out float distance) {
+bool hitAABB(Ray ray, vec4 minAABB, vec4 maxAABB, out float dist) {
 
 	float tmin = -INFINITY, tmax = INFINITY;
 
@@ -135,8 +135,8 @@ bool hitAABB(Ray ray, vec3 minAABB, vec3 maxAABB, out float distance) {
 	tmin = max(tmin, min(tz1, tz2));
 	tmax = min(tmax, max(tz1, tz2));
 
-	distance = max(tmin, 0.0);
-	return (tmax >= distance);
+	dist = max(tmin, 0.0);
+	return (tmax >= dist);
 }
 
 
@@ -155,9 +155,9 @@ TRIANGLE DEFINITON AND METHODS
 ********************************************************************/
 
 struct Triangle {
-	vec2 uv0, uv1, uv2; //24
-	vec3 v0, v1, v2; //36
-	vec3 n0, n1, n2; //36
+	vec2 uv0, uv1, uv2; // 24
+	vec4 v0, v1, v2; // 48
+	vec4 n0, n1, n2; // 48
 	int matIdx; // 4
 };
 
@@ -167,14 +167,14 @@ layout(std430, binding = 4) readonly buffer Triangles {
 };
 
 bool hitTriangle(Ray ray, Triangle tri, float tMin, float tMax, HitRecord rec) {
-	vec3 v0v1 = tri.v1 - tri.v0;
-	vec3 v0v2 = tri.v2 - tri.v0;
+	vec3 v0v1 = vec3(tri.v1 - tri.v0);
+	vec3 v0v2 = vec3(tri.v2 - tri.v0);
 	vec3 p = cross(ray.direction, v0v2);
 	float det = dot(v0v1, p);
 	if (abs(det) < EPSILON) return false;
 	float inv = 1.0 / det;
 
-	vec3 tv = ray.origin - tri.v0;
+	vec3 tv = ray.origin - vec3(tri.v0);
 	float u = dot(tv, p) * inv;
 	if (u < 0.0 || u > 1.0) return false;
 
@@ -186,7 +186,7 @@ bool hitTriangle(Ray ray, Triangle tri, float tMin, float tMax, HitRecord rec) {
 
 	if (tmp > tMin && tmp < tMax) {
 
-		vec3 hitNormal = u * (tri.n1) + v * (tri.n2) + (1.0 - u - v) * (tri.n0);
+		vec3 hitNormal = vec3(u * (tri.n1) + v * (tri.n2) + (1.0 - u - v) * (tri.n0));
 
 		setFaceNormal(rec, ray, hitNormal);
 
@@ -211,10 +211,10 @@ BVH DEFINITON AND METHODS
 ********************************************************************/
 
 struct Node {
-	vec3 minAABB;
-	vec3 maxAABB;
-	int leftFirst;
+	vec4 minAABB;
+	vec4 maxAABB;
 	int count;
+	int leftFirst;
 };
 
 
@@ -228,6 +228,7 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 	float closest = tMax;
 
 	int meshIdx = instance.meshIdx;
+
 	Mesh mesh = meshes[meshIdx];
 	int firstTri = mesh.firstTri;
 	int firstNodeIdx = mesh.firstNode;
@@ -235,8 +236,7 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 	Node nodestack[64];
 	int stackPtr = 0;
 	nodestack[stackPtr++] = nodes[firstNodeIdx]; // Push the root into the stack
-	int k = 0;
-	int j = 0;
+
 	while(stackPtr != 0){
 		Node currNode = nodestack[--stackPtr];
 		if(currNode.count != 0) {// I'm a leaf
@@ -307,7 +307,7 @@ const uint DIELECTRIC  	= 0x00000002u;
 const uint MIRROR  		= 0x00000004u;
 
 struct Material {
-	vec3 absorption;
+	vec4 absorption;
 	uint type;
 	int albedoIdx;
 	int bump;
@@ -388,9 +388,9 @@ const uint AMBIENT = 0x00000008u;
 
 
 struct Light {
-  vec3 color;
-  vec3 position;
-  vec3 direction;
+  vec4 color;
+  vec4 position;
+  vec4 direction;
   uint type;
   float intensity;
   float cutoffAngle;
@@ -415,24 +415,27 @@ Ray getShadowRay(const Light light, const HitRecord rec, out float tMax) {
 	shadowRay.origin = vec3(0.0, 0.0, 0.0);
 	shadowRay.direction = vec3(0.0, 0.0, 0.0);
 
+	vec3 lightpos = vec3(light.position);
+	vec3 lightdir = vec3(light.direction);
+
 	if (light.type == POINT) {
-		tMax = distance(light.position, rec.p);
-		shadowRay.direction = light.position - rec.p;
+		tMax = distance(lightpos, rec.p);
+		shadowRay.direction = lightpos - rec.p;
 		shadowRay.origin = rec.p + 0.001 * shadowRay.direction;
 	} else if (light.type == SPOT) {
-		tMax = distance(light.position, rec.p);
-		shadowRay.direction = light.position - rec.p;
+		tMax = distance(lightpos, rec.p);
+		shadowRay.direction = lightpos - rec.p;
 		shadowRay.origin = rec.p + 0.001 * shadowRay.direction;
 
-		float angle = acos(dot(shadowRay.direction, normalize(rec.p - light.position)));
+		float angle = acos(dot(shadowRay.direction, normalize(rec.p - lightpos)));
 		if (angle > light.cutoffAngle) {
 			shadowRay.origin = rec.p;
 			shadowRay.direction = vec3(0.0, 0.0, 0.0);
 		}
 	} else if (light.type == DIRECTIONAL) {
 		tMax = INFINITY;
-		shadowRay.direction = -light.direction;
-		shadowRay.origin = rec.p + 0.001 * (-light.direction);
+		shadowRay.direction = -lightdir;
+		shadowRay.origin = rec.p + 0.001 * (-lightdir);
 	} else if (light.type == AMBIENT) {
 		tMax = 0.0001;
 		shadowRay.origin = rec.p + 0.001 * rec.normal;
@@ -444,7 +447,7 @@ Ray getShadowRay(const Light light, const HitRecord rec, out float tMax) {
 }
 
 vec3 attenuate(Light light, vec3 color, const vec3 p) {
-	return color * 1.0 / distance(light.position, p);
+	return color * 1.0 / distance(vec3(light.position), p);
 }
 
 
@@ -505,7 +508,7 @@ vec3 trace(Ray ray, int bounces) {
 			return vec3(1.0, 0.0, 0.0);
 			Ray reflectedRay;
 			Material mat = materials[hr.material];
-			vec3 attenuation = getTextureColor(mat.albedoIdx, hr.u, hr.v, hr.p);
+			vec3 attenuation = vec3(getTextureColor(mat.albedoIdx, hr.u, hr.v, hr.p));
 			float reflectance = 1.0f;
 			if (mat.type == DIFFUSE || mat.type == DIELECTRIC) {
 				c += attenuation * traceLights(hr) * frac;
@@ -543,10 +546,10 @@ void main() {
 	ray.direction = normalize(llCorner + px.x / (size.x - 1.0f) * horizontal + px.y / (size.y - 1.0f) * vertical - camPosition);
 	ray.origin = camPosition;
 
-	float t = 0.5 * (ray.direction.y + 1.0);
-	vec3 color = (1.0 - t) * vec3(1.0, 0.0, 0.0) + t * vec3(0.0, 0.0, 0.0);
+	//float t = 0.5 * (ray.direction.y + 1.0);
+	//vec3 color = (1.0 - t) * vec3(1.0, 0.0, 0.0) + t * vec3(0.0, 0.0, 0.0);
 	
-	//vec3 color = trace(ray, bounces);
+	vec3 color = trace(ray, bounces);
 
 	imageStore(fb, ivec2(gl_GlobalInvocationID.xy), vec4(color.rgb, 1.0));
 }

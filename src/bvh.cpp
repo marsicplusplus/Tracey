@@ -39,9 +39,9 @@ void BVH::constructTopLevelBVH() {
 		auto* node = new BVHNode;
 		auto hittable = hittables[i];
 		auto aabb = hittable->getWorldAABB();
-		node->minAABB = { aabb.minX, aabb.minY, aabb.minZ};
+		node->minAABB = { aabb.minX, aabb.minY, aabb.minZ, INF};
 		node->leftFirst = i;
-		node->maxAABB = { aabb.maxX, aabb.maxY, aabb.maxZ};
+		node->maxAABB = { aabb.maxX, aabb.maxY, aabb.maxZ, -INF};
 		node->count = 1;
 		nodeList.push_back(node);
 	}
@@ -138,9 +138,9 @@ void BVH::constructSubBVH() {
 
 bool BVH::computeBounding(BVHNode *node) {
 	if(node == nullptr) return false;
-	node->minAABB = { INF,INF,INF };
+	node->minAABB = { INF,INF,INF,INF };
 	node->leftFirst = node->leftFirst;
-	node->maxAABB = { -INF,-INF,-INF };
+	node->maxAABB = { -INF,-INF,-INF,-INF };
 	node->count = { node->count };
 	int threadNum = OptionsMap::Instance()->getOption(Options::THREADS);
 	std::vector<std::future<void>> futures;
