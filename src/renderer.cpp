@@ -679,7 +679,7 @@ void Renderer::genBuffers() {
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, materialSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
-	glGenBuffers(7, &lightSSBO);
+	glGenBuffers(1, &lightSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactLight) * lights.size(), &lights[0], GL_DYNAMIC_COPY); 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, lightSSBO);

@@ -5,6 +5,7 @@ layout (binding = 0, rgba32f) uniform image2D fb;
 
 const float INFINITY = 1.0/0.0;
 const float EPSILON = 1e-10;
+#define FLT_MIN 1.175494351e-38
 const uint NILL = 0x00000000u;
 
 /*******************************************************************
@@ -97,16 +98,43 @@ struct Ray {
 	vec3 invDirection;
 };
 
-Ray transformRay(Ray origRay, mat4 transform) {
-	vec4 newDir = transform * vec4(origRay.direction, 0.0);
-	vec4 newOg = transform * vec4(origRay.origin, 1.0);
-	Ray ret;
-	ret.origin = vec3(newOg);
-	ret.direction = vec3(newDir);
-	ret.invDirection = 1.0 / ret.direction;
-	return ret;
+void validateRay(inout Ray ray) {
+	if (ray.direction.x == 0.0) {
+		ray.direction.x = FLT_MIN;
+	}
+
+	if (ray.direction.y == 0.0) {
+		ray.direction.y = FLT_MIN;
+	}
+
+	if (ray.direction.z == 0.0) {
+		ray.direction.z = FLT_MIN;
+	}
+
+	ray.invDirection = 1.0 / ray.direction;
+
+	if (ray.invDirection.x == 0.0) {
+		ray.invDirection.x = FLT_MIN;
+	}
+
+	if (ray.invDirection.y == 0.0) {
+		ray.invDirection.y = FLT_MIN;
+	}
+
+	if (ray.invDirection.z == 0.0) {
+		ray.invDirection.z = FLT_MIN;
+	}
 }
 
+Ray transformRay(Ray origRay, mat4 transform) {
+	vec3 newDir = vec3(transform * vec4(origRay.direction, 0.0));
+	vec3 newOg = vec3(transform * vec4(origRay.origin, 1.0));
+	Ray ret;
+	ret.origin = newOg;
+	ret.direction = newDir;
+	validateRay(ret);
+	return ret;
+}
 
 bool hitAABB(Ray ray, vec4 minAABB, vec4 maxAABB, out float dist) {
 
@@ -333,9 +361,9 @@ void material_reflect(Material mat, Ray ray, HitRecord hr, out Ray reflectedRay,
 	}
 
 	vec3 reflectedDir = reflect(ray.direction, hr.normal);
-	reflectedRay.origin = hr.p + EPSILON * reflectedDir;
+	reflectedRay.origin = hr.p + 0.001 * reflectedDir;
 	reflectedRay.direction = reflectedDir;
-	reflectedRay.invDirection = 1.0 / reflectedDir;
+	validateRay(reflectedRay);
 }
 
 void material_refract(Ray ray, HitRecord hr, float ior, out Ray refractedRay, out float refractance) {
@@ -348,9 +376,9 @@ void material_refract(Ray ray, HitRecord hr, float ior, out Ray refractedRay, ou
 		refractance = 0.0;
 	} else {
 		vec3 refractedDir = ratio * ray.direction + (ratio * cosi - sqrt(k)) * hr.normal;
-		refractedRay.origin = hr.p + EPSILON * refractedDir;
+		refractedRay.origin = hr.p + 0.001 * refractedDir;
 		refractedRay.direction = refractedDir;
-		refractedRay.invDirection = 1.0 / refractedDir;
+		validateRay(refractedRay);
 	}
 }
 
@@ -411,11 +439,11 @@ Ray getShadowRay(const Light light, const HitRecord rec, out float tMax) {
 	if (light.type == POINT) {
 		tMax = distance(lightpos, rec.p);
 		shadowRay.direction = lightpos - rec.p;
-		shadowRay.origin = rec.p + EPSILON * shadowRay.direction;
+		shadowRay.origin = rec.p + 0.001 * shadowRay.direction;
 	} else if (light.type == SPOT) {
 		tMax = distance(lightpos, rec.p);
 		shadowRay.direction = lightpos - rec.p;
-		shadowRay.origin = rec.p + EPSILON * shadowRay.direction;
+		shadowRay.origin = rec.p + 0.001 * shadowRay.direction;
 
 		float angle = acos(dot(shadowRay.direction, normalize(rec.p - lightpos)));
 		if (angle > light.cutoffAngle) {
@@ -425,10 +453,10 @@ Ray getShadowRay(const Light light, const HitRecord rec, out float tMax) {
 	} else if (light.type == DIRECTIONAL) {
 		tMax = INFINITY;
 		shadowRay.direction = -lightdir;
-		shadowRay.origin = rec.p + EPSILON * (-lightdir);
+		shadowRay.origin = rec.p + 0.001 * (-lightdir);
 	} else if (light.type == AMBIENT) {
 		tMax = 0.0001;
-		shadowRay.origin = rec.p + EPSILON * rec.normal;
+		shadowRay.origin = rec.p + 0.001 * rec.normal;
 		shadowRay.direction = rec.normal;
 	}
 
@@ -437,7 +465,11 @@ Ray getShadowRay(const Light light, const HitRecord rec, out float tMax) {
 }
 
 vec3 attenuate(Light light, vec3 color, const vec3 p) {
-	return color * 1.0 / distance(vec3(light.position), p);
+	if (light.type == POINT || light.type == SPOT) {
+		return color * 1.0 / distance(vec3(light.position), p);
+	} else {
+		return color;
+	}
 }
 
 
@@ -477,7 +509,7 @@ vec3 traceLights(HitRecord rec) {
 		}
 
 		HitRecord obstruction;
-		if(!traceScene(shadowRay, EPSILON, tMax, obstruction)){
+		if(!traceScene(shadowRay, 0.001, tMax, obstruction)){
 			vec3 contribution = getIllumination(light, rec, shadowRay);
 			illumination += attenuate(light, contribution, rec.p);
 		}
@@ -492,12 +524,10 @@ vec3 trace(Ray ray, int bounces) {
 	Ray current = ray;
 	float frac = 1.0f;
 	while(bounces > 0){
-		if (traceScene(current, EPSILON, INFINITY, hr)) {
+		if (traceScene(current, 0.001, INFINITY, hr)) {
 			Ray reflectedRay;
 			Material mat = materials[hr.material];
-			//vec3 attenuation = getTextureColor(mat.albedoIdx, hr.u, hr.v, hr.p).xyz;
-			vec3 attenuation = vec3(1.0);
-				return attenuation;
+			vec3 attenuation = getTextureColor(mat.albedoIdx, hr.u, hr.v, hr.p).xyz;
 			float reflectance = 1.0f;
 			if (mat.type == DIFFUSE || mat.type == DIELECTRIC) {
 				c += attenuation * traceLights(hr) * frac;
@@ -516,7 +546,7 @@ vec3 trace(Ray ray, int bounces) {
 				break;
 			}
 		}else{
-			return vec3(0.0f, 0.0f, 1.0f);
+			c += vec3(0.0f, 0.0f, 0.0f);
 			break;
 		}
 	}
@@ -534,7 +564,7 @@ void main() {
 
 	ray.direction = normalize(llCorner + px.x / (size.x - 1.0f) * horizontal + px.y / (size.y - 1.0f) * vertical - camPosition);
 	ray.origin = camPosition;
-	ray.invDirection = 1.0/ray.direction;
+	validateRay(ray);
 
 	//float t = 0.5 * (ray.direction.y + 1.0);
 	//vec3 color = (1.0 - t) * vec3(1.0, 0.0, 0.0) + t * vec3(0.0, 0.0, 0.0);
