@@ -1,12 +1,7 @@
 #version 450 core
+layout (local_size_x=1, local_size_y=1) in;
 
 layout (binding = 0, rgba32f) uniform image2D fb;
-
-layout (local_size_x=32, local_size_y=32) in;
-
-//layout(std430, binding = 0) writeonly buffer frameBuffer {
-	//uint fb[];
-//};
 
 const float INFINITY = 3.402823466e+38;
 const float EPSILON = 1e-10;
@@ -155,10 +150,10 @@ TRIANGLE DEFINITON AND METHODS
 ********************************************************************/
 
 struct Triangle {
-	vec4 v0, v1, v2; // 48
-	vec4 n0, n1, n2; // 48
-	vec2 uv0, uv1, uv2; // 24
-	int matIdx; // 4
+	vec4 v0, v1, v2; 	// 12N
+	vec4 n0, n1, n2; 	// 12N
+	vec4 uv0, uv1, uv2; // 12N
+	int matIdx; 		// 1N
 };
 
 
@@ -190,7 +185,7 @@ bool hitTriangle(Ray ray, Triangle tri, float tMin, float tMax, HitRecord rec) {
 
 		setFaceNormal(rec, ray, hitNormal);
 
-		vec2 uv = u * (tri.uv1) + v * (tri.uv2) + (1.0 - u - v) * (tri.uv0);
+		vec2 uv = u * (tri.uv1.xy) + v * (tri.uv2.xy) + (1.0 - u - v) * (tri.uv0.xy);
 		
 		rec.u = uv.x;
 		rec.v = uv.y;
@@ -200,7 +195,6 @@ bool hitTriangle(Ray ray, Triangle tri, float tMin, float tMax, HitRecord rec) {
 
 		return true;
 	}
-
 	return false;
 }
 
@@ -211,10 +205,10 @@ BVH DEFINITON AND METHODS
 ********************************************************************/
 
 struct Node {
-	vec4 minAABB;
-	vec4 maxAABB;
-	int count;
-	int leftFirst;
+	vec4 minAABB; 	// 4N
+	vec4 maxAABB; 	// 4N
+	uint count;		// 1N
+	uint leftFirst;	// 1N
 };
 
 
@@ -237,18 +231,17 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 	int stackPtr = 0;
 	nodestack[stackPtr++] = nodes[firstNodeIdx]; // Push the root into the stack
 
-
-
 	while(stackPtr != 0){
 		Node currNode = nodestack[--stackPtr];
 
-//		float dist = 0;
-//		if (hitAABB(ray, currNode.minAABB, currNode.maxAABB, dist)) {
-//			return true;
-//		}
+		//float dist = 0;
+		//if (hitAABB(ray, currNode.minAABB, currNode.maxAABB, dist)) {
+			//return true;
+		//}
 
 		if(currNode.count != 0) {// I'm a leaf
-			for (int i = firstTri + int(currNode.leftFirst); i < firstTri + currNode.leftFirst + currNode.count; ++i) {
+			return true;
+			for (uint i = firstTri + currNode.leftFirst; i < firstTri + currNode.leftFirst + currNode.count; ++i) {
 				Triangle tri = triangles[i];
 				if (hitTriangle(ray, tri, tMin, closest, tmp)) {
 					rec = tmp;
@@ -258,8 +251,8 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 			}
 			tMax = closest;
 		} else {
-			int idx1 = firstNodeIdx + currNode.leftFirst;
-			int idx2 = firstNodeIdx + currNode.leftFirst + 1;
+			uint idx1 = firstNodeIdx + currNode.leftFirst;
+			uint idx2 = firstNodeIdx + currNode.leftFirst + 1;
 			Node firstNode = nodes[idx1];
 			Node secondNode = nodes[idx2];
 
@@ -410,12 +403,12 @@ layout(std430, binding = 7) readonly buffer Lights {
 
 vec3 getIllumination(const Light light, const HitRecord rec, Ray ray) {
 
-	vec3 illumination = vec3(0.0);
+	vec4 illumination = vec4(0.0);
 	float nd = dot(rec.normal, ray.direction);
 	if(nd > 0.0){
 		illumination += light.color * light.intensity * nd;
 	}
-	return illumination;
+	return illumination.xyz;
 };
 
 Ray getShadowRay(const Light light, const HitRecord rec, out float tMax) {

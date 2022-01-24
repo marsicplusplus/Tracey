@@ -9,10 +9,10 @@
 #include "glm/gtx/norm.hpp"
 
 struct CompactTriangle{
-	glm::vec4 v0, v1, v2;
-	glm::vec4 n0, n1, n2;
-	glm::vec2 u0, u1, u2;
-	int mat; float __padding;
+	glm::vec4 v0, v1, v2; // 12N
+	glm::vec4 n0, n1, n2; // 12N
+	glm::vec4 u0, u1, u2; // 12N
+	int mat;/*1N*/ float __padding[3];
 };
 
 class Triangle : public Hittable {

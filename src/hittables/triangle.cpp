@@ -109,13 +109,13 @@ void Triangle::copyTri(CompactTriangle *ct) {
 	ct->n2 = glm::vec4((this->mesh->n.get())[vIdx[2]], 0);
 
 	if(mesh->uv){
-		ct->u0 = mesh->uv[vIdx[0]];
-		ct->u1 = mesh->uv[vIdx[1]];
-		ct->u2 = mesh->uv[vIdx[2]];
+		ct->u0 = glm::fvec4(mesh->uv[vIdx[0]], 0,0);
+		ct->u1 = glm::fvec4(mesh->uv[vIdx[1]], 0,0);
+		ct->u2 = glm::fvec4(mesh->uv[vIdx[2]], 0,0);
 	} else {
-		ct->u0 = glm::fvec2{0, 0};
-		ct->u1 = glm::fvec2{1, 0};
-		ct->u2 = glm::fvec2{1, 1};
+		ct->u0 = glm::fvec4{0, 0,0,0};
+		ct->u1 = glm::fvec4{1, 0,0,0};
+		ct->u2 = glm::fvec4{1, 1,0,0};
 	}
 
 }
