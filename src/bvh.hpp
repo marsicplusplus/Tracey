@@ -13,8 +13,8 @@ enum class Heuristic {
 struct BVHNode {
 	glm::fvec4 minAABB;
 	glm::fvec4 maxAABB;
-	uint count; 
-	uint leftFirst;
+	unsigned int count; 
+	unsigned int leftFirst;
 	float __padding[2];
 };
 

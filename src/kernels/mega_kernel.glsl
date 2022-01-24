@@ -98,8 +98,8 @@ struct Ray {
 };
 
 Ray transformRay(Ray origRay, mat4 transform) {
-	vec4 newDir = transform * vec4(origRay.direction, 0);
-	vec4 newOg = transform * vec4(origRay.origin, 1);
+	vec4 newDir = transform * vec4(origRay.direction, 0.0);
+	vec4 newOg = transform * vec4(origRay.origin, 1.0);
 	Ray ret;
 	ret.origin = vec3(newOg);
 	ret.direction = vec3(newDir);
@@ -136,7 +136,7 @@ bool hitAABB(Ray ray, vec4 minAABB, vec4 maxAABB, out float dist) {
 
 
 
-void setFaceNormal(HitRecord rec, const Ray r, const vec3 outNormal) {
+void setFaceNormal(out HitRecord rec, const Ray r, const vec3 outNormal) {
 	rec.frontFace = dot(r.direction, outNormal) < 0.0;
 	rec.normal = rec.frontFace ? normalize(outNormal) : normalize(-outNormal);
 }
@@ -161,7 +161,8 @@ layout(std430, binding = 4) readonly buffer Triangles {
 	Triangle[] triangles;
 };
 
-bool hitTriangle(Ray ray, Triangle tri, float tMin, float tMax, HitRecord rec) {
+bool hitTriangle(Ray ray, Triangle tri, float tMin, float tMax, out HitRecord rec) {
+
 	vec3 v0v1 = vec3(tri.v1 - tri.v0);
 	vec3 v0v2 = vec3(tri.v2 - tri.v0);
 	vec3 p = cross(ray.direction, v0v2);
@@ -186,7 +187,7 @@ bool hitTriangle(Ray ray, Triangle tri, float tMin, float tMax, HitRecord rec) {
 		setFaceNormal(rec, ray, hitNormal);
 
 		vec2 uv = u * (tri.uv1.xy) + v * (tri.uv2.xy) + (1.0 - u - v) * (tri.uv0.xy);
-		
+
 		rec.u = uv.x;
 		rec.v = uv.y;
 		rec.material = tri.matIdx;
@@ -216,10 +217,8 @@ layout(std430, binding = 5) readonly buffer BVHNodes {
 	Node[] nodes;
 };
 
-bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out HitRecord rec) {
-	HitRecord tmp;
+bool traverseBVH(Ray ray, Instance instance, float tMin, float tMax, out HitRecord rec) {
 	bool hasHit = false;
-	float closest = tMax;
 
 	int meshIdx = instance.meshIdx;
 
@@ -234,22 +233,16 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 	while(stackPtr != 0){
 		Node currNode = nodestack[--stackPtr];
 
-		//float dist = 0;
-		//if (hitAABB(ray, currNode.minAABB, currNode.maxAABB, dist)) {
-			//return true;
-		//}
-
 		if(currNode.count != 0) {// I'm a leaf
-			return true;
 			for (uint i = firstTri + currNode.leftFirst; i < firstTri + currNode.leftFirst + currNode.count; ++i) {
 				Triangle tri = triangles[i];
-				if (hitTriangle(ray, tri, tMin, closest, tmp)) {
+				HitRecord tmp;
+				if (hitTriangle(ray, tri, tMin, tMax, tmp)) {
 					rec = tmp;
-					closest = rec.t;
+					tMax = rec.t;
 					hasHit = true;
 				}
 			}
-			tMax = closest;
 		} else {
 			uint idx1 = firstNodeIdx + currNode.leftFirst;
 			uint idx2 = firstNodeIdx + currNode.leftFirst + 1;
@@ -274,7 +267,7 @@ bool traverseBVH(Ray ray, Instance instance, out float tMin, out float tMax, out
 				nodestack[stackPtr++] = firstNode;
 			} else if(hitAABBSecond && secondDistance < tMax) {
 				nodestack[stackPtr++] = secondNode;
-			}
+			} 
 		}
 	}
 	return hasHit;
@@ -459,16 +452,14 @@ TRACING
 ********************************************************************/
 
 bool traceScene(const Ray ray, float tMin, float tMax, out HitRecord rec) {
-	HitRecord tmp;
-	tmp.p = vec3(INFINITY, INFINITY, INFINITY);
 	bool hasHit = false;
-	float closest = tMax;
 
 	for (int i = 0; i < instances.length(); i++) {
+		HitRecord tmp;
 		Instance instance = instances[i];
-		if (intersectBVH(ray, instance, tMin, closest, tmp)) {
+		if (intersectBVH(ray, instance, tMin, tMax, tmp)) {
 			hasHit = true;
-			closest = tmp.t;
+			tMax = tmp.t;
 			rec = tmp;
 		}
 	}
@@ -506,7 +497,6 @@ vec3 trace(Ray ray, int bounces) {
 	float frac = 1.0f;
 	while(bounces > 0){
 		if (traceScene(current, EPSILON, INFINITY, hr)) {
-			return vec3(1.0, 0.0, 0.0);
 			Ray reflectedRay;
 			Material mat = materials[hr.material];
 			vec3 attenuation = vec3(getTextureColor(mat.albedoIdx, hr.u, hr.v, hr.p));
