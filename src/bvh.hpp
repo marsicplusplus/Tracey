@@ -42,7 +42,10 @@ class BVH : public Hittable {
 
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
 		bool update(float dt) override;
-		const std::vector<HittablePtr>& getHittable() const {
+		const std::vector<unsigned int>& getHittableIdxs() const {
+			return hittableIdxs;
+		}
+		const std::vector<HittablePtr>& getHittables() const {
 			return hittables;
 		};
 		const BVHNode* getNodes(int &tsize) const {
@@ -78,7 +81,7 @@ class BVH : public Hittable {
 		BVHNode* findBestMatch(BVHNode* target, std::list<BVHNode*> nodes);
 
 		std::vector<HittablePtr> hittables;
-		std::vector<int> hittableIdxs;
+		std::vector<unsigned int> hittableIdxs;
 
 		BVHNode* nodePool;
 		BVHNode* root;

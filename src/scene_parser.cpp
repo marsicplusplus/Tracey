@@ -178,7 +178,7 @@ namespace SceneParser {
 		if (!mesh.contains("name")) throw std::invalid_argument("Mesh doesn't name an instance");
 		std::string name = mesh.at("name");
 		auto m = meshes.find(name);
-		numTri += m->second->getHittable().size();
+		numTri += m->second->getHittables().size();
 		if(m == meshes.end()){
 			throw std::invalid_argument("Mesh doesn't name a valid instance");
 		}

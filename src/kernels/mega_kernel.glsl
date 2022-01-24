@@ -3,7 +3,7 @@ layout (local_size_x=1, local_size_y=1) in;
 
 layout (binding = 0, rgba32f) uniform image2D fb;
 
-const float INFINITY = 3.402823466e+38;
+const float INFINITY = 1.0/0.0;
 const float EPSILON = 1e-10;
 const uint NILL = 0x00000000u;
 
@@ -82,13 +82,13 @@ HIT RECORD AND RAY DEFINITION/METHODS
 ********************************************************************/
 
 struct HitRecord {
+	vec3 p;
+	vec3 normal;
 	bool frontFace;
 	int material;
 	float u;
 	float v;
 	float t;
-	vec3 p;
-	vec3 normal;
 };
 
 struct Ray {
@@ -110,13 +110,13 @@ Ray transformRay(Ray origRay, mat4 transform) {
 
 bool hitAABB(Ray ray, vec4 minAABB, vec4 maxAABB, out float dist) {
 
-	float tmin = -INFINITY, tmax = INFINITY;
+	float tmin, tmax;
 
 	float tx1 = (minAABB.x - ray.origin.x) * ray.invDirection.x;
 	float tx2 = (maxAABB.x - ray.origin.x) * ray.invDirection.x;
 
-	tmin = max(tmin, min(tx1, tx2));
-	tmax = min(tmax, max(tx1, tx2));
+	tmin = min(tx1, tx2);
+	tmax = max(tx1, tx2);
 
 	float ty1 = (minAABB.y - ray.origin.y) * ray.invDirection.y;
 	float ty2 = (maxAABB.y - ray.origin.y) * ray.invDirection.y;
@@ -134,14 +134,10 @@ bool hitAABB(Ray ray, vec4 minAABB, vec4 maxAABB, out float dist) {
 	return (tmax >= dist);
 }
 
-
-
-void setFaceNormal(out HitRecord rec, const Ray r, const vec3 outNormal) {
+void setFaceNormal(inout HitRecord rec, const Ray r, const vec3 outNormal) {
 	rec.frontFace = dot(r.direction, outNormal) < 0.0;
 	rec.normal = rec.frontFace ? normalize(outNormal) : normalize(-outNormal);
 }
-
-
 
 /*******************************************************************
 
@@ -163,14 +159,14 @@ layout(std430, binding = 4) readonly buffer Triangles {
 
 bool hitTriangle(Ray ray, Triangle tri, float tMin, float tMax, out HitRecord rec) {
 
-	vec3 v0v1 = vec3(tri.v1 - tri.v0);
-	vec3 v0v2 = vec3(tri.v2 - tri.v0);
+	vec3 v0v1 = tri.v1.xyz - tri.v0.xyz;
+	vec3 v0v2 = tri.v2.xyz - tri.v0.xyz;
 	vec3 p = cross(ray.direction, v0v2);
 	float det = dot(v0v1, p);
 	if (abs(det) < EPSILON) return false;
 	float inv = 1.0 / det;
 
-	vec3 tv = ray.origin - vec3(tri.v0);
+	vec3 tv = ray.origin - tri.v0.xyz;
 	float u = dot(tv, p) * inv;
 	if (u < 0.0 || u > 1.0) return false;
 
@@ -337,7 +333,7 @@ void material_reflect(Material mat, Ray ray, HitRecord hr, out Ray reflectedRay,
 	}
 
 	vec3 reflectedDir = reflect(ray.direction, hr.normal);
-	reflectedRay.origin = hr.p + 0.001 * reflectedDir;
+	reflectedRay.origin = hr.p + EPSILON * reflectedDir;
 	reflectedRay.direction = reflectedDir;
 	reflectedRay.invDirection = 1.0 / reflectedDir;
 }
@@ -352,7 +348,7 @@ void material_refract(Ray ray, HitRecord hr, float ior, out Ray refractedRay, ou
 		refractance = 0.0;
 	} else {
 		vec3 refractedDir = ratio * ray.direction + (ratio * cosi - sqrt(k)) * hr.normal;
-		refractedRay.origin = hr.p + 0.001 * refractedDir;
+		refractedRay.origin = hr.p + EPSILON * refractedDir;
 		refractedRay.direction = refractedDir;
 		refractedRay.invDirection = 1.0 / refractedDir;
 	}
@@ -415,11 +411,11 @@ Ray getShadowRay(const Light light, const HitRecord rec, out float tMax) {
 	if (light.type == POINT) {
 		tMax = distance(lightpos, rec.p);
 		shadowRay.direction = lightpos - rec.p;
-		shadowRay.origin = rec.p + 0.001 * shadowRay.direction;
+		shadowRay.origin = rec.p + EPSILON * shadowRay.direction;
 	} else if (light.type == SPOT) {
 		tMax = distance(lightpos, rec.p);
 		shadowRay.direction = lightpos - rec.p;
-		shadowRay.origin = rec.p + 0.001 * shadowRay.direction;
+		shadowRay.origin = rec.p + EPSILON * shadowRay.direction;
 
 		float angle = acos(dot(shadowRay.direction, normalize(rec.p - lightpos)));
 		if (angle > light.cutoffAngle) {
@@ -429,10 +425,10 @@ Ray getShadowRay(const Light light, const HitRecord rec, out float tMax) {
 	} else if (light.type == DIRECTIONAL) {
 		tMax = INFINITY;
 		shadowRay.direction = -lightdir;
-		shadowRay.origin = rec.p + 0.001 * (-lightdir);
+		shadowRay.origin = rec.p + EPSILON * (-lightdir);
 	} else if (light.type == AMBIENT) {
 		tMax = 0.0001;
-		shadowRay.origin = rec.p + 0.001 * rec.normal;
+		shadowRay.origin = rec.p + EPSILON * rec.normal;
 		shadowRay.direction = rec.normal;
 	}
 
@@ -499,7 +495,9 @@ vec3 trace(Ray ray, int bounces) {
 		if (traceScene(current, EPSILON, INFINITY, hr)) {
 			Ray reflectedRay;
 			Material mat = materials[hr.material];
-			vec3 attenuation = vec3(getTextureColor(mat.albedoIdx, hr.u, hr.v, hr.p));
+			//vec3 attenuation = getTextureColor(mat.albedoIdx, hr.u, hr.v, hr.p).xyz;
+			vec3 attenuation = vec3(1.0);
+				return attenuation;
 			float reflectance = 1.0f;
 			if (mat.type == DIFFUSE || mat.type == DIELECTRIC) {
 				c += attenuation * traceLights(hr) * frac;
@@ -536,6 +534,7 @@ void main() {
 
 	ray.direction = normalize(llCorner + px.x / (size.x - 1.0f) * horizontal + px.y / (size.y - 1.0f) * vertical - camPosition);
 	ray.origin = camPosition;
+	ray.invDirection = 1.0/ray.direction;
 
 	//float t = 0.5 * (ray.direction.y + 1.0);
 	//vec3 color = (1.0 - t) * vec3(1.0, 0.0, 0.0) + t * vec3(0.0, 0.0, 0.0);
