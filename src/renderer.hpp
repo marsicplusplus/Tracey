@@ -37,7 +37,7 @@ public:
 		bool loadComputeShaders(); /* If false is returned, do not use GPU rendering */
 		void bindBuffers();
 		void genBuffers();
-		const char* readShader(std::string path);
+		const std::string readShader(std::string path);
 
 		static void mouseCallback(GLFWwindow* window, int button, int action, int mods);
 		static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);

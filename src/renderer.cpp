@@ -570,7 +570,7 @@ void Renderer::saveCurrentFrame(int frame){
 	stbi_write_png(buffer, wWidth, wHeight, 3, bitmap, 3 * wWidth);
 	delete[] bitmap;
 }
-const char* Renderer::readShader(std::string path) {
+const std::string Renderer::readShader(std::string path) {
 	if(!std::filesystem::exists(path)){
 		std::cerr << "Cannot open shader file: " << path << std::endl;
 		return nullptr;
@@ -586,13 +586,13 @@ const char* Renderer::readShader(std::string path) {
 	shaderStream << shaderFile.rdbuf();
 	shaderFile.close();
 	code = shaderStream.str();
-	const char* codeChar = code.c_str();
-	return codeChar;
+	return code;
 }
 
 bool Renderer::loadComputeShaders(){
-	const char* codeChar = readShader("kernels/mega_kernel.glsl");
-	if(codeChar == nullptr) return false;
+	std::string code = readShader("kernels/mega_kernel.glsl");
+	if(code.empty()) return false;
+	auto codeChar = code.c_str();
 	unsigned int megaKernelShader = glCreateShader(GL_COMPUTE_SHADER);
 	glShaderSource(megaKernelShader, 1, &codeChar, NULL);
 	glCompileShader(megaKernelShader);
@@ -608,7 +608,6 @@ bool Renderer::loadComputeShaders(){
 		std::vector<GLchar> errorLog(maxLength);
 		glGetShaderInfoLog(megaKernelShader, maxLength, &maxLength, &errorLog[0]);
 
-		// Provide the infolog in whatever manor you deem best.
 		// Exit with failure.
 		for (char i : errorLog)
 			std::cout << i;
@@ -616,7 +615,6 @@ bool Renderer::loadComputeShaders(){
 		glDeleteShader(megaKernelShader); // Don't leak the shader.
 		return false;
 	}
-
 	megaKernel = glCreateProgram();
 	glAttachShader(megaKernel, megaKernelShader);
 	glLinkProgram(megaKernel);
@@ -628,7 +626,6 @@ bool Renderer::loadComputeShaders(){
 void Renderer::bindBuffers() {
 
 	glBindImageTexture(0, this->texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, fbSSBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, meshSSBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, instanceSSBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, textureSSBO);
