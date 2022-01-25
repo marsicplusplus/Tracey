@@ -156,65 +156,9 @@ void Renderer::initGui() {
 	this->aberrationOffset = glm::fvec3(0.0f, 0.0f, 0.0f);
 	this->guiVignetting = false;
 	this->vignettingSlider = 1.0f;
-	this->guiPacketTraversal = false;
 	this->fBrowser.SetTitle("Choose a scene");
 	this->fBrowser.SetWindowSize(500, 300);
 	this->fBrowser.SetTypeFilters({".json"});
-}
-
-bool Renderer::corePacketRayTracing(int horizontalTiles, int verticalTiles, int tWidth, int tHeight, int wWidth, int wHeight) {
-	std::vector<std::future<void>> futures;
-	for(int tileRow = 0; tileRow < verticalTiles; ++tileRow){
-		for(int tileCol = 0; tileCol < horizontalTiles; ++tileCol){
-			/* Launch thread */
-			int samples = this->nSamples;
-			int bounces = this->nBounces;
-			futures.push_back(Threading::pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
-						CameraPtr cam = scene->getCamera();
-						std::vector<RayInfo> packet(tHeight * tWidth);
-						std::vector<Ray> corners(4);
-						for (int row = 0; row < tHeight; ++row) {
-						for (int col = 0; col < tWidth; ++col) {
-								Color pxColor(0,0,0);
-								int x = col + tWidth * tileCol;
-								int y = row + tHeight * tileRow;
-								if (cam) {
-									for(int s = 0; s < samples; ++s){
-										float u = static_cast<float>(x + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wWidth - 1);
-										float v = static_cast<float>(y + ((samples > 1) ? Random::RandomFloat(rng) : 0)) / static_cast<float>(wHeight - 1);
-										Ray ray = cam->generateCameraRay(u, v);
-										if (ray.getDirection() == glm::fvec3(0, 0, 0)) {
-											pxColor += Color(0, 0, 0);
-										} else {
-											if (guiPacketTraversal) {
-												if(row == 0 && col == 0) corners.push_back(ray);
-												if(row == 0 && col == tWidth-1) corners.push_back(ray);
-												if(row == tHeight-1 && col == 0) corners.push_back(ray);
-												if(row == tHeight-1 && col == tWidth-1) corners.push_back(ray);
-												auto zIndex = calcZOrder(col, row);
-												packet[zIndex].ray = ray;
-												packet[zIndex].x = x;
-												packet[zIndex].y = y;
-											}
-										}
-									}
-								}
-							}
-						}
-						Core::packetTrace(corners, packet, bounces, scene, rng);
-						for (auto& rayInfo : packet) {
-								int idx = wWidth * (rayInfo.y) + (rayInfo.x);
-								putPixel(frameBuffer, idx, rayInfo.pxColor);
-						}
-			}));
-		}
-	}
-
-	for (auto& f : futures) 
-		f.get();
-
-	isBufferInvalid = false;
-	return true;
 }
 
 bool Renderer::coreRayTracing(int horizontalTiles, int verticalTiles, int tWidth, int tHeight, int wWidth, int wHeight) {
@@ -226,8 +170,6 @@ bool Renderer::coreRayTracing(int horizontalTiles, int verticalTiles, int tWidth
 			int bounces = this->nBounces;
 			futures.push_back(Threading::pool.queue([&, tileRow, tileCol, samples, bounces](uint32_t &rng){
 						CameraPtr cam = scene->getCamera();
-						//std::vector<RayInfo> packet(tHeight * tWidth);
-						//std::vector<Ray> corners(4);
 						for (int row = 0; row < tHeight; ++row) {
 							for (int col = 0; col < tWidth; ++col) {
 								Color pxColor(0,0,0);
@@ -288,7 +230,6 @@ bool Renderer::start() {
 
 		if(scene && (this->isBufferInvalid)) {
 			this->coreRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
-			//this->corePacketRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
 			std::cout << "Last frameTime: " << lasttime << "s" << std::endl;
 #ifdef DEBUG
 			averageFrameTime.push_back(lasttime);
@@ -460,15 +401,8 @@ void Renderer::renderGUI() {
 					}
 				}
 
-				if (ImGui::Checkbox("Packet Traversal", &guiPacketTraversal)) {
-					this->nSamples = 1;
-				}
-
 				ImGui::TextWrapped("Samples");
 				ImGui::SliderInt("##SAMPLES", &nSamples, 1, 100);
-				if (nSamples > 1) {
-					guiPacketTraversal = false;
-				}
 				ImGui::TextWrapped("Bounces");
 				ImGui::SliderInt("##BOUNCES", &nBounces, 2, 100);
 			}

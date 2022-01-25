@@ -30,11 +30,9 @@ public:
 
 	private:
 		bool coreRayTracing(int horizontalTiles, int verticalTiles, int tWidth, int tHeight, int wWidth, int wHeight);
-		bool corePacketRayTracing(int horizontalTiles, int verticalTiles, int tWidth, int tHeight, int wWidth, int wHeight);
 
 		static void putPixel(uint32_t fb[], int idx, Color &color);
 		static void putPixel(uint32_t fb[], int idx, uint8_t r, uint8_t g, uint8_t b);
-		void packetTrace(std::vector<Ray> &corners, std::vector<RayInfo>& rays, int bounces, const ScenePtr scene);
 		void handleInput();
 
 		static void mouseCallback(GLFWwindow* window, int button, int action, int mods);
@@ -65,7 +63,6 @@ public:
 		bool guiFisheye;
 		bool guiContinuousRender;
 		bool guiGammaCorrection;
-		bool guiPacketTraversal;
 		bool guiVignetting;
 		float vignettingSlider;
 		bool guiAberration;
