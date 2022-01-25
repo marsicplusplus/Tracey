@@ -1,9 +1,10 @@
 #include "hittables/curve.hpp"
 
-Curve::Curve(float uMin, float uMax, int material) : mat(material), uMin(uMin), uMax(uMax) {
+Curve::Curve(std::vector<glm::fvec3> cPts, bool isClosed, int mat) : 
+	controlPoints(cPts), 
+	isClosed(isClosed), 
+	mat(mat) {}
 
-}
-
-bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) {
+bool Curve::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
 	return false;
 }

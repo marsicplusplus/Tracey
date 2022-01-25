@@ -46,6 +46,6 @@ namespace Core {
 			}
 			return Color{0,0,0};
 		}
-		return Color(0.4,0.4,0.4);
+		return Color(0.1,0.1,0.1);
 	}
 };

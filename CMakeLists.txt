@@ -46,6 +46,7 @@ set( SRC
 	external/glad/src/glad.c
 	src/hittables/triangle.cpp
 	src/hittables/triangle_mesh.cpp
+	src/hittables/curve.cpp
 	src/textures/image_texture.cpp
 	src/tracey.cpp
 	src/core.cpp
@@ -60,6 +61,7 @@ set( SRC
 	src/bvh.cpp
 	src/transform.cpp
 	src/animation.cpp
+	src/importer.cpp
 	)
 
 if (UNIX)

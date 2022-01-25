@@ -13,16 +13,6 @@ public:
 
 	virtual bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const = 0;
 
-	virtual void packetHit(std::vector<RayInfo>& packet, Frustum frustum, float tMin, int first, int last) {
-
-		for (int i = first; i < last; i++) {
-			if (hit(packet[i].ray, tMin, packet[i].rec.t, packet[i].rec)) {
-				packet[i].rec.p = transform.getMatrix() * glm::fvec4(packet[i].rec.p, 1.0f);
-				packet[i].rec.setFaceNormal(packet[i].ray, transform.getTransposeInverse() * glm::fvec4(packet[i].rec.normal, 0.0));
-			}
-		}
-	};
-
 	virtual bool update(float dt) { return false; }
 
 	inline void translate(glm::fvec3 t){
@@ -87,7 +77,6 @@ protected:
 	AABB localBBox;
 	AABB worldBBox;
 	std::vector<glm::fvec3> worldVertices;
-
 };
 
 typedef std::shared_ptr<Hittable> HittablePtr;

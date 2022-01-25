@@ -71,21 +71,6 @@ bool Scene::traverse(const Ray &ray, float tMin, float tMax, HitRecord &rec) con
 	return hasHit;
 }
 
-void Scene::packetTraverse(std::vector<Ray>& corners, std::vector<RayInfo>& packet, float tMin) const {
-	Frustum frustum;
-	auto O = corners[0].getOrigin();
-	frustum.normals[0] = glm::cross(corners[0].getDirection() - O, corners[1].getDirection() - corners[0].getDirection()); 
-	frustum.normals[1] = glm::cross(corners[1].getDirection() - O, corners[2].getDirection() - corners[1].getDirection()); 
-	frustum.normals[2] = glm::cross(corners[2].getDirection() - O, corners[3].getDirection() - corners[2].getDirection()); 
-	frustum.normals[3] = glm::cross(corners[3].getDirection() - O, corners[0].getDirection() - corners[3].getDirection()); 
-	frustum.offsets[0] = glm::dot(frustum.normals[0], O);
-	frustum.offsets[1] = glm::dot(frustum.normals[1], O);
-	frustum.offsets[2] = glm::dot(frustum.normals[2], O);
-	frustum.offsets[3] = glm::dot(frustum.normals[3], O);
-	topLevelBVH->packetHit(packet, frustum, tMin, 0, 0);
-}
-
-
 void Scene::setCamera(CameraPtr camera){
 	this->currentCamera = camera;
 }
