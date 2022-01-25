@@ -125,7 +125,7 @@ Color Scene::traceLights(HitRecord &rec) const {
 	return illumination;
 }
 
-void Scene::getTextureBuffer(std::vector<CompactTexture> &compactTextures, std::vector<unsigned char> &imgs) {
+void Scene::getTextureBuffer(std::vector<CompactTexture> &compactTextures, std::vector<unsigned int> &imgs) {
 	for(const auto &text : textures) {
 		CompactTexture txt;
 		txt.type = toUnderlyingType(text->getType());
@@ -139,12 +139,14 @@ void Scene::getTextureBuffer(std::vector<CompactTexture> &compactTextures, std::
 		} else if(text->getType() == TextureType::TEXTURE_IMAGE){
 			auto imgT = std::static_pointer_cast<ImageTexture>(text);
 			txt.bpp = imgT->bpp;
+			txt.slice = imgT->width;
 			txt.w = imgT->width;
 			txt.h = imgT->height;
 			auto img = imgT->img;
 			txt.idx = imgs.size(); // from imgs.size to imgs.size + txt.w * txt.h * txt.bpp;
-			for(int i = 0; i < txt.w * txt.h * txt.bpp; ++i){
-				imgs.push_back(img[i]);
+			for(int i = 0; i < txt.w * txt.h * txt.bpp; i+=txt.bpp){
+				unsigned int color = img[i] << 16 | img[i+1] << 8 | img[i+2] << 0; 
+				imgs.push_back(color);
 			}
 		}
 		compactTextures.push_back(txt);

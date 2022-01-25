@@ -44,7 +44,7 @@ class Scene {
 			return nTris;
 		}
 
-		void getTextureBuffer(std::vector<CompactTexture> &textures, std::vector<unsigned char> &imgs);
+		void getTextureBuffer(std::vector<CompactTexture> &textures, std::vector<unsigned int> &imgs);
 		void getMeshBuffer(std::vector<CompactTriangle> &tris, std::vector<BVHNode> &bvhs, std::vector<CompactMesh> &meshes);
 		void getInstanceBuffer(std::vector<Instance>& instances);
 		void getLightBuffer(std::vector<CompactLight>& compLights);

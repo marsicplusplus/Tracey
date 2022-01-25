@@ -1,52 +1,18 @@
 #version 450 core
 layout (local_size_x=1, local_size_y=1) in;
 
-layout (binding = 0, rgba32f) uniform image2D fb;
-
-const float INFINITY = 1.0/0.0;
-const float EPSILON = 1e-10;
-#define FLT_MIN 1.175494351e-38
-const uint NILL = 0x00000000u;
-
-/*******************************************************************
-
-MESH AND INSTANCE DEFINITION
-
-********************************************************************/
-
 struct Mesh {
 	int firstTri;
 	int lastTri;
 	int firstNode;
 	int lastNode;
 };
-
-layout(std430, binding = 1) readonly buffer Meshes {
-	Mesh[] meshes;
-};
-
 struct Instance{
 	mat4 transformMat;
 	mat4 transformInv;
 	mat4 transposeInv;
 	int meshIdx;
 };
-
-layout(std430, binding = 2) readonly buffer Instances {
-	Instance[] instances;
-};
-
-
-/*******************************************************************
-
-TEXTURE DEFINITION AND METHODS
-
-********************************************************************/
-
-const uint SOLID = 0x00000001u;
-const uint IMAGE = 0x00000002u;
-const uint CHECKERED = 0x00000004u;
-
 struct Texture {
 	vec4 color1;
 	vec4 color2; 
@@ -57,31 +23,12 @@ struct Texture {
 	int slice;  
 	int bpp; 
 };
-
-layout(std430, binding = 3) readonly buffer Textures {
-	Texture[] textures;
+struct Triangle {
+	vec4 v0, v1, v2; 	// 12N
+	vec4 n0, n1, n2; 	// 12N
+	vec4 uv0, uv1, uv2; // 12N
+	int matIdx; 		// 1N
 };
-
-vec4 getTextureColor(int textureIdx, float u, float v, const vec3 p) {
-	Texture tex = textures[textureIdx];
-	return tex.color1;
-//	if (tex.type == SOLID) {
-//		return color1;
-//	} else if (tex.type == IMAGE) {
-//		return color1;
-//	} else {
-//		return color1;
-//	}
-}
-
-
-
-/*******************************************************************
-
-HIT RECORD AND RAY DEFINITION/METHODS
-
-********************************************************************/
-
 struct HitRecord {
 	vec3 p;
 	vec3 normal;
@@ -97,34 +44,100 @@ struct Ray {
 	vec3 direction;
 	vec3 invDirection;
 };
+struct Node {
+	vec4 minAABB; 	// 4N
+	vec4 maxAABB; 	// 4N
+	uint count;		// 1N
+	uint leftFirst;	// 1N
+};
+struct Material {
+	vec4 absorption;
+	uint type;
+	int albedoIdx;
+	int bump;
+	float reflectionIdx;
+	float ior;
+};
+struct Light {
+  vec4 color;
+  vec4 position;
+  vec4 direction;
+  uint type;
+  float intensity;
+  float cutoffAngle;
+};
 
-void validateRay(inout Ray ray) {
-	if (ray.direction.x == 0.0) {
-		ray.direction.x = FLT_MIN;
-	}
 
-	if (ray.direction.y == 0.0) {
-		ray.direction.y = FLT_MIN;
-	}
 
-	if (ray.direction.z == 0.0) {
-		ray.direction.z = FLT_MIN;
-	}
+layout (binding = 0, rgba32f) uniform image2D fb;
+layout(std430, binding = 1) readonly buffer Meshes {
+	Mesh[] meshes;
+};
+layout(std430, binding = 2) readonly buffer Instances {
+	Instance[] instances;
+};
+layout(std430, binding = 3) readonly buffer Textures {
+	Texture[] textures;
+};
+layout(std430, binding = 4) readonly buffer Triangles {
+	Triangle[] triangles;
+};
+layout(std430, binding = 5) readonly buffer BVHNodes {
+	Node[] nodes;
+};
+layout(std430, binding = 6) readonly buffer Materials {
+	Material[] materials;
+};
+layout(std430, binding = 7) readonly buffer Lights {
+	Light[] lights;
+};
+layout(std430, binding = 8) readonly buffer Images {
+	uint[] imgs;
+};
 
-	ray.invDirection = 1.0 / ray.direction;
+const float INFINITY = 1.0/0.0;
+const float EPSILON = 1e-10;
+const float SCALE_BYTE = 0.00392156862745098f;
+#define FLT_MIN 1.175494351e-38
+const uint NILL = 0x00000000u;
 
-	if (ray.invDirection.x == 0.0) {
-		ray.invDirection.x = FLT_MIN;
-	}
+/*******************************************************************
 
-	if (ray.invDirection.y == 0.0) {
-		ray.invDirection.y = FLT_MIN;
-	}
+TEXTURE DEFINITION AND METHODS
 
-	if (ray.invDirection.z == 0.0) {
-		ray.invDirection.z = FLT_MIN;
+********************************************************************/
+
+const uint IMAGE = 0x00000001u;
+const uint SOLID = 0x00000002u;
+const uint CHECKERED = 0x00000004u;
+
+
+vec4 getTextureColor(int textureIdx, float u, float v, const vec3 p) {
+	Texture tex = textures[textureIdx];
+	if (tex.type == SOLID) {
+		return tex.color1;
+	} else if (tex.type == IMAGE) {
+		//int i = int(mod(u*tex.width, tex.width-1));
+		//int j = int(mod(v*tex.height, tex.height-1));
+		int pixel = tex.idx + int(u) * tex.slice + int(v);
+		return vec4(
+				((imgs[pixel] & 0x00ff0000) >> 16) * SCALE_BYTE, 
+				((imgs[pixel] & 0x0000ff00) >> 8) * SCALE_BYTE, 
+				((imgs[pixel] & 0x000000ff) >> 0) * SCALE_BYTE, 
+				1.0f
+			);
+	} else if (tex.type == CHECKERED){
+		float sines = sin(10.0f*p.x)*sin(10.0f*p.y)*sin(10.0f*p.z);
+		return (sines < 0.0f) ? tex.color1 : tex.color2;
 	}
 }
+
+
+/*******************************************************************
+
+HIT RECORD AND RAY DEFINITION/METHODS
+
+********************************************************************/
 
 Ray transformRay(Ray origRay, mat4 transform) {
 	vec3 newDir = vec3(transform * vec4(origRay.direction, 0.0));
@@ -132,7 +145,7 @@ Ray transformRay(Ray origRay, mat4 transform) {
 	Ray ret;
 	ret.origin = newOg;
 	ret.direction = newDir;
-	validateRay(ret);
+	ret.invDirection = 1.0/newDir;
 	return ret;
 }
 
@@ -173,17 +186,6 @@ TRIANGLE DEFINITON AND METHODS
 
 ********************************************************************/
 
-struct Triangle {
-	vec4 v0, v1, v2; 	// 12N
-	vec4 n0, n1, n2; 	// 12N
-	vec4 uv0, uv1, uv2; // 12N
-	int matIdx; 		// 1N
-};
-
-
-layout(std430, binding = 4) readonly buffer Triangles {
-	Triangle[] triangles;
-};
 
 bool hitTriangle(Ray ray, Triangle tri, float tMin, float tMax, out HitRecord rec) {
 
@@ -229,17 +231,6 @@ BVH DEFINITON AND METHODS
 
 ********************************************************************/
 
-struct Node {
-	vec4 minAABB; 	// 4N
-	vec4 maxAABB; 	// 4N
-	uint count;		// 1N
-	uint leftFirst;	// 1N
-};
-
-
-layout(std430, binding = 5) readonly buffer BVHNodes {
-	Node[] nodes;
-};
 
 bool traverseBVH(Ray ray, Instance instance, float tMin, float tMax, out HitRecord rec) {
 	bool hasHit = false;
@@ -324,19 +315,6 @@ const uint DIFFUSE 		= 0x00000001u;
 const uint DIELECTRIC  	= 0x00000002u;
 const uint MIRROR  		= 0x00000004u;
 
-struct Material {
-	vec4 absorption;
-	uint type;
-	int albedoIdx;
-	int bump;
-	float reflectionIdx;
-	float ior;
-};
-
-layout(std430, binding = 6) readonly buffer Materials {
-	Material[] materials;
-};
-
 
 void material_reflect(Material mat, Ray ray, HitRecord hr, out Ray reflectedRay, out float reflectance) {
 	if (mat.type == MIRROR) {
@@ -363,7 +341,7 @@ void material_reflect(Material mat, Ray ray, HitRecord hr, out Ray reflectedRay,
 	vec3 reflectedDir = reflect(ray.direction, hr.normal);
 	reflectedRay.origin = hr.p + 0.001 * reflectedDir;
 	reflectedRay.direction = reflectedDir;
-	validateRay(reflectedRay);
+	reflectedRay.invDirection = 1.0 / reflectedRay.direction;
 }
 
 void material_refract(Ray ray, HitRecord hr, float ior, out Ray refractedRay, out float refractance) {
@@ -378,7 +356,7 @@ void material_refract(Ray ray, HitRecord hr, float ior, out Ray refractedRay, ou
 		vec3 refractedDir = ratio * ray.direction + (ratio * cosi - sqrt(k)) * hr.normal;
 		refractedRay.origin = hr.p + 0.001 * refractedDir;
 		refractedRay.direction = refractedDir;
-		validateRay(refractedRay);
+		refractedRay.invDirection = 1.0 / refractedRay.direction;
 	}
 }
 
@@ -404,19 +382,6 @@ const uint POINT = 0x00000002u;
 const uint SPOT = 0x00000004u;
 const uint AMBIENT = 0x00000008u;
 
-
-struct Light {
-  vec4 color;
-  vec4 position;
-  vec4 direction;
-  uint type;
-  float intensity;
-  float cutoffAngle;
-};
-
-layout(std430, binding = 7) readonly buffer Lights {
-	Light[] lights;
-};
 
 vec3 getIllumination(const Light light, const HitRecord rec, Ray ray) {
 
@@ -542,11 +507,10 @@ vec3 trace(Ray ray, int bounces) {
 				if(reflectance == 0.0f) break;
 				continue;
 			} else {
-				return vec3(1.0f);
+				return vec3(0.4f);
 				break;
 			}
 		}else{
-			c += vec3(0.0f, 0.0f, 0.0f);
 			break;
 		}
 	}
@@ -564,7 +528,7 @@ void main() {
 
 	ray.direction = normalize(llCorner + px.x / (size.x - 1.0f) * horizontal + px.y / (size.y - 1.0f) * vertical - camPosition);
 	ray.origin = camPosition;
-	validateRay(ray);
+	ray.invDirection = 1.0 / ray.direction;
 
 	//float t = 0.5 * (ray.direction.y + 1.0);
 	//vec3 color = (1.0 - t) * vec3(1.0, 0.0, 0.0) + t * vec3(0.0, 0.0, 0.0);

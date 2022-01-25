@@ -96,7 +96,7 @@ public:
 		unsigned int instanceSSBO;
 		std::vector<CompactTexture> textures;
 		unsigned int textureSSBO;
-		std::vector<uint8_t> imgs;
+		std::vector<unsigned int> imgs;
 		unsigned int imageSSBO;
 		std::vector<CompactMaterial> materials;
 		unsigned int materialSSBO;

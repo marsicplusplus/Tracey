@@ -633,6 +633,7 @@ void Renderer::bindBuffers() {
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, nodeSSBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, materialSSBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, lightSSBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, imageSSBO);
 
 	auto cam = this->scene->getCamera();
 	glUniform3f(glGetUniformLocation(megaKernel, "camPosition"), cam->position[0], cam->position[1], cam->position[2]);
@@ -683,5 +684,11 @@ void Renderer::genBuffers() {
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(CompactLight) * lights.size(), &lights[0], GL_DYNAMIC_COPY); 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, lightSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+
+	glGenBuffers(1, &imageSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, imageSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned int) * imgs.size(), &imgs[0], GL_DYNAMIC_COPY); 
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, imageSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 }
