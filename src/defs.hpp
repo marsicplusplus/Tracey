@@ -125,9 +125,13 @@ inline uint32_t calcZOrder(int xPos, int yPos)
 	return result;
 }
 
-inline float lerp(float a, float b, float f)
+inline float lerp(float x, float y, float u)
 {
-	return (a * (1.0 - f)) + (b * f);
+	return (x * (1.0 - u)) + (x * u);
+}
+
+inline glm::vec3 lerp(glm::vec3 x, glm::vec3 y, float u) {
+	return x * (1.f - u) + y * u;
 }
 
 namespace Random {

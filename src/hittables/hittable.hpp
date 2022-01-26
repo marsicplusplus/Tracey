@@ -9,7 +9,7 @@
 
 class Hittable {
 public:
-	Hittable(AABB aabb = AABB{ 0,0,0,0,0,0 }) : localBBox{aabb}, worldBBox{aabb} {}
+	Hittable(AABB aabb = AABB{ INF, INF, INF, -INF, -INF, -INF }) : localBBox{aabb}, worldBBox{aabb} {}
 
 	virtual bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const = 0;
 
