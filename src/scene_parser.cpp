@@ -143,7 +143,7 @@ namespace SceneParser {
 						aiString textureName;
 						material->GetTexture(aiTextureType_DIFFUSE, 0, &textureName);
 						std::filesystem::path fp = meshPath.parent_path() / std::filesystem::path(textureName.C_Str());
-						text = std::make_unique<ImageTexture>(textureName.C_Str(), fp);
+						text = std::make_unique<ImageTexture>(textureName.C_Str(), fp.string());
 					} else {
 						aiColor4D color{0.0,0.0,0.0,0.0};
 						aiGetMaterialColor(material,AI_MATKEY_COLOR_DIFFUSE,&color);

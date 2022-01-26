@@ -125,6 +125,11 @@ inline uint32_t calcZOrder(int xPos, int yPos)
 	return result;
 }
 
+inline float lerp(float a, float b, float f)
+{
+	return (a * (1.0 - f)) + (b * f);
+}
+
 namespace Random {
 	inline uint32_t xorshift32( uint32_t& state ){
 		state ^= state << 13;

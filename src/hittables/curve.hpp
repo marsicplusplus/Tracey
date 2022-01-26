@@ -12,6 +12,8 @@ class Curve : public Hittable {
 		const std::vector<glm::fvec3> controlPoints;
 		const bool isClosed;
 		const int mat;
+		float uMin;
+		float uMax;
 };
 
 #endif // __CURVE_HPP__

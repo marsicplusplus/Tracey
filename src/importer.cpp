@@ -7,7 +7,7 @@
 
 bool Importer::readBCC(std::filesystem::path p, std::vector<HittablePtr> &curves, int mat){
 	BCCHeader header;
-	FILE *pFile = fopen(p.c_str(), "rb");
+	FILE *pFile = fopen(p.string().c_str(), "rb");
 	fread(&header, sizeof(header), 1, pFile);
 
 	if ( header.sign[0] != 'B' ) {CLOSE_RETURN(pFile, false);} 		// Invalid file signature
@@ -24,9 +24,9 @@ bool Importer::readBCC(std::filesystem::path p, std::vector<HittablePtr> &curves
 		int curveControlPointCount;
 		bool isClosed = false;
 		fread(&curveControlPointCount, sizeof(int), 1, pFile);
-		std::vector<glm::fvec3> controlPoints(curveControlPointCount);
 		isClosed = curveControlPointCount < 0;
 		if ( curveControlPointCount < 0 ) curveControlPointCount = -curveControlPointCount;
+		std::vector<glm::fvec3> controlPoints(curveControlPointCount);
 
 		for(uint64_t j = 0; j < curveControlPointCount; ++j){
 			float cpx, cpy, cpz;
