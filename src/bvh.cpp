@@ -1059,3 +1059,26 @@ bool BVH::updateNode(BVHNode* node, float dt){
 	}
 	return ret;
 }
+
+void BVH::updateWorldBBox() {
+	std::vector<glm::fvec4> localVertices;
+	localVertices.emplace_back( localBBox.minX, localBBox.minY, localBBox.minZ, 1.0f );
+	localVertices.emplace_back( localBBox.minX, localBBox.minY, localBBox.maxZ, 1.0f );
+	localVertices.emplace_back( localBBox.minX, localBBox.maxY, localBBox.minZ, 1.0f );
+	localVertices.emplace_back( localBBox.minX, localBBox.maxY, localBBox.maxZ, 1.0f );
+	localVertices.emplace_back( localBBox.maxX, localBBox.minY, localBBox.minZ, 1.0f );
+	localVertices.emplace_back( localBBox.maxX, localBBox.minY, localBBox.maxZ, 1.0f );
+	localVertices.emplace_back( localBBox.maxX, localBBox.maxY, localBBox.minZ, 1.0f );
+	localVertices.emplace_back( localBBox.maxX, localBBox.maxY, localBBox.maxZ, 1.0f );
+
+	worldBBox = { INF, INF, INF, -INF, -INF, -INF };
+	for (auto vertex : localVertices) {
+		auto tranformedVertex = transform.getMatrix() * vertex;
+		worldBBox.minX = min(tranformedVertex.x, worldBBox.minX);
+		worldBBox.minY = min(tranformedVertex.y, worldBBox.minY);
+		worldBBox.minZ = min(tranformedVertex.z, worldBBox.minZ);
+		worldBBox.maxX = max(tranformedVertex.x, worldBBox.maxX);
+		worldBBox.maxY = max(tranformedVertex.y, worldBBox.maxY);
+		worldBBox.maxZ = max(tranformedVertex.z, worldBBox.maxZ);
+	}
+}

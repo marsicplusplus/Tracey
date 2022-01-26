@@ -26,7 +26,6 @@ Triangle::Triangle(const std::shared_ptr<TriangleMesh> &mesh, unsigned int trian
 		localBBox.minZ -= 0.0001f;
 		localBBox.maxZ += 0.0001f;
 	}
-	updateWorldBBox();
 }
 
 void Triangle::getUV(glm::vec2 uv[3]) const {
@@ -42,35 +41,30 @@ void Triangle::getUV(glm::vec2 uv[3]) const {
 }
 
 bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
-	auto transformInv = transform.getInverse();
-	auto transposeInv = transform.getTransposeInverse();
-	auto transformMat = transform.getMatrix();
-	const auto transformedRay = ray.transformRay(transformInv);
-
 	glm::fvec3 *v0 = &(this->mesh->p.get())[vIdx[0]];
 	glm::fvec3 *v1 = &(this->mesh->p.get())[vIdx[1]];
 	glm::fvec3 *v2 = &(this->mesh->p.get())[vIdx[2]];
 
 	glm::fvec3 v0v1 = *v1 - *v0;
 	glm::fvec3 v0v2 = *v2 - *v0;
-	glm::fvec3 p = glm::cross(transformedRay.getDirection(), v0v2);
+	glm::fvec3 p = glm::cross(ray.getDirection(), v0v2);
 	float det = glm::dot(v0v1, p);
 	if (std::fabs(det) < EPS) return false;
 	float inv = 1.0f / det;
 
-	glm::fvec3 tv = transformedRay.getOrigin() - *v0;
+	glm::fvec3 tv = ray.getOrigin() - *v0;
 	float u = glm::dot(tv, p) * inv;
 	if (u < 0.0f || u > 1.0f) return false;
 
 	glm::fvec3 q = glm::cross(tv, v0v1);
-	float v = glm::dot(transformedRay.getDirection(), q) * inv;
+	float v = glm::dot(ray.getDirection(), q) * inv;
 	if (v < 0.0f || u + v > 1.0f) return false;
 	float tmp = glm::dot(v0v2, q) * inv;
 	if (tmp < 0.0f) return false;
 
 	if (tmp > tMin && tmp < tMax) {
 		rec.t = tmp;
-		auto localp = transformedRay.at(tmp);
+		auto localp = ray.at(tmp);
 
 		glm::fvec3 *n0 = &(this->mesh->n.get())[vIdx[0]];
 		glm::fvec3 *n1 = &(this->mesh->n.get())[vIdx[1]];
@@ -79,7 +73,7 @@ bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const
 		glm::fvec3 hitNormal;
 		hitNormal = u * (*n1) + v * (*n2) + (1.0f - u - v) * (*n0);
 
-		rec.setFaceNormal(ray, transposeInv * glm::fvec4(hitNormal, 0.0));
+		rec.setFaceNormal(ray, hitNormal);
 
 		glm::fvec2 uvs[3];
 		getUV(&uvs[0]);
@@ -89,7 +83,7 @@ bool Triangle::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const
 		rec.u = uv.x;
 		rec.v = uv.y;
 		rec.material = mat;
-		rec.p = transformMat * glm::fvec4(localp, 1.0);
+		rec.p = localp;
 		rec.t = tmp;
 
 		return true;

@@ -59,6 +59,36 @@ class BVH : public Hittable {
 			animationManager.setInitial(transform);
 		}
 
+		virtual inline void translate(glm::fvec3 t) override {
+			transform.translate(t);
+			updateWorldBBox();
+		}
+		virtual inline void scale(glm::fvec3 s) override {
+			transform.scale(s);
+			updateWorldBBox();
+		}
+		virtual inline void scale(float s) override {
+			transform.scale(s);
+			updateWorldBBox();
+		}
+		virtual inline void rotate(float t, glm::fvec3 a) override {
+			transform.rotate(t, a);
+			updateWorldBBox();
+		}
+		virtual inline AABB getWorldAABB() const override {
+			return worldBBox;
+		}
+		virtual inline void setLocalAABB(AABB local) override {
+			Hittable::setLocalAABB(local);
+			updateWorldBBox();
+		}
+		virtual inline void setTransform(const Transform t) override {
+			transform = t;
+			updateWorldBBox();
+		}
+		void updateWorldBBox(); 
+
+
 	private:
 		void midpointSplit(BVHNode* node);
 		void subdivideBin(BVHNode* node);
@@ -89,6 +119,8 @@ class BVH : public Hittable {
 		bool animate;
 		bool mustRefit;
 		int refitCounter;
+		AABB worldBBox;
+		Transform transform;
 		Animation animationManager;
 };
 
