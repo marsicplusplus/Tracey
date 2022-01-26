@@ -258,11 +258,12 @@ void BVH::midpointSplit(BVHNode* node){
 
 	auto split = (maxBBox[longestAxisIdx] + minBBox[longestAxisIdx]) / 2.0f;
 	
-	auto right = std::partition(&hittableIdxs[node->minAABBLeftFirst.w], &hittableIdxs[node->minAABBLeftFirst.w + node->maxAABBCount.w], [&](int idx){
-				auto aabb = hittables[idx]->getWorldAABB();
-				glm::fvec3 centroid = glm::fvec3((aabb.minX + aabb.maxX) / 2.0f, (aabb.minY + aabb.maxY) / 2.0f, (aabb.minZ + aabb.maxZ) / 2.0f);
-				return centroid[longestAxisIdx] < split;
-			});
+	auto right = std::partition(&hittableIdxs[node->minAABBLeftFirst.w], &hittableIdxs[node->minAABBLeftFirst.w + node->maxAABBCount.w - 1] + 1, [&](int idx){
+			auto aabb = hittables[idx]->getWorldAABB();
+			glm::fvec3 centroid = glm::fvec3((aabb.minX + aabb.maxX) / 2.0f, (aabb.minY + aabb.maxY) / 2.0f, (aabb.minZ + aabb.maxZ) / 2.0f);
+			return centroid[longestAxisIdx] < split;
+		}
+	);
 
 	auto first = node->minAABBLeftFirst.w;
 	auto numElems = node->maxAABBCount.w;
@@ -277,7 +278,7 @@ void BVH::midpointSplit(BVHNode* node){
 	computeBounding(leftNode);
 
 	rightNode->minAABBLeftFirst.w = first + leftNode->maxAABBCount.w;
-	rightNode->maxAABBCount.w = &hittableIdxs[first + numElems] - right;
+	rightNode->maxAABBCount.w = (&hittableIdxs[first + numElems - 1] + 1) - right;
 	computeBounding(rightNode);
 }
 
