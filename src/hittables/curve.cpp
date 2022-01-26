@@ -1,7 +1,9 @@
 #include "hittables/curve.hpp"
 
-Curve::Curve(std::vector<glm::fvec3> cPts, bool isClosed, int mat) : 
+Curve::Curve(std::vector<glm::fvec3> cPts, float wMin, float wMax, bool isClosed, int mat) : 
 	controlPoints(cPts), 
+	wMin(wMin),
+	wMax(wMax),
 	isClosed(isClosed), 
 	mat(mat) {}
 

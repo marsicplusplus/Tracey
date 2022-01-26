@@ -3,6 +3,11 @@
 #include "hittables/curve.hpp"
 #include "glm/vec3.hpp"
 
+#include <fstream>
+#include <istream>
+#include <iostream>
+#include <cstring>
+
 #define CLOSE_RETURN(X, Y) fclose((X)); return (Y);
 
 bool Importer::readBCC(std::filesystem::path p, std::vector<HittablePtr> &curves, int mat){
@@ -38,6 +43,7 @@ bool Importer::readBCC(std::filesystem::path p, std::vector<HittablePtr> &curves
 		curves.push_back(
 				std::make_shared<Curve>(
 						controlPoints,
+						0.0, 10.0,
 						isClosed,
 						mat
 					)
@@ -46,3 +52,54 @@ bool Importer::readBCC(std::filesystem::path p, std::vector<HittablePtr> &curves
 	CLOSE_RETURN(pFile, true);
 }
 
+bool Importer::readPBRCurve(std::filesystem::path p, std::vector<HittablePtr> &curves, int mat){
+	std::ifstream file(p);
+	if (file.is_open()) {
+		std::string line;
+		// Shape "curve" "string type" [ "cylinder" ] "point P" [ 0.368558 9.90303 1.79676 0.302866 9.9561 1.92861 0.237174 10.0092 2.06046 0.233016 9.95108 2.07153 ] "float width0" [ 0.002167 ] "float width1" [ 0.001167 ] 
+		while (std::getline(file, line)) {
+			auto pointPStr = "\"point P\" ";
+			auto width0Str = "\"float width0\" ";
+			auto width1Str = "\"float width1\" ";
+			int idx = line.find(pointPStr);
+			std::string tmp = line.substr(idx + strlen(pointPStr));
+			std::string points = tmp.substr(1, tmp.find(']')-1);
+			std::istringstream oss(points);
+			std::string word;
+			float ptx, pty, ptz;
+			std::vector<glm::fvec3> curvePts(4);
+			int k = 0;
+			while(oss >> word) {
+				ptx = atof(word.c_str());
+				oss >> word;
+				pty = atof(word.c_str());
+				oss >> word;
+				ptz = atof(word.c_str());
+				curvePts[k++] = glm::fvec3(ptx, pty, ptz);
+			}
+			idx = line.find(width0Str);
+			tmp = line.substr(idx + strlen(width0Str));
+			std::string w0Str = tmp.substr(1, tmp.find(']') - 1);
+			oss.str(w0Str);
+			oss >> word;
+			float w0 = atof(word.c_str());
+
+			idx = line.find(width1Str);
+			tmp = line.substr(idx + strlen(width1Str));
+			std::string w1Str = tmp.substr(1, tmp.find(']') - 1);
+			oss.str(w1Str);
+			oss >> word;
+			float w1 = atof(word.c_str());
+			curves.push_back(
+					std::make_shared<Curve>(
+						curvePts,
+						w0, w1,
+						false,
+						mat
+						)
+					);
+		}
+		file.close();
+	}
+	return true;
+}

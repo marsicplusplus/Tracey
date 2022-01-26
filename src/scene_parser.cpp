@@ -168,6 +168,15 @@ namespace SceneParser {
 				throw std::invalid_argument("Curve does not name a material!");
 			}
 			Importer::readBCC(meshPath, hittables, matIdx);
+		} else if(meshPath.extension() == ".pbrt") {
+			std::string matName;
+			int matIdx = -1;
+			if(hit.contains("material")) matName = hit.at("material");
+			matIdx = findMaterial(matName, materials);
+			if(matName.empty() || matIdx == -1) {
+				throw std::invalid_argument("Curve does not name a material!");
+			}
+			Importer::readPBRCurve(meshPath, hittables, matIdx);
 		}
 
 		Heuristic heuristic = Heuristic::SAH;

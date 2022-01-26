@@ -19,6 +19,7 @@ namespace Importer {
 	};
 
 	bool readBCC(std::filesystem::path p, std::vector<HittablePtr> &curves, int mat);
+	bool readPBRCurve(std::filesystem::path p, std::vector<HittablePtr> &curves, int mat);
 };
 
 #endif
