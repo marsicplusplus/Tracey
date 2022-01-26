@@ -43,7 +43,6 @@ protected:
 	}
 
 protected:
-	glm::fvec3 position;
 	AABB localBBox;
 };
 
