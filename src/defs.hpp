@@ -134,6 +134,23 @@ inline glm::vec3 lerp(glm::vec3 x, glm::vec3 y, float u) {
 	return x * (1.f - u) + y * u;
 }
 
+inline void expandBBox(AABB& bbox, glm::vec3 expandDimensions) {
+	bbox.minX -= expandDimensions.x;
+	bbox.minY -= expandDimensions.y;
+	bbox.minZ -= expandDimensions.z;
+	bbox.maxX += expandDimensions.x;
+	bbox.maxY += expandDimensions.y;
+	bbox.maxZ += expandDimensions.z;
+}
+
+
+inline bool overlaps(AABB& b1, AABB& b2) {
+	bool x = (b1.maxX >= b2.minX) && (b1.minX <= b2.maxX);
+	bool y = (b1.maxY >= b2.minY) && (b1.minY <= b2.maxY);
+	bool z = (b1.maxZ >= b2.minZ) && (b1.minZ <= b2.maxZ);
+	return (x && y && z);
+}
+
 namespace Random {
 	inline uint32_t xorshift32( uint32_t& state ){
 		state ^= state << 13;

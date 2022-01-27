@@ -30,14 +30,14 @@ Curve::Curve(float uMin, float uMax, bool isClosed, int mat, const std::shared_p
 
 		float expandWidth = std::max(localWidths[0], localWidths[1]) * 0.5f;
 
-		expandBBox(glm::fvec3(expandWidth, expandWidth, expandWidth));
+		expandBBox(localBBox, glm::fvec3(expandWidth));
 	}
 
-bool Curve::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
-	return false;
-}
+//bool Curve::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
+//	return false;
+//}
 
-glm::fvec3 Curve::BlossomBezier(const glm::fvec3 cPts[4], float u0, float u1, float u2) {
+glm::fvec3 Curve::BlossomBezier(const glm::fvec3 cPts[4], float u0, float u1, float u2) const {
 	glm::fvec3 a[3] = { 
 		lerp(cPts[0], cPts[1], u0),
 		lerp(cPts[1], cPts[2], u0),
@@ -50,4 +50,147 @@ glm::fvec3 Curve::BlossomBezier(const glm::fvec3 cPts[4], float u0, float u1, fl
 	};
 
 	return lerp(b[0], b[1], u2);
+}
+
+bool Curve::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
+
+	glm::fvec3 localCPts[4];
+	localCPts[0] = BlossomBezier(common->curvePoints, uMin, uMin, uMin);
+	localCPts[1] = BlossomBezier(common->curvePoints, uMin, uMin, uMax);
+	localCPts[2] = BlossomBezier(common->curvePoints, uMin, uMax, uMax);
+	localCPts[3] = BlossomBezier(common->curvePoints, uMax, uMax, uMax);
+
+	auto upVec = glm::cross(ray.getDirection(), glm::vec3(1, 0, 0));
+	const auto objectToRay = glm::lookAt(ray.getOrigin(), ray.getOrigin() - ray.getDirection(), upVec);
+
+	glm::fvec3 transformedPoints[4] = { objectToRay * glm::vec4(localCPts[0], 1), objectToRay * glm::vec4(localCPts[1], 1),
+					  objectToRay* glm::vec4(localCPts[2], 1), objectToRay* glm::vec4(localCPts[3], 1) };
+
+	float L0 = 0;
+	for (int i = 0; i < 2; ++i) {
+		L0 = std::max(L0,
+			std::max(std::max(std::abs(transformedPoints[i].x - 2 * transformedPoints[i + 1].x + transformedPoints[i + 2].x),
+				std::abs(transformedPoints[i].y - 2 * transformedPoints[i + 1].y + transformedPoints[i + 2].y)),
+				std::abs(transformedPoints[i].z - 2 * transformedPoints[i + 1].z + transformedPoints[i + 2].z))
+		);
+	};
+		
+	float eps = std::max(common->width[0], common->width[1]) * .05f; // width / 20
+#define LOG4(x) (std::log(x) * 0.7213475108f)
+	float fr0 = LOG4(1.41421356237f * 12.f * L0 / (8.f * eps));
+#undef LOG4
+	int r0 = (int)std::round(fr0);
+	int maxDepth = std::clamp(r0, 0, 10);
+
+	return recursiveIntersect(ray, tMin, tMax, rec, transformedPoints, glm::inverse(objectToRay), uMin, uMax, maxDepth);
+}
+
+bool Curve::recursiveIntersect(const Ray& ray, float tMin, float tMax, HitRecord& rec, const glm::fvec3 cPts[4], glm::mat4x4& rayToObject, float u0, float u1, int depth) const {
+
+	AABB curveBounds = { INF, INF, INF, -INF, -INF, -INF };
+
+	for (int i = 0; i < 4; i++) {
+		curveBounds.minX = min(curveBounds.minX, cPts[i].x);
+		curveBounds.minY = min(curveBounds.minY, cPts[i].y);
+		curveBounds.minZ = min(curveBounds.minZ, cPts[i].z);
+		curveBounds.maxX = max(curveBounds.maxX, cPts[i].x);
+		curveBounds.maxY = max(curveBounds.maxY, cPts[i].y);
+		curveBounds.maxZ = max(curveBounds.maxZ, cPts[i].z);
+	}
+
+
+	float maxWidth = std::max(lerp(common->width[0], common->width[1], u0), lerp(common->width[0], common->width[1], u1));
+	expandBBox(curveBounds, glm::fvec3(0.5 * maxWidth));
+
+	float rayLength = glm::length(ray.getDirection());
+	float zMax = rayLength * tMax;
+	AABB rayBounds = { 0, 0, 0, 0, 0, zMax };
+
+	if (overlaps(curveBounds, rayBounds) == false)
+		return false;
+
+	if (depth > 0) {
+		float uMid = 0.5f * (u0 + u1);
+		glm::fvec3 cpSplit[7];
+		SubdivideBezier(cPts, cpSplit);
+		return (recursiveIntersect(ray, tMin, tMax, rec, &cpSplit[0], rayToObject, u0, uMid, depth - 1) ||
+				recursiveIntersect(ray, tMin, tMax, rec, &cpSplit[3], rayToObject, uMid, u1, depth - 1));
+	}
+	else {
+		float edge = (cPts[1].y - cPts[0].y) * -cPts[0].y +
+				cPts[0].x * (cPts[0].x - cPts[1].x);
+		if (edge < 0)
+			return false;
+
+		edge = (cPts[2].y - cPts[3].y) * -cPts[3].y +
+			cPts[3].x * (cPts[3].x - cPts[2].x);
+		if (edge < 0)
+			return false;
+
+
+		glm::fvec2 segmentDirection = glm::fvec2(cPts[3]) - glm::fvec2(cPts[0]);
+		float denom = glm::length(segmentDirection) * glm::length(segmentDirection);
+		if (denom == 0)
+			return false;
+		float w = glm::dot(-glm::fvec2(cPts[0]), segmentDirection) / denom;
+
+
+		float u = std::clamp(lerp(u0, u1, w), u0, u1);
+		float hitWidth = lerp(common->width[0], common->width[1], u);
+		glm::fvec3 nHit;
+
+
+		glm::fvec3 dpcdw;
+		glm::fvec3 pc = EvalBezier(cPts, std::clamp(w, 0.0f, 1.0f), &dpcdw);
+		float ptCurveDist2 = pc.x * pc.x + pc.y * pc.y;
+		if (ptCurveDist2 > hitWidth * hitWidth * .25f)
+			return false;
+		if (pc.z < 0 || pc.z > zMax)
+			return false;
+
+		float ptCurveDist = std::sqrt(ptCurveDist2);
+		float edgeFunc = dpcdw.x * -pc.y + pc.x * dpcdw.y;
+		float v = (edgeFunc > 0) ? 0.5f + ptCurveDist / hitWidth :
+			0.5f - ptCurveDist / hitWidth;
+
+		float tHit = pc.z / rayLength;
+		glm::fvec3 pError(2 * hitWidth, 2 * hitWidth, 2 * hitWidth);
+
+		glm::fvec3 dpdu, dpdv;
+		EvalBezier(common->curvePoints, u, &dpdu);
+		glm::fvec3 dpduPlane = glm::inverse(rayToObject) * glm::fvec4(dpdu, 1);
+		glm::fvec3 dpdvPlane = glm::normalize(glm::fvec3(-dpduPlane.y, dpduPlane.x, 0)) * hitWidth;
+		float theta = lerp(-90.f, 90.f, v);
+		auto rot = glm::rotate(glm::mat4x4(1.0f), -theta, dpduPlane);
+		dpdvPlane = rot * glm::fvec4(dpdvPlane, 1);
+		dpdv = rayToObject * glm::fvec4(dpdvPlane, 1);
+
+		rec.p = ray.at(tHit);
+		rec.t = tHit;
+		rec.normal = -ray.getDirection();
+		rec.u = u;
+		rec.v = v;
+		rec.material = mat;
+
+		return true;
+	}
+}
+
+void Curve::SubdivideBezier(const glm::fvec3 cp[4], glm::fvec3 cpSplit[7]) const {
+	cpSplit[0] = cp[0];
+	cpSplit[1] = (cp[0] + cp[1]) / 2.0f;
+	cpSplit[2] = (cp[0] + 2.0f * cp[1] + cp[2]) / 4.0f;
+	cpSplit[3] = (cp[0] + 3.0f * cp[1] + 3.0f * cp[2] + cp[3]) / 8.0f;
+	cpSplit[4] = (cp[1] + 2.0f * cp[2] + cp[3]) / 4.0f;
+	cpSplit[5] = (cp[2] + cp[3]) / 2.0f;
+	cpSplit[6] = cp[3];
+}
+
+glm::fvec3 Curve::EvalBezier(const glm::fvec3 cp[4], float u, glm::fvec3* deriv = nullptr) const {
+	glm::fvec3 cp1[3] = { lerp(cp[0], cp[1], u), lerp(cp[1], cp[2], u),
+					   lerp(cp[2], cp[3], u) };
+	glm::fvec3 cp2[2] = { lerp(cp1[0], cp1[1], u), lerp(cp1[1], cp1[2], u) };
+	if (deriv)
+		*deriv = 3.0f * (cp2[1] - cp2[0]);
+	return lerp(cp2[0], cp2[1], u);
 }

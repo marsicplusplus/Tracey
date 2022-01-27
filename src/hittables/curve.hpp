@@ -19,7 +19,11 @@ class Curve : public Hittable {
 	public:
 		Curve(float uMin, float uMax, bool isClosed, int mat, const std::shared_ptr<CurveCommon>& common);
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
-		glm::fvec3 BlossomBezier(const glm::fvec3 cPts[4], float u0, float u1, float u2);
+		glm::fvec3 BlossomBezier(const glm::fvec3 cPts[4], float u0, float u1, float u2) const;
+		bool intersect(const Ray& ray, float tMin, float tMax, HitRecord& rec) const;
+		bool recursiveIntersect(const Ray& ray, float tMin, float tMax, HitRecord& rec, const glm::fvec3 cPts[4], glm::mat4x4& rayToObject, float u0, float u1, int depth) const;
+		void SubdivideBezier(const glm::fvec3 cp[4], glm::fvec3 cpSplit[7]) const;
+		glm::fvec3 EvalBezier(const glm::fvec3 cp[4], float u, glm::fvec3* deriv) const;
 
 	private:
 		const std::shared_ptr<CurveCommon> common;

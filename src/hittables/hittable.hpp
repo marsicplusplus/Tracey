@@ -33,16 +33,6 @@ public:
 	virtual inline void setTransform(const Transform t) {}
 
 protected:
-	inline void expandBBox(glm::vec3 expandDimensions) {
-		localBBox.minX -= expandDimensions.x;
-		localBBox.minY -= expandDimensions.y;
-		localBBox.minZ -= expandDimensions.z;
-		localBBox.maxX += expandDimensions.x;
-		localBBox.maxY += expandDimensions.y;
-		localBBox.maxZ += expandDimensions.z;
-	}
-
-protected:
 	AABB localBBox;
 };
 
