@@ -40,7 +40,6 @@ Curve::Curve(float uMin, float uMax, bool isClosed, int mat, const std::shared_p
 		float de = -INF;
 		const int ctrlPtsNo = 7;
 		for(int i = 0; i < ctrlPtsNo; ++i){
-			// TODO: just realized that this is wrong. We need the perpendicular distance from the point to the axis?
 			auto dist = glm::length(glm::cross(cpSplit[i] - localCPts[0], axisDir)) / glm::length(axisDir);
 			de = max(dist, de);
 		}
@@ -86,14 +85,29 @@ bool Curve::hitEnclosingCylinder(const Ray& ray) const {
 	return true;
 }
 
-//bool Curve::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
-	//// Early check for enclosing cylinder
-	//if (!hitEnclosingCylinder(ray)) return false;
-//}
-
 bool Curve::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
+	return hitPBRT(ray, tMin, tMax, rec);
+}
 
-	// TODO: This makes it slower, idk;
+bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
+	// Early check for enclosing cylinder
+	if (!hitEnclosingCylinder(ray)) return false;
+
+	glm::fvec3 localCPts[4];
+	localCPts[0] = BlossomBezier(common->curvePoints, uMin, uMin, uMin);
+	localCPts[1] = BlossomBezier(common->curvePoints, uMin, uMin, uMax);
+	localCPts[2] = BlossomBezier(common->curvePoints, uMin, uMax, uMax);
+	localCPts[3] = BlossomBezier(common->curvePoints, uMax, uMax, uMax);
+
+	auto upVec = glm::cross(ray.getDirection(), glm::vec3(1, 0, 0));
+	const auto objectToRay = glm::lookAt(ray.getOrigin(), ray.getOrigin() - ray.getDirection(), upVec);
+
+	glm::fvec3 transformedPoints[4] = { objectToRay * glm::vec4(localCPts[0], 1), objectToRay * glm::vec4(localCPts[1], 1),
+					  objectToRay * glm::vec4(localCPts[2], 1), objectToRay * glm::vec4(localCPts[3], 1) };
+}
+
+bool Curve::hitPBRT(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
+
 	if(!hitEnclosingCylinder(ray)) return false;
 
 	glm::fvec3 localCPts[4];

@@ -1125,85 +1125,20 @@ bool BVH::traverseCollapsed(const Ray& ray, const BVHNode* node, float& tMin, fl
 	}
 	else {
 
-		//for (int i = 0; i < 4; i++) {
-		//	auto childNode = &this->nodePool[(int)node->minAABBLeftFirst.w + i];
-		//	if (childNode->minAABBLeftFirst == glm::fvec4(INF, INF, INF, 0)) {
-		//		continue;
-		//	}
+		for (int i = 0; i < 4; i++) {
+			auto childNode = &this->nodePool[(int)node->minAABBLeftFirst.w + i];
+			if (childNode->minAABBLeftFirst == glm::fvec4(INF, INF, INF, 0)) {
+				continue;
+			}
 
-		//	float distance = 0.0f;
-		//	bool hit = hitAABB(ray, childNode->minAABBLeftFirst, childNode->maxAABBCount, distance);
-		//	if (hit && distance < tMax) {
-		//		if (traverseCollapsed(ray, childNode, tMin, tMax, rec)) {
-		//			hasHit = true;
-		//		}
-		//	}
-		//}
-
-		auto firstNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 0];
-		auto secondNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 1];
-		auto thirdNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 2];
-		auto fourthNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 3];
-
-		float firstDistance = 0.0f;
-		float secondDistance = 0.0f;
-		float thirdDistance = 0.0f;
-		float fourthDistance = 0.0f;
-
-		bool firstHit = hitAABB(ray, firstNode->minAABBLeftFirst, firstNode->maxAABBCount, firstDistance);
-		bool secondHit = hitAABB(ray, secondNode->minAABBLeftFirst, secondNode->maxAABBCount, secondDistance);
-		bool thirdHit = hitAABB(ray, thirdNode->minAABBLeftFirst, thirdNode->maxAABBCount, thirdDistance);
-		bool fourthHit = hitAABB(ray, fourthNode->minAABBLeftFirst, fourthNode->maxAABBCount, fourthDistance);
-
-
-		if (firstDistance > secondDistance) {
-			std::swap(firstDistance, secondDistance);
-			std::swap(firstNode, secondNode);
-			std::swap(firstHit, secondHit);
+			float distance = 0.0f;
+			bool hit = hitAABB(ray, childNode->minAABBLeftFirst, childNode->maxAABBCount, distance);
+			if (hit && distance < tMax) {
+				if (traverseCollapsed(ray, childNode, tMin, tMax, rec)) {
+					hasHit = true;
+				}
+			}
 		}
-		if (thirdDistance > fourthDistance) {
-			std::swap(thirdDistance, fourthDistance);
-			std::swap(thirdNode, fourthNode);
-			std::swap(thirdHit, fourthHit);
-		}
-		if (firstDistance > thirdDistance) {
-			std::swap(firstDistance, thirdDistance);
-			std::swap(firstNode, thirdNode);
-			std::swap(firstHit, thirdHit);
-		}
-		if (secondDistance > fourthDistance) {
-			std::swap(secondDistance, fourthDistance);
-			std::swap(secondNode, fourthNode);
-			std::swap(secondHit, fourthHit);
-		}
-		if (secondDistance > thirdDistance) {
-			std::swap(secondDistance, thirdDistance);
-			std::swap(secondNode, thirdNode);
-			std::swap(secondHit, thirdHit);
-		}
-
-
-		if (firstNode->minAABBLeftFirst == glm::fvec4(INF, INF, INF, 0)) {
-			firstHit = false;
-		}
-		if (secondNode->minAABBLeftFirst == glm::fvec4(INF, INF, INF, 0)) {
-			secondHit = false;
-		}
-		if (thirdNode->minAABBLeftFirst == glm::fvec4(INF, INF, INF, 0)) {
-			thirdHit = false;
-		}
-		if (fourthNode->minAABBLeftFirst == glm::fvec4(INF, INF, INF, 0)) {
-			fourthHit = false;
-		}
-
-		if (firstHit && firstDistance < tMax && traverseCollapsed(ray, firstNode, tMin, tMax, rec))
-			hasHit = true;
-		if (secondHit && secondDistance < tMax && traverseCollapsed(ray, secondNode, tMin, tMax, rec))
-			hasHit = true;
-		if (thirdHit && thirdDistance < tMax && traverseCollapsed(ray, thirdNode, tMin, tMax, rec))
-			hasHit = true;
-		if (fourthHit && fourthDistance < tMax && traverseCollapsed(ray, fourthNode, tMin, tMax, rec))
-			hasHit = true;
 	}
 
 	return hasHit;
