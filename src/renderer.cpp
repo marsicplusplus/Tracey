@@ -223,22 +223,22 @@ bool Renderer::start() {
 	const int horizontalTiles = wWidth / tWidth;
 	const int verticalTiles = wHeight / tHeight;
 
-#ifdef DEBUG
 	std::deque<float> averageFrameTime;
-#endif
 	while(!glfwWindowShouldClose(this->window)){
+		glfwPollEvents();
 
 		if(scene && (this->isBufferInvalid)) {
+			float now = glfwGetTime();
 			this->coreRayTracing(horizontalTiles, verticalTiles, tWidth, tHeight, wWidth, wHeight);
-			std::cout << "Last frameTime: " << lasttime << "s" << std::endl;
-#ifdef DEBUG
-			averageFrameTime.push_back(lasttime);
+			float timeframe = glfwGetTime() - now;
+			std::cout << "Last frameTime: " << timeframe << "s" << std::endl;
+			averageFrameTime.push_back(timeframe);
 			int count = averageFrameTime.size();
 			if(count > 500) averageFrameTime.pop_front();
 			std::cout << "Average time of the last " << count << " frames: " << 
 				std::reduce(averageFrameTime.begin(), averageFrameTime.end()) / count << "s" << std::endl;
-#endif
 		}
+
 		float now = glfwGetTime();
 		frameTime = now - lastUpdateTime;
 		lasttime = frameTime;
@@ -247,7 +247,6 @@ bool Renderer::start() {
 		while(frameTime > 0.0f){
 			float dt = min(frameTime, fpsLimit);
 			frameTime -= dt;
-			glfwPollEvents();
 			double xpos, ypos;
 			glfwGetCursorPos(this->window, &xpos, &ypos);
 			InputManager::Instance()->setMouseState(xpos, ypos);

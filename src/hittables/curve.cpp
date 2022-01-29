@@ -9,10 +9,7 @@ Curve::Curve(float uMin, float uMax, bool isClosed, int mat, const std::shared_p
 
 
 		glm::fvec3 localCPts[4];
-		localCPts[0] = BlossomBezier(common->curvePoints, uMin, uMin, uMin);
-		localCPts[1] = BlossomBezier(common->curvePoints, uMin, uMin, uMax);
-		localCPts[2] = BlossomBezier(common->curvePoints, uMin, uMax, uMax);
-		localCPts[3] = BlossomBezier(common->curvePoints, uMax, uMax, uMax);
+		getLocalControlPoints(localCPts);
 
 		for (int i = 0; i < 4; i++) {
 			localBBox.minX = min(localBBox.minX, localCPts[i].x);
@@ -31,11 +28,32 @@ Curve::Curve(float uMin, float uMax, bool isClosed, int mat, const std::shared_p
 		float expandWidth = std::max(localWidths[0], localWidths[1]) * 0.5f;
 
 		expandBBox(localBBox, glm::fvec3(expandWidth));
-	}
 
-//bool Curve::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
-//	return false;
-//}
+		auto axisDir = localCPts[3] - localCPts[0]; /* Axis direction */
+		auto oe = ((localCPts[3] + localCPts[0])/2.0f
+				+ EvalBezier(localCPts, 0.5, nullptr)) / 2.0f; /* Cylinder passes through this point */
+		float rMax = max(lerp(common->width[0], common->width[1], uMin),
+				lerp(common->width[0], common->width[1], uMax)); /* Radius of the cylinder */
+
+		// We should subdivide the curve a predefinite number of times;
+		glm::fvec3 cpSplit[7];
+		SubdivideBezier(localCPts, cpSplit);
+		float de = -INF;
+		const int ctrlPtsNo = 7;
+		for(int i = 0; i < ctrlPtsNo; ++i){
+			// TODO: just realized that this is wrong. We need the perpendicular distance from the point to the axis?
+			auto dist = glm::distance(axisDir, localCPts[i]);
+			de = max(dist, de);
+		}
+
+		enclosingCylinder = Cylinder{
+			axisDir,
+			oe,
+			rMax,
+			de
+		};
+}
+
 
 glm::fvec3 Curve::BlossomBezier(const glm::fvec3 cPts[4], float u0, float u1, float u2) const {
 	glm::fvec3 a[3] = { 
@@ -52,7 +70,33 @@ glm::fvec3 Curve::BlossomBezier(const glm::fvec3 cPts[4], float u0, float u1, fl
 	return lerp(b[0], b[1], u2);
 }
 
+void Curve::getLocalControlPoints(glm::fvec3 *pts) const {
+	pts[0] = BlossomBezier(common->curvePoints, uMin, uMin, uMin);
+	pts[1] = BlossomBezier(common->curvePoints, uMin, uMin, uMax);
+	pts[2] = BlossomBezier(common->curvePoints, uMin, uMax, uMax);
+	pts[3] = BlossomBezier(common->curvePoints, uMax, uMax, uMax);
+}
+
+bool Curve::hitEnclosingCylinder(const Ray& ray) const {
+	auto n = glm::cross(ray.getDirection(), enclosingCylinder.axis);
+	auto tmp = glm::dot(ray.getOrigin() - enclosingCylinder.oe, n);
+	auto dSquared = (tmp * tmp)/(glm::dot(n, n));
+
+	// TODO: dSquared... do we need to square the second term of the disequality?
+	if(dSquared > enclosingCylinder.rayMax + enclosingCylinder.de) return false;
+
+	return true;
+}
+
+//bool Curve::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
+	//// Early check for enclosing cylinder
+	//if (!hitEnclosingCylinder(ray)) return false;
+//}
+
 bool Curve::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
+
+	// TODO: This makes it slower, idk;
+	if(!hitEnclosingCylinder(ray)) return false;
 
 	glm::fvec3 localCPts[4];
 	localCPts[0] = BlossomBezier(common->curvePoints, uMin, uMin, uMin);
@@ -82,7 +126,8 @@ bool Curve::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
 	int r0 = (int)std::round(fr0);
 	int maxDepth = std::clamp(r0, 0, 10);
 
-	return recursiveIntersect(ray, tMin, tMax, rec, transformedPoints, glm::inverse(objectToRay), uMin, uMax, maxDepth);
+	auto inv = glm::inverse(objectToRay);
+	return recursiveIntersect(ray, tMin, tMax, rec, transformedPoints, inv, uMin, uMax, maxDepth);
 }
 
 bool Curve::recursiveIntersect(const Ray& ray, float tMin, float tMax, HitRecord& rec, const glm::fvec3 cPts[4], glm::mat4x4& rayToObject, float u0, float u1, int depth) const {

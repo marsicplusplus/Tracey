@@ -3,6 +3,13 @@
 
 #include "hittables/hittable.hpp"
 
+struct Cylinder {
+	glm::fvec3 axis;
+	glm::fvec3 oe;
+	float rayMax;
+	float de;
+};
+
 class CurveCommon {
 public:
 	CurveCommon(glm::fvec3 cPts[4], float width0, float width1) :
@@ -27,9 +34,13 @@ class Curve : public Hittable {
 
 	private:
 		const std::shared_ptr<CurveCommon> common;
+		Cylinder enclosingCylinder;
 		const bool isClosed;
 		const int mat;
 		float uMin, uMax;
+
+		void getLocalControlPoints(glm::fvec3 *pts) const;
+		bool hitEnclosingCylinder(const Ray& ray) const;
 };
 
 #endif // __CURVE_HPP__
