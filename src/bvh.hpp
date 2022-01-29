@@ -11,8 +11,8 @@ enum class Heuristic {
 };
 
 struct BVHNode {
-	glm::fvec4 minAABBLeftFirst;
-	glm::fvec4 maxAABBCount;
+	glm::fvec4 minAABBLeftFirst = {INF, INF, INF, 0};
+	glm::fvec4 maxAABBCount = {-INF, -INF, -INF, 0};
 };
 
 struct StackNode
@@ -44,12 +44,11 @@ class BVH : public Hittable {
 		~BVH();
 
 		bool hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const override;
-		bool frustumIntersectsAABB(Frustum frustum, const glm::fvec4& minBBox, const glm::fvec4& maxBBox);
 		bool update(float dt) override;
 		const std::vector<HittablePtr>& getHittable() const {
 			return hittables;
 		};
-
+		void collapseBVH();
 		void constructTopLevelBVH();
 		void constructSubBVH();
 
@@ -105,6 +104,7 @@ class BVH : public Hittable {
 		float calculateSurfaceArea(AABB bbox);
 		float calculateBinID(AABB primAABB, float k1, float k0, int longestAxisIdx);
 		bool traverse(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitRecord& rec) const;
+		bool traverseCollapsed(const Ray& ray, const BVHNode* node, float& tMin, float& tMax, HitRecord& rec) const;
 		BVHNode* findBestMatch(BVHNode* target, std::list<BVHNode*> nodes);
 
 		std::vector<HittablePtr> hittables;
@@ -114,6 +114,7 @@ class BVH : public Hittable {
 		BVHNode* root;
 		size_t poolPtr;
 		float surfaceArea;
+		bool isCollapsed = false;
 
 		Heuristic heuristic;
 		bool animate;

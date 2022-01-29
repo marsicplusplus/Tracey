@@ -93,13 +93,18 @@ namespace SceneParser {
 		std::vector<std::shared_ptr<Hittable>> hittables;
 		if(meshPath.extension() == ".obj") {
 			Assimp::Importer importer;
-			const aiScene* scene = importer.ReadFile(meshPath.string(), aiProcess_Triangulate | aiProcess_GenNormals);
+			const aiScene* scene = importer.ReadFile(meshPath.string(), aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_SortByPType);
 
-			if(!scene) 
+			if(!scene)
 				throw std::invalid_argument("Failed parsing the obj file");
 
 			for(int i = 0; i < scene->mNumMeshes; ++i){
 				auto mesh = scene->mMeshes[i];
+
+				if (!(mesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE)) {
+					continue;
+				}
+
 				std::vector<glm::fvec3> verts(mesh->mNumVertices);
 				std::vector<glm::fvec3> norms;
 				std::vector<glm::fvec2> uvs;

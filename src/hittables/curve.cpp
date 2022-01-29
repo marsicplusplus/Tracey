@@ -25,15 +25,14 @@ Curve::Curve(float uMin, float uMax, bool isClosed, int mat, const std::shared_p
 			lerp(common->width[0], common->width[1], uMax)
 		};
 
-		float expandWidth = std::max(localWidths[0], localWidths[1]) * 0.5f;
+		float expandWidth = max(localWidths[0], localWidths[1]) * 0.5f;
 
 		expandBBox(localBBox, glm::fvec3(expandWidth));
 
 		auto axisDir = localCPts[3] - localCPts[0]; /* Axis direction */
 		auto oe = ((localCPts[3] + localCPts[0])/2.0f
 				+ EvalBezier(localCPts, 0.5, nullptr)) / 2.0f; /* Cylinder passes through this point */
-		float rMax = max(lerp(common->width[0], common->width[1], uMin),
-				lerp(common->width[0], common->width[1], uMax)); /* Radius of the cylinder */
+		float rMax = max(localWidths[0], localWidths[1]);  /* Radius of the cylinder */
 
 		// We should subdivide the curve a predefinite number of times;
 		glm::fvec3 cpSplit[7];
@@ -42,7 +41,7 @@ Curve::Curve(float uMin, float uMax, bool isClosed, int mat, const std::shared_p
 		const int ctrlPtsNo = 7;
 		for(int i = 0; i < ctrlPtsNo; ++i){
 			// TODO: just realized that this is wrong. We need the perpendicular distance from the point to the axis?
-			auto dist = glm::distance(axisDir, localCPts[i]);
+			auto dist = glm::length(glm::cross(cpSplit[i] - localCPts[0], axisDir)) / glm::length(axisDir);
 			de = max(dist, de);
 		}
 
@@ -82,8 +81,7 @@ bool Curve::hitEnclosingCylinder(const Ray& ray) const {
 	auto tmp = glm::dot(ray.getOrigin() - enclosingCylinder.oe, n);
 	auto dSquared = (tmp * tmp)/(glm::dot(n, n));
 
-	// TODO: dSquared... do we need to square the second term of the disequality?
-	if(dSquared > enclosingCylinder.rayMax + enclosingCylinder.de) return false;
+	if (sqrt(dSquared) > enclosingCylinder.rayMax + enclosingCylinder.de) return false;
 
 	return true;
 }

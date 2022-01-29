@@ -106,6 +106,112 @@ void BVH::constructTopLevelBVH() {
 	this->surfaceArea = calculateSurfaceArea(worldBBox);
 }
 
+void BVH::collapseBVH() {
+
+	if (hittables.size() < 4) {
+		return;
+	}
+
+	auto newNodePool = new BVHNode[hittables.size() * 2];
+	auto newNodePoolPtr = 4;
+
+	auto newRoot = &newNodePool[0];
+	newRoot->minAABBLeftFirst = this->root->minAABBLeftFirst;
+	newRoot->maxAABBCount = this->root->maxAABBCount;
+	auto currNode = newRoot;
+
+	auto currPointer = 4;
+	std::deque<BVHNode*> children;
+	std::deque<BVHNode*> finalChildren;
+
+	int emptyCount = 0;
+	// while currnode aabb is not negative bounding box;
+	while (currPointer < hittables.size() * 2 - 1) {
+		if (currNode->maxAABBCount.w != 0) {
+			currNode = &newNodePool[currPointer++];
+			continue;
+		}
+
+		if (currNode->minAABBLeftFirst == glm::fvec4{ INF, INF, INF, 0 }) {
+			// We've hit an empty node;
+			emptyCount++;
+			currNode = &newNodePool[currPointer++];
+			continue;
+		}
+
+		auto nChildren = 2;
+		emptyCount = 0;
+		children.clear();
+		finalChildren.clear();
+
+		auto maxSurfaceArea = -INF;
+		for (int i = 0; i < nChildren; i++) {
+			auto child = &this->nodePool[(int)(currNode->minAABBLeftFirst.w + i)];
+
+
+			auto surfaceArea = calculateSurfaceArea({
+				child->minAABBLeftFirst.x,
+				child->minAABBLeftFirst.y,
+				child->minAABBLeftFirst.z,
+				child->maxAABBCount.x,
+				child->maxAABBCount.y,
+				child->maxAABBCount.z
+			});
+
+			if (surfaceArea > maxSurfaceArea) {
+				maxSurfaceArea = surfaceArea;
+				children.push_front(child);
+			} else { 
+				children.push_back(child);
+			}
+		}
+
+		while (!children.empty()) {
+			auto child = children.front();
+			children.pop_front();
+
+			// If our child is a leaf we don't want to collapse
+			if (child->maxAABBCount.w != 0.0f) {
+				finalChildren.push_back(child);
+				continue;
+			}
+
+			if (nChildren + 1 <= 4) {
+				children.push_back(&this->nodePool[(int)(child->minAABBLeftFirst.w)]);
+				children.push_back(&this->nodePool[(int)(child->minAABBLeftFirst.w + 1)]);
+				nChildren += 1;
+			} else {
+				finalChildren.push_back(child);
+			}
+		}
+
+		currNode->minAABBLeftFirst.w = newNodePoolPtr;
+		for (int i = 0; i < 4; i++) {
+			auto newChild = &newNodePool[newNodePoolPtr++];
+
+			if (finalChildren.empty()) {
+				newChild->minAABBLeftFirst = { INF, INF, INF, 0 };
+				newChild->maxAABBCount = { -INF, -INF, -INF, 0 };
+			}
+			else {
+				auto oldChild = finalChildren.front();
+				finalChildren.pop_front();
+				newChild->minAABBLeftFirst = oldChild->minAABBLeftFirst;
+				newChild->maxAABBCount = oldChild->maxAABBCount;
+			}
+		}
+
+		currNode = &newNodePool[currPointer++];
+	}
+
+	delete[] this->nodePool;
+	this->nodePool = &newNodePool[0];
+	this->root = &newNodePool[0];
+	this->root->minAABBLeftFirst.w = 4;
+
+	isCollapsed = true;
+}
+
 void BVH::constructSubBVH() {
 	if(this->nodePool != nullptr)
 		delete[] this->nodePool;
@@ -933,12 +1039,22 @@ bool BVH::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
 	const Ray transformedRay = ray.transformRay(transformInv);
 
 	HitRecord tmp;
-	if (traverse(transformedRay, this->root, tMin, tMax, tmp)) {
-		rec = tmp;
-		rec.p = transformMat * glm::fvec4(rec.p, 1.0f);
-		rec.setFaceNormal(ray, transposeInv * glm::fvec4(rec.normal, 0.0));
-		return true;
+	if (isCollapsed) {
+		if (traverseCollapsed(transformedRay, &this->nodePool[0], tMin, tMax, tmp)) {
+			rec = tmp;
+			rec.p = transformMat * glm::fvec4(rec.p, 1.0f);
+			rec.setFaceNormal(ray, transposeInv * glm::fvec4(rec.normal, 0.0));
+			return true;
+		}
+	} else {
+		if (traverse(transformedRay, this->root, tMin, tMax, tmp)) {
+			rec = tmp;
+			rec.p = transformMat * glm::fvec4(rec.p, 1.0f);
+			rec.setFaceNormal(ray, transposeInv * glm::fvec4(rec.normal, 0.0));
+			return true;
+		}
 	}
+
 	return false;
 }
 
@@ -984,6 +1100,112 @@ bool BVH::traverse(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitR
 			}
 		}
 	}
+	return hasHit;
+}
+
+bool BVH::traverseCollapsed(const Ray& ray, const BVHNode* node, float& tMin, float& tMax, HitRecord& rec) const {
+	HitRecord tmp;
+	bool hasHit = false;
+	float closest = tMax;
+
+	if (node->maxAABBCount.w != 0) {
+
+		// We are a leaf
+		// Intersect the primitives
+		for (size_t i = node->minAABBLeftFirst.w; i < node->minAABBLeftFirst.w + node->maxAABBCount.w; ++i) {
+			auto prim = hittables[hittableIdxs[i]];
+			if (prim->hit(ray, tMin, closest, tmp)) {
+				rec = tmp;
+				closest = rec.t;
+				hasHit = true;
+			}
+		}
+
+		tMax = closest;
+	}
+	else {
+
+		//for (int i = 0; i < 4; i++) {
+		//	auto childNode = &this->nodePool[(int)node->minAABBLeftFirst.w + i];
+		//	if (childNode->minAABBLeftFirst == glm::fvec4(INF, INF, INF, 0)) {
+		//		continue;
+		//	}
+
+		//	float distance = 0.0f;
+		//	bool hit = hitAABB(ray, childNode->minAABBLeftFirst, childNode->maxAABBCount, distance);
+		//	if (hit && distance < tMax) {
+		//		if (traverseCollapsed(ray, childNode, tMin, tMax, rec)) {
+		//			hasHit = true;
+		//		}
+		//	}
+		//}
+
+		auto firstNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 0];
+		auto secondNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 1];
+		auto thirdNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 2];
+		auto fourthNode = &this->nodePool[(int)node->minAABBLeftFirst.w + 3];
+
+		float firstDistance = 0.0f;
+		float secondDistance = 0.0f;
+		float thirdDistance = 0.0f;
+		float fourthDistance = 0.0f;
+
+		bool firstHit = hitAABB(ray, firstNode->minAABBLeftFirst, firstNode->maxAABBCount, firstDistance);
+		bool secondHit = hitAABB(ray, secondNode->minAABBLeftFirst, secondNode->maxAABBCount, secondDistance);
+		bool thirdHit = hitAABB(ray, thirdNode->minAABBLeftFirst, thirdNode->maxAABBCount, thirdDistance);
+		bool fourthHit = hitAABB(ray, fourthNode->minAABBLeftFirst, fourthNode->maxAABBCount, fourthDistance);
+
+
+		if (firstDistance > secondDistance) {
+			std::swap(firstDistance, secondDistance);
+			std::swap(firstNode, secondNode);
+			std::swap(firstHit, secondHit);
+		}
+		if (thirdDistance > fourthDistance) {
+			std::swap(thirdDistance, fourthDistance);
+			std::swap(thirdNode, fourthNode);
+			std::swap(thirdHit, fourthHit);
+		}
+		if (firstDistance > thirdDistance) {
+			std::swap(firstDistance, thirdDistance);
+			std::swap(firstNode, thirdNode);
+			std::swap(firstHit, thirdHit);
+		}
+		if (secondDistance > fourthDistance) {
+			std::swap(secondDistance, fourthDistance);
+			std::swap(secondNode, fourthNode);
+			std::swap(secondHit, fourthHit);
+		}
+		if (secondDistance > thirdDistance) {
+			std::swap(secondDistance, thirdDistance);
+			std::swap(secondNode, thirdNode);
+			std::swap(secondHit, thirdHit);
+		}
+
+
+		if (firstNode->minAABBLeftFirst == glm::fvec4(INF, INF, INF, 0)) {
+			firstHit = false;
+		}
+		if (secondNode->minAABBLeftFirst == glm::fvec4(INF, INF, INF, 0)) {
+			secondHit = false;
+		}
+		if (thirdNode->minAABBLeftFirst == glm::fvec4(INF, INF, INF, 0)) {
+			thirdHit = false;
+		}
+		if (fourthNode->minAABBLeftFirst == glm::fvec4(INF, INF, INF, 0)) {
+			fourthHit = false;
+		}
+
+		if (firstHit && firstDistance < tMax && traverseCollapsed(ray, firstNode, tMin, tMax, rec))
+			hasHit = true;
+		if (secondHit && secondDistance < tMax && traverseCollapsed(ray, secondNode, tMin, tMax, rec))
+			hasHit = true;
+		if (thirdHit && thirdDistance < tMax && traverseCollapsed(ray, thirdNode, tMin, tMax, rec))
+			hasHit = true;
+		if (fourthHit && fourthDistance < tMax && traverseCollapsed(ray, fourthNode, tMin, tMax, rec))
+			hasHit = true;
+	}
+
 	return hasHit;
 }
 
