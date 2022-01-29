@@ -6,7 +6,7 @@
 struct Cylinder {
 	glm::fvec3 axis;
 	glm::fvec3 oe;
-	float rayMax;
+	float radiusMax;
 	float de;
 };
 
@@ -26,7 +26,7 @@ struct RayConeIntersection { // ray.o = {0,0,0}; ray.d = {0,0,1};
 		float b = cd.z * (drr - cdd); // a − 2bs + cs2
 		float cdz2 = cd.z * cd.z; // (s for ray ∩ cone)
 		ddd += cdz2; // now it is cd·cd
-		float a = 2 * drr * cdd + cxd * cxd - ddd * r2 + dp * cdz2;
+		float a = 2.0f * drr * cdd + cxd * cxd - ddd * r2 + dp * cdz2;
 #if defined(KEEP_DR2) // dr2 adjustments
 		float qs = (dr ∗ dr) / ddd; // ( it does not help
 		a − = qs ∗ cdd∗cdd; // much with neither
@@ -34,15 +34,15 @@ struct RayConeIntersection { // ray.o = {0,0,0}; ray.d = {0,0,1};
 		c − = qs ∗ cdz2; // accuracy )
 #endif
 
-// We will add c0.z to s and splatter if needed
+// We will add c0.z to s and sp latter if needed
 		float det = b * b - a * c; // for a − 2bs + cs2
-		s = (b - (det > 0 ? sqrt(det) : 0)) / c; // c > 0
+		s = (b - (det > 0.0f ? sqrt(det) : 0.0f)) / c; // c > 0
 		dt = (s * cd.z - cdd) / ddd; // wrt t
 		dc = s * s + dp; // | (ray ∩ cone) − c0 | 2
 		sp = cdd / cd.z; // will add c0.z latter
 		dp += sp * sp; // | (ray ∩ plane) − c0 | 2
 
-		return det > 0; // true (real) or false (phantom)
+		return det > 0.0f; // true (real) or false (phantom)
 	}
 
 	glm::fvec3 c0; // curve (t) in RCC (base center)
@@ -77,11 +77,11 @@ class Curve : public Hittable {
 		bool recursiveIntersect(const Ray& ray, float tMin, float tMax, HitRecord& rec, const glm::fvec3 cPts[4], glm::mat4x4& rayToObject, float u0, float u1, int depth) const;
 		void SubdivideBezier(const glm::fvec3 cp[4], glm::fvec3 cpSplit[7]) const;
 		glm::fvec3 EvalBezier(const glm::fvec3 cp[4], float u, glm::fvec3* deriv) const;
+		glm::fvec3 getTangent(float t) const;
 
 	private:
 		const std::shared_ptr<CurveCommon> common;
 		Cylinder enclosingCylinder;
-		RayConeIntersection rayConeIntersection;
 		const bool isClosed;
 		const int mat;
 		float uMin, uMax;

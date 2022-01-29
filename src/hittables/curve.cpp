@@ -1,4 +1,4 @@
-#include "hittables/curve.hpp"
+﻿#include "hittables/curve.hpp"
 
 Curve::Curve(float uMin, float uMax, bool isClosed, int mat, const std::shared_ptr<CurveCommon>& common) :
 	uMin(uMin),
@@ -80,7 +80,7 @@ bool Curve::hitEnclosingCylinder(const Ray& ray) const {
 	auto tmp = glm::dot(ray.getOrigin() - enclosingCylinder.oe, n);
 	auto dSquared = (tmp * tmp)/(glm::dot(n, n));
 
-	if (sqrt(dSquared) > enclosingCylinder.rayMax + enclosingCylinder.de) return false;
+	if (sqrt(dSquared) > enclosingCylinder.radiusMax + enclosingCylinder.de) return false;
 
 	return true;
 }
@@ -99,11 +99,30 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 	localCPts[2] = BlossomBezier(common->curvePoints, uMin, uMax, uMax);
 	localCPts[3] = BlossomBezier(common->curvePoints, uMax, uMax, uMax);
 
-	auto upVec = glm::cross(ray.getDirection(), glm::vec3(1, 0, 0));
+	glm::fvec3 upVec = glm::cross(ray.getDirection(), glm::fvec3(1, 0, 0));
+
+	if (ray.getDirection() == glm::fvec3(1, 0, 0)) {
+		upVec = glm::cross(ray.getDirection(), glm::vec3(0, 1, 0));
+	}
+
 	const auto objectToRay = glm::lookAt(ray.getOrigin(), ray.getOrigin() - ray.getDirection(), upVec);
 
 	glm::fvec3 transformedPoints[4] = { objectToRay * glm::vec4(localCPts[0], 1), objectToRay * glm::vec4(localCPts[1], 1),
 					  objectToRay * glm::vec4(localCPts[2], 1), objectToRay * glm::vec4(localCPts[3], 1) };
+
+
+	RayConeIntersection rayConeIntersection; 
+	rayConeIntersection.c0 = transformedPoints[0];
+	rayConeIntersection.cd = (transformedPoints[0] + enclosingCylinder.axis * 0.0001f) / 0.0001f;
+	rayConeIntersection.intersect(enclosingCylinder.radiusMax, 0);
+	float deltaT0 = rayConeIntersection.dt;
+	rayConeIntersection.c0 = transformedPoints[3];
+	rayConeIntersection.cd = (transformedPoints[3] - enclosingCylinder.axis * 0.0001f) / 0.0001f;
+	rayConeIntersection.intersect(enclosingCylinder.radiusMax, 0);
+	float deltaT1 = rayConeIntersection.dt;
+
+	if (deltaT0 < 0 && deltaT1 > 0) return false;
+	
 }
 
 bool Curve::hitPBRT(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
@@ -121,6 +140,90 @@ bool Curve::hitPBRT(const Ray& ray, float tMin, float tMax, HitRecord& rec) cons
 
 	glm::fvec3 transformedPoints[4] = { objectToRay * glm::vec4(localCPts[0], 1), objectToRay * glm::vec4(localCPts[1], 1),
 					  objectToRay* glm::vec4(localCPts[2], 1), objectToRay* glm::vec4(localCPts[3], 1) };
+
+	// Compute delta t(0) and delta t(1)
+	RayConeIntersection rayConeIntersection;
+	rayConeIntersection.c0 = transformedPoints[0];
+	rayConeIntersection.cd = ((transformedPoints[0] + enclosingCylinder.axis * 0.0001f) - transformedPoints[0]) / 0.0001f;
+	rayConeIntersection.intersect(enclosingCylinder.radiusMax, 0);
+	float deltaT0 = rayConeIntersection.dt;
+
+	rayConeIntersection.c0 = transformedPoints[3];
+	rayConeIntersection.cd = ((transformedPoints[3] - enclosingCylinder.axis * 0.0001f) - transformedPoints[0]) / 0.0001f;
+	rayConeIntersection.intersect(enclosingCylinder.radiusMax, 0);
+	float deltaT1 = rayConeIntersection.dt;
+
+	if (deltaT0 < 0 && deltaT1 > 0) return false;
+
+	// Try intersecting in one direction
+	int iteration = 0;
+	float currT = glm::dot(transformedPoints[3] - transformedPoints[0], glm::fvec3(0.0f, 0.0f, 1.0f)) > 0 ? 0.0f : 1.0f;
+	bool frontToBack = currT == 0.0f ? true : false;
+
+	while (true) {
+		auto coneBase = EvalBezier(transformedPoints, currT, nullptr);
+		rayConeIntersection.c0 = coneBase;
+		auto tangent = getTangent(currT);
+		rayConeIntersection.cd = frontToBack ? tangent : -tangent;
+
+		// Find deltaT
+		bool trueHit = rayConeIntersection.intersect(lerp(common->width[0], common->width[1], currT), 0.0f);
+		rayConeIntersection.dt = std::clamp(rayConeIntersection.dt, -0.5f, 0.5f);
+
+		if (abs(rayConeIntersection.dt) < 0.0005f) {
+			if (trueHit) {
+				rec.p = ray.at(rayConeIntersection.s + coneBase.z);
+				rec.t = rayConeIntersection.s + coneBase.z;
+				rec.normal = -ray.getDirection();
+				rec.u = 0;
+				rec.v = 0;
+				rec.material = mat;
+				return true;
+			} else {
+				break;
+			}
+		}
+
+		currT = currT + rayConeIntersection.dt;
+		iteration++;
+		if (iteration > 50) break;
+	}
+
+	// Try intersecting in the opposite direciton
+	frontToBack = !frontToBack;
+	currT = frontToBack ? 0.0f : 1.0f;
+	iteration = 0;
+	while (true) {
+		auto coneBase = EvalBezier(transformedPoints, currT, nullptr);
+		rayConeIntersection.c0 = coneBase;
+		auto tangent = getTangent(currT);
+		rayConeIntersection.cd = frontToBack ? tangent : -tangent;
+
+		// Find deltaT
+		bool trueHit = rayConeIntersection.intersect(lerp(common->width[0], common->width[1], currT), 0.0f);
+		rayConeIntersection.dt = std::clamp(rayConeIntersection.dt, -0.5f, 0.5f);
+
+		if (abs(rayConeIntersection.dt) < 0.0005f) {
+			if (trueHit) {
+				rec.p = ray.at(rayConeIntersection.s + coneBase.z);
+				rec.t = rayConeIntersection.s + coneBase.z;
+				rec.normal = -ray.getDirection();
+				rec.u = 0;
+				rec.v = 0;
+				rec.material = mat;
+				return true;
+			} else {
+				break;
+			}
+		}
+
+		currT = currT + rayConeIntersection.dt;
+		iteration++;
+		if (iteration > 50) break;
+	}
+
+	return false;
+
 
 	float L0 = 0;
 	for (int i = 0; i < 2; ++i) {
@@ -250,4 +353,16 @@ glm::fvec3 Curve::EvalBezier(const glm::fvec3 cp[4], float u, glm::fvec3* deriv 
 	if (deriv)
 		*deriv = 3.0f * (cp2[1] - cp2[0]);
 	return lerp(cp2[0], cp2[1], u);
+}
+
+glm::fvec3 Curve::getTangent(float t) const {
+	glm::fvec3 localCPts[4];
+	getLocalControlPoints(localCPts);
+	auto onemint = 1 - t;
+	auto onemintSquared = onemint * onemint;
+	auto a = -3.0f * onemintSquared * localCPts[0];
+	auto b = localCPts[1] * (3.0f * onemintSquared - 6.0f * t * onemint);
+	auto c = localCPts[2] * (-3.0f * t * t + 6.0f * t * onemint);
+	auto d = localCPts[3] * 3.0f * t * t;
+	return a + b + c + d;
 }
