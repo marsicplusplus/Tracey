@@ -122,12 +122,11 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 	float deltaT1 = rayConeIntersection.dt;
 
 	if (deltaT0 < 0 && deltaT1 > 0) return false;
-	
 }
 
 bool Curve::hitPBRT(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
 
-	if(!hitEnclosingCylinder(ray)) return false;
+	//if(!hitEnclosingCylinder(ray)) return false;
 
 	glm::fvec3 localCPts[4];
 	localCPts[0] = BlossomBezier(common->curvePoints, uMin, uMin, uMin);
@@ -141,6 +140,62 @@ bool Curve::hitPBRT(const Ray& ray, float tMin, float tMax, HitRecord& rec) cons
 	glm::fvec3 transformedPoints[4] = { objectToRay * glm::vec4(localCPts[0], 1), objectToRay * glm::vec4(localCPts[1], 1),
 					  objectToRay* glm::vec4(localCPts[2], 1), objectToRay* glm::vec4(localCPts[3], 1) };
 
+	float tStart = glm::dot(transformedPoints[3] - transformedPoints[0], ray.getDirection()) > 0.0f ? 0.0f : 1.0f;
+
+	bool hit = false;
+	float localWidths[2] = { 
+		lerp(common->width[0], common->width[1], uMin),
+		lerp(common->width[0], common->width[1], uMax)
+	};
+#if 1
+	for (int side = 0; side < 2; ++side){
+		float t = tStart;
+		float tOld = 0.0f;
+
+		RayConeIntersection inters;
+	
+		float dt1 = 0.0f;
+		float dt2 = 0.0f;
+
+		for(int iter = 0; iter < 40 /* iteration number */; ++iter){
+			inters.c0 = EvalBezier(transformedPoints, t, nullptr);
+			inters.cd = getTangent(t);
+			bool realHit = inters.intersect(std::max(localWidths[0], localWidths[1]), 0.0f);
+			if(realHit && fabsf(inters.dt) < 5e-5f){ /* Stops at 5e-5 as in the paper */
+				// Fill in hit struct and break;
+				rec.t = inters.s + inters.c0.z;
+				rec.p = ray.at(rec.t);
+				rec.u = 0;
+				rec.v = 0;
+				rec.setFaceNormal(ray, glm::normalize(rec.p - EvalBezier(localCPts, t, nullptr)));
+				rec.material = this->mat;
+				hit = true;
+				break;
+			}
+			inters.dt = min (inters.dt, 0.5f); /* Clamp to 0.5 */
+			inters.dt = max(inters.dt, -0.5f); /* Clamp to -0.5 */
+			dt2 = dt1;
+			dt1 = inters.dt;
+			if(dt1 * dt2 < 0.0f) { /* Summon the ancient Babylonian gods */
+				float next = 0.0f;
+				if((iter & 3) == 0) {
+					next = 0.5f * t * tOld; /* Bisector method every 4th iteration */
+				} else {
+					next = (dt2 * tOld - dt1 * t) / (dt2 - dt1);
+				}
+				tOld = t;
+				t = next;
+			} else { /* Use the dt computed by the intersection; */
+				tOld = t;
+				t = t + inters.dt;
+			}
+			if(t < 0.0f || t > 1.0f) break;
+		}
+		if(!hit) tStart = 1.0f - tStart;
+		else break;
+	}
+	return hit;
+#else 
 	// Compute delta t(0) and delta t(1)
 	RayConeIntersection rayConeIntersection;
 	rayConeIntersection.c0 = transformedPoints[0];
@@ -334,6 +389,7 @@ bool Curve::recursiveIntersect(const Ray& ray, float tMin, float tMax, HitRecord
 
 		return true;
 	}
+#endif
 }
 
 void Curve::SubdivideBezier(const glm::fvec3 cp[4], glm::fvec3 cpSplit[7]) const {

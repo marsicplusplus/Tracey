@@ -17,10 +17,10 @@ struct RayConeIntersection { // ray.o = {0,0,0}; ray.d = {0,0,1};
 		float r2 = r * r; // dr could be either positive
 		float drr = r * dr; // or negative (0 for cylinder)
 
-		float ddd = cd.x * cd.x + cd.y * cd.y; // all possible
-		dp = c0.x * c0.x + c0.y * c0.y; // combinations
-		float cdd = c0.x * cd.x + c0.y * cd.y; // of x∗y terms
-		float cxd = (c0.x * cd.y) - (c0.y * cd.x); // (c0 × cd)z
+		float ddd 	= cd.x * cd.x + cd.y * cd.y; // all possible
+		dp 			= c0.x * c0.x + c0.y * c0.y; // combinations
+		float cdd 	= c0.x * cd.x + c0.y * cd.y; // of x∗y terms
+		float cxd 	= (c0.x * cd.y) - (c0.y * cd.x); // (c0 × cd)z
 
 		float c = ddd; // compute a, b, c in
 		float b = cd.z * (drr - cdd); // a − 2bs + cs2
