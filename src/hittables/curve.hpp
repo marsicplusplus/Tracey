@@ -77,7 +77,7 @@ class Curve : public Hittable {
 		bool recursiveIntersect(const Ray& ray, float tMin, float tMax, HitRecord& rec, const glm::fvec3 cPts[4], glm::mat4x4& rayToObject, float u0, float u1, int depth) const;
 		void SubdivideBezier(const glm::fvec3 cp[4], glm::fvec3 cpSplit[7]) const;
 		glm::fvec3 EvalBezier(const glm::fvec3 cp[4], float u, glm::fvec3* deriv) const;
-		glm::fvec3 getTangent(float t) const;
+		glm::fvec3 getTangent(const glm::fvec3 localCPts[4], float t) const;
 
 	private:
 		const std::shared_ptr<CurveCommon> common;

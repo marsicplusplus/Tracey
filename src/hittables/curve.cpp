@@ -122,11 +122,12 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 	float deltaT1 = rayConeIntersection.dt;
 
 	if (deltaT0 < 0 && deltaT1 > 0) return false;
+	return true;
 }
 
 bool Curve::hitPBRT(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
 
-	//if(!hitEnclosingCylinder(ray)) return false;
+	if(!hitEnclosingCylinder(ray)) return false;
 
 	glm::fvec3 localCPts[4];
 	localCPts[0] = BlossomBezier(common->curvePoints, uMin, uMin, uMin);
@@ -159,27 +160,28 @@ bool Curve::hitPBRT(const Ray& ray, float tMin, float tMax, HitRecord& rec) cons
 
 		for(int iter = 0; iter < 40 /* iteration number */; ++iter){
 			inters.c0 = EvalBezier(transformedPoints, t, nullptr);
-			inters.cd = getTangent(t);
+			inters.cd = getTangent(transformedPoints, t);
 			bool realHit = inters.intersect(std::max(localWidths[0], localWidths[1]), 0.0f);
-			if(realHit && fabsf(inters.dt) < 5e-5f){ /* Stops at 5e-5 as in the paper */
+			if(realHit && fabsf(inters.dt) < 5e-10f){ /* Stops at 5e-5 as in the paper */
 				// Fill in hit struct and break;
 				rec.t = inters.s + inters.c0.z;
 				rec.p = ray.at(rec.t);
 				rec.u = 0;
 				rec.v = 0;
-				rec.setFaceNormal(ray, glm::normalize(rec.p - EvalBezier(localCPts, t, nullptr)));
+				rec.normal = glm::normalize(rec.p - EvalBezier(localCPts, t, nullptr));
+				rec.frontFace = true;
 				rec.material = this->mat;
 				hit = true;
 				break;
 			}
 			inters.dt = min (inters.dt, 0.5f); /* Clamp to 0.5 */
 			inters.dt = max(inters.dt, -0.5f); /* Clamp to -0.5 */
-			dt2 = dt1;
-			dt1 = inters.dt;
+			dt1 = dt2;
+			dt2 = inters.dt;
 			if(dt1 * dt2 < 0.0f) { /* Summon the ancient Babylonian gods */
 				float next = 0.0f;
 				if((iter & 3) == 0) {
-					next = 0.5f * t * tOld; /* Bisector method every 4th iteration */
+					next = 0.5f * (t + tOld); /* Bisector method every 4th iteration */
 				} else {
 					next = (dt2 * tOld - dt1 * t) / (dt2 - dt1);
 				}
@@ -196,6 +198,7 @@ bool Curve::hitPBRT(const Ray& ray, float tMin, float tMax, HitRecord& rec) cons
 	}
 	return hit;
 #else 
+#if 0
 	// Compute delta t(0) and delta t(1)
 	RayConeIntersection rayConeIntersection;
 	rayConeIntersection.c0 = transformedPoints[0];
@@ -279,7 +282,7 @@ bool Curve::hitPBRT(const Ray& ray, float tMin, float tMax, HitRecord& rec) cons
 
 	return false;
 
-
+#else
 	float L0 = 0;
 	for (int i = 0; i < 2; ++i) {
 		L0 = std::max(L0,
@@ -390,6 +393,7 @@ bool Curve::recursiveIntersect(const Ray& ray, float tMin, float tMax, HitRecord
 		return true;
 	}
 #endif
+#endif
 }
 
 void Curve::SubdivideBezier(const glm::fvec3 cp[4], glm::fvec3 cpSplit[7]) const {
@@ -411,9 +415,7 @@ glm::fvec3 Curve::EvalBezier(const glm::fvec3 cp[4], float u, glm::fvec3* deriv 
 	return lerp(cp2[0], cp2[1], u);
 }
 
-glm::fvec3 Curve::getTangent(float t) const {
-	glm::fvec3 localCPts[4];
-	getLocalControlPoints(localCPts);
+glm::fvec3 Curve::getTangent(const glm::fvec3 localCPts[4], float t) const {
 	auto onemint = 1 - t;
 	auto onemintSquared = onemint * onemint;
 	auto a = -3.0f * onemintSquared * localCPts[0];
