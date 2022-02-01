@@ -117,7 +117,7 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 	for (int side = 0; side < 2; ++side) {
 		float t = tStart;
 		float tOld = 0.0f;
-		auto slant = tStart == 0.0f ? localWidths[1] - localWidths[0] : localWidths[1] - localWidths[0];
+		auto slant = tStart == 0.0f ? localWidths[1] - localWidths[0] : localWidths[0] - localWidths[1];
 
 		RayConeIntersection inters;
 
