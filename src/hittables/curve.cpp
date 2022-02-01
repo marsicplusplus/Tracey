@@ -116,6 +116,7 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 	for (int side = 0; side < 2; ++side) {
 		float t = tStart;
 		float tOld = 0.0f;
+		auto slant = tStart == 0.0f ? localWidths[1] - localWidths[0] : localWidths[1] - localWidths[0];
 
 		RayConeIntersection inters;
 
@@ -126,7 +127,8 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 		for (int iter = 0; iter < 40; ++iter) {
 			inters.c0 = EvalBezier(transformedPoints, t, nullptr);
 			inters.cd = getTangent(transformedPoints, t);
-			bool realHit = inters.intersect(std::max(localWidths[0], localWidths[1]), 0.0f);
+			auto rad = lerp(localWidths[0], localWidths[1], t);
+			bool realHit = inters.intersect(rad, slant);
 
 			if (realHit && fabsf(inters.dt) < 5e-5f) { /* Stops at 5e-5 as in the paper */
 

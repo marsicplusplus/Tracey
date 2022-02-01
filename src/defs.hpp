@@ -127,7 +127,7 @@ inline uint32_t calcZOrder(int xPos, int yPos)
 
 inline float lerp(float x, float y, float u)
 {
-	return (x * (1.0 - u)) + (x * u);
+	return (x * (1.0f - u)) + (y * u);
 }
 
 inline glm::vec3 lerp(glm::vec3 x, glm::vec3 y, float u) {
