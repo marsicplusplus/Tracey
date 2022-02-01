@@ -61,7 +61,7 @@ inline uint32_t calcZOrder(int xPos, int yPos){
 	return result;
 }
 float lerp(float x, float y, float u) {
-	return (x * (1.0 - u)) + (x * u);
+	return (x * (1.0 - u)) + (y * u);
 }
 glm::vec3 lerp(glm::vec3 x, glm::vec3 y, float u) {
 	return x * (1.f - u) + y * u;

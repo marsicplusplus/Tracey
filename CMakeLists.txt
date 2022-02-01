@@ -62,6 +62,7 @@ set( SRC
 	src/transform.cpp
 	src/animation.cpp
 	src/importer.cpp
+	src/defs.cpp
 	)
 
 if (UNIX)

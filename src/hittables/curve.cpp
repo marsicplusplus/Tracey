@@ -86,6 +86,7 @@ bool Curve::hitEnclosingCylinder(const Ray& ray) const {
 }
 
 bool Curve::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
+	//return hitPBRT(ray, tMin, tMax, rec);
 	return hitPhantom(ray, tMin, tMax, rec);
 }
 
@@ -131,14 +132,12 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 			bool realHit = inters.intersect(rad, slant);
 
 			if (realHit && fabsf(inters.dt) < 5e-5f) { /* Stops at 5e-5 as in the paper */
-
-				auto t = (inters.s + inters.c0.z) / glm::length(ray.getDirection());
-				if (t < tMin || t > tMax) {
+				auto hitT = (inters.s + inters.c0.z) / glm::length(ray.getDirection());
+				if (hitT < tMin || hitT > tMax) {
 					break;
 				}
-
 				// Fill in hit struct and break;
-				rec.t = t;
+				rec.t = hitT;
 				rec.p = ray.at(rec.t);
 				rec.u = 0;
 				rec.v = 0;
@@ -171,7 +170,9 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 				tOld = t;
 				t = t + inters.dt;
 			}
-			if (t < 0.0f || t > 1.0f) break;
+			if (t < 0.0f || t > 1.0f) {
+				break;
+			}
 		}
 
 		if (!hit) tStart = 1.0f - tStart;
