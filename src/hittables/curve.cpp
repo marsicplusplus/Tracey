@@ -128,15 +128,10 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 			inters.cd = getTangent(transformedPoints, t);
 			bool realHit = inters.intersect(std::max(localWidths[0], localWidths[1]), 0.0f);
 
-			auto tempT = (inters.sp + inters.c0.z) / glm::length(ray.getDirection());
-			if (tempT > tMax) {
-				break;
-			}
-
 			if (realHit && fabsf(inters.dt) < 5e-5f) { /* Stops at 5e-5 as in the paper */
 
 				auto t = (inters.s + inters.c0.z) / glm::length(ray.getDirection());
-				if (t < tMin) {
+				if (t < tMin || t > tMax) {
 					break;
 				}
 
