@@ -125,7 +125,7 @@ class AmbientLight : public LightObject {
 		inline Lights getType() override {return Lights::AMBIENT; }
 
 		Ray getRay(const HitRecord &rec, float &tMax) const override {
-			tMax = 0.0001f;
+			tMax = EPS;
 			Ray ray(rec.p + 0.001f * rec.normal, rec.normal);
 			return ray;
 		}
