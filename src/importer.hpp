@@ -18,7 +18,7 @@ namespace Importer {
 		char fileInfo[40];
 	};
 
-	bool readBCC(std::filesystem::path p, std::vector<HittablePtr> &curves, int mat);
+	bool importBCC(std::filesystem::path p, std::vector<HittablePtr> &curves, int mat, int numSegments);
 	bool importBEZ(std::filesystem::path p, std::vector<HittablePtr> &curves, int mat, int numSegments = 1);
 };
 

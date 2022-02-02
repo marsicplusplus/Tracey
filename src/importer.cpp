@@ -17,7 +17,7 @@
 
 #define CLOSE_RETURN(X, Y) fclose((X)); return (Y);
 
-bool Importer::readBCC(std::filesystem::path p, std::vector<HittablePtr> &curves, int mat){
+bool Importer::importBCC(std::filesystem::path p, std::vector<HittablePtr> &curves, int mat, int numSegments){
 	BCCHeader header;
 	FILE *pFile = fopen(p.string().c_str(), "rb");
 	fread(&header, sizeof(header), 1, pFile);
@@ -31,7 +31,8 @@ bool Importer::readBCC(std::filesystem::path p, std::vector<HittablePtr> &curves
 	if ( header.curveType[1] != '0' ) {CLOSE_RETURN(pFile, false);} // Not uniform parameterization
 	if ( header.dimensions != 3 ) {CLOSE_RETURN(pFile, false);} 	// Only curves in 3D
 
-	curves.reserve(header.curveCount);
+	int totalCount = 0;
+	std::cout << "CatmullRom curves: " << header.curveCount << std::endl;
 	for ( uint64_t i=0; i<header.curveCount; i++ ) {
 		int curveControlPointCount;
 		bool isClosed = false;
@@ -45,20 +46,44 @@ bool Importer::readBCC(std::filesystem::path p, std::vector<HittablePtr> &curves
 			fread(&cpx, sizeof(float), 1, pFile);
 			fread(&cpy, sizeof(float), 1, pFile);
 			fread(&cpz, sizeof(float), 1, pFile);
-			controlPoints.push_back({cpx, cpy, cpz});
+			controlPoints[j] = glm::fvec3{cpx, cpy, cpz};
 		}
+		uint64_t j = 0;
+		while(j < curveControlPointCount - 3){
+			totalCount++;
+			auto p0 = controlPoints[j++];
+			auto p1 = controlPoints[j++];
+			auto p2 = controlPoints[j++];
+			auto p3 = controlPoints[j];
 
-		//TODO - Turn these splines into cubic bezier curves
-		//auto common = std::make_shared<CurveCommon>(&controlPoints[0], 0.001, 0.001);
-		//curves.push_back(
-			//std::make_shared<Curve>(
-				//0.0, 1.0,
-				//isClosed,
-				//mat,
-				//common
-			//)
-		//);
+			auto v1 = (p2 - p0) * 0.5f;
+			auto v2 = (p3 - p1) * 0.5f;
+
+			glm::fvec3 ctrlPts[4];
+			ctrlPts[0] = p0;
+			ctrlPts[1] = p0 + 0.3f * v1;
+			ctrlPts[2] = p3 - 0.3f * v2;
+			ctrlPts[3] = p3;
+
+			auto common = std::make_shared<CurveCommon>(ctrlPts, 0.5, 0.5);
+			for (int i = 0; i < numSegments; i++) {
+				float segmentSize = 1.0f / (float)numSegments;
+				float uMin = i * segmentSize;
+				float uMax = min((i + 1) * segmentSize, 1.0f);
+				curves.push_back(
+					std::make_shared<Curve>(
+						uMin, uMax,
+						false,
+						mat,
+						common
+					)
+				);
+			}
+		}
+		std::cout << j << std::endl;
 	}
+	std::cout << "N. curves: " << totalCount << std::endl;
+	std::cout << "Done parsing" << std::endl;
 	CLOSE_RETURN(pFile, true);
 }
 bool Importer::importBEZ(std::filesystem::path p, std::vector<HittablePtr> &curves, int mat, int numSegments) {
@@ -105,10 +130,10 @@ bool Importer::importBEZ(std::filesystem::path p, std::vector<HittablePtr> &curv
 
 			auto common = std::make_shared<CurveCommon>(ctrlPts, width0, width1);
 
-			for (int i = 0; i < numSegments; i++) {
+			for (int j = 0; j < numSegments; j++) {
 				float segmentSize = 1.0f / (float)numSegments;
-				float uMin = i * segmentSize;
-				float uMax = min((i + 1) * segmentSize, 1.0f);
+				float uMin = j * segmentSize;
+				float uMax = min((j + 1) * segmentSize, 1.0f);
 				curves.push_back(
 					std::make_shared<Curve>(
 						uMin, uMax,

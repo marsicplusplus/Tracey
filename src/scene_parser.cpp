@@ -172,9 +172,21 @@ namespace SceneParser {
 			if(matName.empty() || matIdx == -1) {
 				throw std::invalid_argument("Curve does not name a material!");
 			}
-			int numSegments = (hit.contains("segments")) ? (int)hit.at("segments") : 4;
+			int numSegments = (hit.contains("segments")) ? (int)hit.at("segments") : 1;
 			Importer::importBEZ(meshPath, hittables, matIdx, numSegments);
+		} else if(meshPath.extension() == ".bcc") {
+			std::string matName;
+			int matIdx = -1;
+			if(hit.contains("material")) matName = hit.at("material");
+			matIdx = findMaterial(matName, materials);
+			if(matName.empty() || matIdx == -1) {
+				throw std::invalid_argument("Curve does not name a material!");
+			}
+			int numSegments = (hit.contains("segments")) ? (int)hit.at("segments") : 1;
+			Importer::importBCC(meshPath, hittables, matIdx, numSegments);
 		}
+
+
 
 		Heuristic heuristic = Heuristic::SAH;
 		if(hit.contains("bvh")){
