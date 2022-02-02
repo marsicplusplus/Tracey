@@ -40,7 +40,6 @@ bool Importer::importBCC(std::filesystem::path p, std::vector<HittablePtr> &curv
 		isClosed = curveControlPointCount < 0;
 		if ( curveControlPointCount < 0 ) curveControlPointCount = -curveControlPointCount;
 		std::vector<glm::fvec3> controlPoints(curveControlPointCount);
-
 		for(uint64_t j = 0; j < curveControlPointCount; ++j){
 			float cpx, cpy, cpz;
 			fread(&cpx, sizeof(float), 1, pFile);
@@ -80,7 +79,6 @@ bool Importer::importBCC(std::filesystem::path p, std::vector<HittablePtr> &curv
 				);
 			}
 		}
-		std::cout << j << std::endl;
 	}
 	std::cout << "N. curves: " << totalCount << std::endl;
 	std::cout << "Done parsing" << std::endl;
