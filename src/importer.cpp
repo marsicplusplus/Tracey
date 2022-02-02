@@ -50,9 +50,12 @@ bool Importer::importBCC(std::filesystem::path p, std::vector<HittablePtr> &curv
 		uint64_t j = 0;
 		while(j < curveControlPointCount - 3){
 			totalCount++;
-			auto p0 = controlPoints[j++];
-			auto p1 = controlPoints[j++];
-			auto p2 = controlPoints[j++];
+			auto p0 = controlPoints[j];
+			j += 1;
+			auto p1 = controlPoints[j];
+			j += 1;
+			auto p2 = controlPoints[j];
+			j += 1;
 			auto p3 = controlPoints[j];
 
 			auto v1 = (p2 - p0) * 0.5f;
@@ -64,7 +67,7 @@ bool Importer::importBCC(std::filesystem::path p, std::vector<HittablePtr> &curv
 			ctrlPts[2] = p3 - 0.3f * v2;
 			ctrlPts[3] = p3;
 
-			auto common = std::make_shared<CurveCommon>(ctrlPts, 0.5, 0.5);
+			auto common = std::make_shared<CurveCommon>(ctrlPts, 0.15, 0.15);
 			for (int i = 0; i < numSegments; i++) {
 				float segmentSize = 1.0f / (float)numSegments;
 				float uMin = i * segmentSize;

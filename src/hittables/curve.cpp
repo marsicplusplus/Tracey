@@ -107,17 +107,16 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 					  objectToRay * glm::vec4(localCPts[2], 1), objectToRay * glm::vec4(localCPts[3], 1) };
 
 	float tStart = glm::dot(transformedPoints[3] - transformedPoints[0], ray.getDirection()) > 0.0f ? 0.0f : 1.0f;
-
 	bool hit = false;
 	float localWidths[2] = {
 		lerp(common->width[0], common->width[1], uMin),
 		lerp(common->width[0], common->width[1], uMax)
 	};
+	auto slant = tStart == 0.0f ? localWidths[1] - localWidths[0] : localWidths[0] - localWidths[1];
 
 	for (int side = 0; side < 2; ++side) {
 		float t = tStart;
 		float tOld = 0.0f;
-		auto slant = tStart == 0.0f ? localWidths[1] - localWidths[0] : localWidths[0] - localWidths[1];
 
 		RayConeIntersection inters;
 
@@ -141,8 +140,7 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 				rec.p = ray.at(rec.t);
 				rec.u = 0;
 				rec.v = 0;
-				rec.normal = glm::normalize(rec.p - EvalBezier(localCPts, t, nullptr));
-				rec.frontFace = true;
+				rec.setFaceNormal(ray, rec.p - EvalBezier(localCPts, t, nullptr));
 				rec.material = this->mat;
 				hit = true;
 				break;
@@ -174,7 +172,6 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 				break;
 			}
 		}
-
 		if (!hit) tStart = 1.0f - tStart;
 		else break;
 	}
@@ -288,8 +285,6 @@ bool Curve::recursiveIntersect(const Ray& ray, float tMin, float tMax, HitRecord
 		if (tHit < tMin) {
 			return false;
 		}
-
-		glm::fvec3 pError(2 * hitWidth, 2 * hitWidth, 2 * hitWidth);
 
 		glm::fvec3 dpdu, dpdv;
 		EvalBezier(common->curvePoints, u, &dpdu);
