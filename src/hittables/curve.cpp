@@ -32,7 +32,7 @@ Curve::Curve(float uMin, float uMax, bool isClosed, int mat, const std::shared_p
 		auto axisDir = localCPts[3] - localCPts[0]; /* Axis direction */
 		auto oe = ((localCPts[3] + localCPts[0])/2.0f
 				+ EvalBezier(localCPts, 0.5, nullptr)) / 2.0f; /* Cylinder passes through this point */
-		float rMax = max(localWidths[0], localWidths[1]);  /* Radius of the cylinder */
+		float rMax = max(localWidths[0], localWidths[1]) * 0.5f;  /* Radius of the cylinder */
 
 		// We should subdivide the curve a predefinite number of times;
 		glm::fvec3 cpSplit[7];
