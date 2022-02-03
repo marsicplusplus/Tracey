@@ -1047,7 +1047,10 @@ bool BVH::hit(const Ray& ray, float tMin, float tMax, HitRecord& rec) const {
 			return true;
 		}
 	} else {
-		if (traverse(transformedRay, this->root, tMin, tMax, tmp)) {
+		float dist = 0;
+		bool hitRoot = hitAABB(transformedRay, this->root->minAABBLeftFirst, this->root->maxAABBCount, dist);
+
+		if (hitRoot && traverse(transformedRay, this->root, tMin, tMax, tmp)) {
 			rec = tmp;
 			rec.p = transformMat * glm::fvec4(rec.p, 1.0f);
 			rec.setFaceNormal(ray, transposeInv * glm::fvec4(rec.normal, 0.0));
@@ -1062,6 +1065,7 @@ bool BVH::traverse(const Ray& ray, BVHNode* node, float& tMin, float& tMax, HitR
 	HitRecord tmp;
 	bool hasHit = false;
 	float closest = tMax;
+
 
 	BVHNode* nodestack[64];
 	size_t stackPtr = 0;

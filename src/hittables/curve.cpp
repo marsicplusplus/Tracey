@@ -127,7 +127,7 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 		for (int iter = 0; iter < 40; ++iter) {
 			inters.c0 = EvalBezier(transformedPoints, t, nullptr);
 			inters.cd = getTangent(transformedPoints, t);
-			auto rad = lerp(localWidths[0], localWidths[1], t);
+			auto rad = lerp(localWidths[0], localWidths[1], t) * 0.5f;
 			bool realHit = inters.intersect(rad, slant);
 
 			if (realHit && fabsf(inters.dt) < 5e-5f) { /* Stops at 5e-5 as in the paper */
@@ -163,15 +163,31 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 				}
 				tOld = t;
 				t = next;
-			}
+			} 
 			else { /* Use the dt computed by the intersection; */
 				tOld = t;
 				t = t + inters.dt;
 			}
 			if (t < 0.0f || t > 1.0f) {
+				if (sqrt(inters.dp) < rad) {
+					if (tOld == inters.cd.z < 0) {
+						auto hitT = (inters.sp + inters.c0.z) / glm::length(ray.getDirection());
+						if (hitT < tMin || hitT > tMax) {
+							break;
+						}
+
+						rec.t = hitT;
+						rec.p = ray.at(rec.t);
+						rec.u = 0;
+						rec.v = 0;
+						rec.setFaceNormal(ray, -ray.getDirection());
+						rec.material = this->mat;
+						hit = true;
+					}
+				}
 				break;
 			}
-		}
+		}	
 		if (!hit) tStart = 1.0f - tStart;
 		else break;
 	}
