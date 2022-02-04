@@ -9,7 +9,7 @@ namespace Core {
 		HitRecord hr;
 		hr.p = {INF, INF, INF};
 		if(!scene || bounces <= 0)
-			return Color{0,0,0};
+			return Color{1,1,1};
 		if (scene->traverse(ray, 0.001f, INF, hr)) {
 			Ray reflectedRay;
 			MaterialPtr mat = scene->getMaterial(hr.material);
@@ -44,8 +44,8 @@ namespace Core {
 
 				return attenuation * (reflectionColor * reflectance + refractionColor * (1 - reflectance));
 			}
-			return Color{0,0,0};
+			return Color{1,1,1};
 		}
-		return Color(0.1,0.1,0.1);
+		return Color(1,1,1);
 	}
 };

@@ -67,7 +67,7 @@ bool Importer::importBCC(std::filesystem::path p, std::vector<HittablePtr> &curv
 			ctrlPts[2] = p3 - 0.3f * v2;
 			ctrlPts[3] = p3;
 
-			auto common = std::make_shared<CurveCommon>(ctrlPts, 0.3, 0.3);
+			auto common = std::make_shared<CurveCommon>(ctrlPts, 0.2, 0.2);
 			for (int i = 0; i < numSegments; i++) {
 				float segmentSize = 1.0f / (float)numSegments;
 				float uMin = i * segmentSize;
