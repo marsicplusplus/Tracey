@@ -169,6 +169,22 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 				t = t + inters.dt;
 			}
 			if (t < 0.0f || t > 1.0f) {
+				if (inters.dp < rad*rad) {
+					if (tOld == inters.cd.z < 0) {
+						auto hitT = (inters.sp + inters.c0.z) / glm::length(ray.getDirection());
+						if (hitT < tMin || hitT > tMax) {
+							break;
+						}
+
+						rec.t = hitT;
+						rec.p = ray.at(rec.t);
+						rec.u = 0;
+						rec.v = 0;
+						rec.setFaceNormal(ray, -ray.getDirection());
+						rec.material = this->mat;
+						hit = true;
+					}
+				}
 				break;
 			}
 		}

@@ -53,7 +53,7 @@ class PointLight : public LightObject {
 		inline Ray getRay(const HitRecord &rec, float &tMax) const override {
 			tMax = glm::distance(this->position, rec.p);
 			auto dir = this->position - rec.p;
-			return Ray(rec.p + EPS * dir, dir);
+			return Ray(rec.p + 1e-7f * dir, dir);
 		}
 
 		inline Color attenuate(Color color, const glm::fvec3 &p) override {
@@ -77,7 +77,7 @@ public:
 	inline Ray getRay(const HitRecord& rec, float& tMax) const override {
 		tMax = glm::distance(this->position, rec.p);
 		auto dir = this->position - rec.p;
-		auto hitToLight = Ray(rec.p + EPS * dir, dir);
+		auto hitToLight = Ray(rec.p + 1e-7f * dir, dir);
 
 		auto angle = std::acos(glm::dot(direction, glm::normalize(rec.p - this->position)));
 		if (angle > cutoffAngle) {
@@ -107,7 +107,7 @@ class DirectionalLight : public LightObject {
 
 		inline Ray getRay(const HitRecord &rec, float &tMax) const override {
 			tMax = INF;
-			return Ray(rec.p + EPS*(-this->direction), -this->direction);
+			return Ray(rec.p + 1e-7f *(-this->direction), -this->direction);
 		}
 
 	private:
@@ -125,7 +125,7 @@ class AmbientLight : public LightObject {
 		inline Lights getType() override {return Lights::AMBIENT; }
 
 		Ray getRay(const HitRecord &rec, float &tMax) const override {
-			tMax = EPS;
+			tMax = 1e-7f ;
 			Ray ray(rec.p + 0.001f * rec.normal, rec.normal);
 			return ray;
 		}

@@ -28,13 +28,14 @@ Scene::Scene(std::filesystem::path sceneFile){
 			materials.push_back(mat);
 		}
 	}
-
+	std::cout << "Building BVHs..." << std::endl;
 	if(j.contains("instance_meshes")){
 		for (auto m : j["instance_meshes"]) {
 			std::string name;
 			std::string materialName;
 			auto mesh = SceneParser::parseMeshInstance(m, materials, textures, meshes, name);
 			if (mesh){
+				std::cout << name << ": done!" << std::endl;
 				meshesBVH[name] = mesh;
 			}
 		}

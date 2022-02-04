@@ -47,46 +47,37 @@ bool Importer::importBCC(std::filesystem::path p, std::vector<HittablePtr> &curv
 			fread(&cpz, sizeof(float), 1, pFile);
 			controlPoints[j] = glm::fvec3{cpx, cpy, cpz};
 		}
-		uint64_t j = 0;
-		while(j < curveControlPointCount - 3){
-			totalCount++;
-			auto p0 = controlPoints[j];
-			j += 1;
-			auto p1 = controlPoints[j];
-			j += 1;
-			auto p2 = controlPoints[j];
-			j += 1;
-			auto p3 = controlPoints[j];
-
-			auto v1 = (p2 - p0) * 0.5f;
-			auto v2 = (p3 - p1) * 0.5f;
-
-			glm::fvec3 ctrlPts[4];
-			ctrlPts[0] = p0;
-			ctrlPts[1] = p0 + 0.3f * v1;
-			ctrlPts[2] = p3 - 0.3f * v2;
-			ctrlPts[3] = p3;
-
-			auto common = std::make_shared<CurveCommon>(ctrlPts, 0.2, 0.2);
-			for (int i = 0; i < numSegments; i++) {
+		for(uint64_t pIdx = 1; pIdx <= curveControlPointCount - 3; pIdx++){
+			auto p0 = controlPoints[pIdx - 1];
+			auto p1 = controlPoints[pIdx];
+			auto p2 = controlPoints[pIdx + 1];
+			auto p3 = controlPoints[pIdx + 2];
+			glm::fvec3 cp[4];
+			cp[0] = p1;
+			cp[1] = p1+(p2-p0)/(6.0f * 0.1f);
+			cp[2] = p2+(p3-p1)/(6.0f * 0.1f);
+			cp[3] = p2;
+			auto common = std::make_shared<CurveCommon>(cp, 0.2, 0.2);
+			for (int k = 0; k < numSegments; k++) {
+				totalCount++;
 				float segmentSize = 1.0f / (float)numSegments;
-				float uMin = i * segmentSize;
-				float uMax = min((i + 1) * segmentSize, 1.0f);
+				float uMin = k * segmentSize;
+				float uMax = min((k + 1) * segmentSize, 1.0f);
 				curves.push_back(
-					std::make_shared<Curve>(
-						uMin, uMax,
-						false,
-						mat,
-						common
-					)
-				);
+						std::make_shared<Curve>(
+							uMin, uMax,
+							false,
+							mat,
+							common
+							)
+						);
 			}
 		}
 	}
 	std::cout << "N. curves: " << totalCount << std::endl;
-	std::cout << "Done parsing" << std::endl;
 	CLOSE_RETURN(pFile, true);
 }
+
 bool Importer::importBEZ(std::filesystem::path p, std::vector<HittablePtr> &curves, int mat, int numSegments) {
 	std::ifstream file(p);
 	if (file.is_open()) {
@@ -151,7 +142,6 @@ bool Importer::importBEZ(std::filesystem::path p, std::vector<HittablePtr> &curv
 		file.close();
 		return false;
 	}
-	std::cout << "Done parsing" << std::endl;
 	file.close();
 	return true;
 }
