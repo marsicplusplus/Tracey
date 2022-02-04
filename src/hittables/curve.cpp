@@ -127,7 +127,7 @@ bool Curve::hitPhantom(const Ray& ray, float tMin, float tMax, HitRecord& rec) c
 		for (int iter = 0; iter < 40; ++iter) {
 			inters.c0 = EvalBezier(transformedPoints, t, nullptr);
 			inters.cd = getTangent(transformedPoints, t);
-			auto rad = lerp(localWidths[0], localWidths[1], t);
+			auto rad = lerp(localWidths[0], localWidths[1], t) * 0.5f;
 			bool realHit = inters.intersect(rad, slant);
 
 			if (realHit && fabsf(inters.dt) < 5e-5f) { /* Stops at 5e-5 as in the paper */
