@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>README</title>
+  <style>
+    html {
+      line-height: 1.5;
+      font-family: Georgia, serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 1em;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
+      font-size: 85%;
+      margin: 0;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#tracey">Tracey</a>
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#camera">Camera</a></li>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#primitives">Primitives</a></li>
+<li><a href="#textures-and-materials">Textures and Materials</a></li>
+<li><a href="#lights">Lights</a></li>
+<li><a href="#bvh">BVH</a>
+<ul>
+<li><a href="#binning-and-sah">Binning and SAH</a></li>
+<li><a href="#midpoint">Midpoint</a></li>
+<li><a href="#refitting">Refitting</a></li>
+</ul></li>
+<li><a href="#animation">Animation</a></li>
+<li><a href="#scenes">Scenes</a></li>
+<li><a href="#multithreading">Multithreading</a></li>
+<li><a href="#postprocessing">Postprocessing</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="tracey">Tracey</h1>
+<h2 id="introduction">Introduction</h2>
+<p>Tracey is a real time written for the Advanced Graphics Course at
+Utrecht University, taught by Professor J. Bikker.</p>
+<p>The project has been written in C++, rendering the image to a
+framebuffer presented to the user through an OpenGL texture thanks to
+the GLFW API and GLAD.</p>
+<p>ImGUI is used to itneract with the scene, GLM hass been chosen to
+provide us with all the matrices operation and linear algebra we
+needed.</p>
+<figure>
+<img src="Screenshots/bright-gallery.png"
+alt="Render of the Art Gallery model" />
+<figcaption aria-hidden="true">Render of the Art Gallery
+model</figcaption>
+</figure>
+<h2 id="camera">Camera</h2>
+<p>Tracey supports a user controllable camera that can be moved with the
+usual WASD key combination and can be rotated around using the
+mouse.</p>
+<p>The camera supports both Fisheye and Barrel distortion effects,
+generated by deforming the rays that are hitting the scene.</p>
+<figure>
+<img src="Screenshots/Barrel.png" alt="Barrel Camera" />
+<figcaption aria-hidden="true">Barrel Camera</figcaption>
+</figure>
+<figure>
+<img src="Screenshots/Fisheye.png" alt="Fisheye Camera" />
+<figcaption aria-hidden="true">Fisheye Camera</figcaption>
+</figure>
+<h2 id="configuration">Configuration</h2>
+<p>Tracey can be configured through a config.txt file that is read at
+the start of the binary.</p>
+<pre><code>
+MAX_BOUNCES=3
+SAMPLES=1
+FPS_LIMIT=60
+TILE_WIDTH=8
+TILE_HEIGHT=8
+W_WIDTH=640
+W_HEIGHT=384
+# 0 To go fullscreen on your primary monitor
+SCALING=2
+THREADS=-1
+</code></pre>
+<h2 id="primitives">Primitives</h2>
+<p>Tracey supports triangular meshes, in the form of OBJ files, and
+bezier curves in the form of BCC and BEZ (after using our conversion
+script) files to implement <a
+href="https://research.nvidia.com/publication/2018-08_Phantom-Ray-Hair-Intersector">Phantom
+Ray Hair Intersector</a> by Reshetov and Luebke (2018).</p>
+<p><img src="Screenshots/bunny.png"
+alt="Render of the Stanford Bunny, hairy mode" /> <img
+src="Screenshots/sheep_phantom.png"
+alt="Sweater sheep scene from Reshetov paper" /></p>
+<h2 id="textures-and-materials">Textures and Materials</h2>
+<p>Both meshes and curves support three different kind of materials:
+<em>Diffuse</em>, <em>Dielectric</em> and <em>Mirror</em>. Each material
+must have a texture. A texture can either be <em>Solid Color</em>,
+<em>Checkerboard</em> or an <em>Image Texture</em></p>
+<figure>
+<img src="Screenshots/Glass.png" alt="Example of the Glass Material" />
+<figcaption aria-hidden="true">Example of the Glass
+Material</figcaption>
+</figure>
+<figure>
+<img src="Screenshots/SuzanneBrickk.png"
+alt="Brick Texture on Suzanne" />
+<figcaption aria-hidden="true">Brick Texture on Suzanne</figcaption>
+</figure>
+<h2 id="lights">Lights</h2>
+<p>Tracey supports 4 different light types:</p>
+<ul>
+<li><em>Directional Lights</em>: described by position and
+direction;</li>
+<li><em>Point Lights</em>: described by its position;</li>
+<li><em>Spot Light</em>: described by a position, direction and its
+cutoff angle;</li>
+<li><em>AmbientLight</em>;</li>
+</ul>
+<figure>
+<img src="Screenshots/torus-spotlight.png"
+alt="A torus and a sphere illuminated by a spotlight" />
+<figcaption aria-hidden="true">A torus and a sphere illuminated by a
+spotlight</figcaption>
+</figure>
+<h2 id="bvh">BVH</h2>
+<p>We construct a BVH for each unique mesh. This BVH has an identity
+transform. Then for each instance of the mesh in the scene, we create a
+top level BVH with only one leaf which is the base mesh.</p>
+<p>This top level BVH has a unique transform which is specified in the
+JSON scene. This instancing allows us to render multiple copies of the
+same mesh without needing to construct identical mesh BVHs.</p>
+<p>All of the BVHs in the scene are then combined into what we call the
+Scene BVH which is a top level BVH containing all other BVHs in the
+scene. This is done by taking the two BVHs with the smallest surface
+area and joining them in a top level BVH. This process is repeated until
+there is only one BVH remaining which has BVHs as its leaves.</p>
+<p>Traversal for any of our BVHs is the same. We transform the ray upon
+entering, then traverse the nodes of the BVH. We check to see if we hit
+the AABB of each child node and traverse the closest hit child first. If
+we get to a leaf, we check the intersection with all elements in the
+leaf.</p>
+<h3 id="binning-and-sah">Binning and SAH</h3>
+<p>Binning has been achieved by binned triangles with respect to their
+centroid. We use 16 bins and implemented horizontal multi-threading for
+nodes with more than 20,000 triangles. We found this to be a good
+threshold before the overhead of adding tasks to the thread pool
+resulted in slower construction times than a single thread. We attempted
+vertical threading, but ran into issues constructing the final indices
+array.</p>
+<p>We provide the option for construction of a High Quality BVH by
+checking all possible centroid partitions across all three axes. This
+BVH was added for possible future work regarding animations where the
+BVH could be constructed offline for static meshes.</p>
+<h3 id="midpoint">Midpoint</h3>
+<p>The possibility to build a BVH using the midpoint split has been
+added as a faster alternative to the SAH. This will be helpful for when
+a refitting of a mesh’ BVH will be needed (i.e. non rigid body
+animations).</p>
+<p>Just like for the SAH heuristic the split is made recursively along
+the longest axis of the Bounding Box of the node.</p>
+<h3 id="refitting">Refitting</h3>
+<p>The option for a mesh to be refitted at every animation frame is
+added but it’s not currently useful as all supported animations are
+rigid-bodies that can be applied to the mesh instance’s BVH with just a
+rebuilding of the Top Level BVH.</p>
+<p>Nonetheless, when the BVH of a mesh has the flag set to true, the
+bounding box of each node will be recursively recomputed starting from
+the leaves going backward from the last primitive to the first one in
+the node.</p>
+<p>To avoid losing too much time performances when traversing the tree
+after refitting, the entire mesh BVH is rebuilt after 2 refitting
+operations.</p>
+<h2 id="animation">Animation</h2>
+<p>Each instance can have multiple frames of animation.</p>
+<p>The mesh transform is linearly interpolated between the current and
+the next frame based on an accumulator value incremented with the delta
+time computed after each frame.</p>
+<p>Each frame can have a different easing function that will be used to
+tweak the “percentage of the animation between the next transform and
+the one from the previous frame. If an easing function is not specified
+in the json file, a simple linear interpolation will be used.</p>
+<h2 id="scenes">Scenes</h2>
+<p>Scenes are described through a json file, parsed using Niel Lhmann <a
+href="https://github.com/nlohmann/json">json library</a>.</p>
+<p>The Scene file defines a camera (position, front and up direction,
+FOV), a list of textures, a list of materials, a list of meshes to be
+instantiated, the actual list of instances and a list of lights.</p>
+<p>Each mesh the path to an OBJ file and, optionally, a material. If the
+material field is not present, Tracey will use the one defined in the
+mtl field.</p>
+<p>Each instance must specify its mesh and, optionally, the BVH type,
+animation keyframes and a transformation object.</p>
+<p>An example of a basic json scene:</p>
+<pre><code>{
+    &quot;camera&quot; : {
+        &quot;position&quot;: [0.0, 1.0, 4.0],
+        &quot;dir&quot;: [0.0, 0.0, -1.0],
+        &quot;up&quot;: [0.0, 1.0, 0.0],
+        &quot;fov&quot;: 90
+    },
+    &quot;textures&quot; : [
+        {
+            &quot;name&quot;: &quot;SolidGold&quot;,
+            &quot;type&quot;:&quot;SOLID_COLOR&quot;,
+            &quot;color&quot;: [1.0, 0.8, 0.0]
+        }
+    ],
+    &quot;materials&quot;: [
+        {
+            &quot;type&quot;: &quot;DIELECTRIC&quot;,
+            &quot;name&quot;: &quot;GoldMirror&quot;,
+            &quot;texture&quot;: &quot;SolidGold&quot;,
+            &quot;ior&quot;: 0.470
+        }
+    ],
+    &quot;instance_meshes&quot;: 
+    [
+        {
+            &quot;path&quot;: &quot;./obj/cat.obj&quot;,
+            &quot;name&quot;: &quot;Cat&quot;,
+            &quot;material&quot;: &quot;GoldMirror&quot;,
+            &quot;bvh&quot;: &quot;SAH&quot;
+        },
+        {
+            &quot;path&quot;: &quot;./obj/pillar.obj&quot;,
+            &quot;name&quot;: &quot;Pillar&quot;,
+            &quot;bvh&quot;: &quot;MIDPOINT&quot;
+        }
+    ],
+    &quot;scenegraph&quot;: 
+    [
+        {
+            &quot;meshes&quot;: [
+                {
+                    &quot;name&quot;: &quot;Cat&quot;,
+                    &quot;transform&quot;: {
+                        &quot;scale&quot;: 0.5,
+                        &quot;translation&quot;: [0.0, 1.8, 0.0],
+                        &quot;rotation&quot;: [0,0,45]
+                    }
+                },
+                {
+                    &quot;name&quot;: &quot;Pillar&quot;
+                }
+            ]
+        }
+    ],
+    &quot;lights&quot;: [
+        {
+            &quot;type&quot;: &quot;DIRECTIONAL&quot;,
+            &quot;direction&quot;: [0.0, -0.6, -0.4],
+            &quot;color&quot;: [ 0.7, 0.7, 1.0 ],
+            &quot;intensity&quot;: 0.8
+        },
+        {
+            &quot;type&quot;: &quot;DIRECTIONAL&quot;,
+            &quot;direction&quot;: [0.0, -0.6, 0.4],
+            &quot;color&quot;: [ 0.7, 0.7, 1.0 ],
+            &quot;intensity&quot;: 0.8
+        }
+    ]
+}</code></pre>
+<p><video src="Screenshots/cat_pillar_r.mp4" controls=""><a
+href="Screenshots/cat_pillar_r.mp4">Video</a></video></p>
+<h2 id="multithreading">Multithreading</h2>
+<p>Ray tracing is obviously the perfect task for multithreading, hence
+to obtain faster renders the framebuffer is split into tiles and each
+tile is given to a thread in a threadpool. Each thread owns a different
+seed for a Xorshift RNG.</p>
+<h2 id="postprocessing">Postprocessing</h2>
+<p>Tracey supports three different non-descructive post processing
+operations, applied to a copy of the frame buffer.</p>
+<p>Tracey supports <em>Chromatic Aberration</em>, <em>Gamma
+Correction</em> and <em>Vignetting</em>, all of them configurable trough
+the ImGUI interface.</p>
+<figure>
+<img src="Screenshots/Gamma.png" alt="Gamma Correction" />
+<figcaption aria-hidden="true">Gamma Correction</figcaption>
+</figure>
+<figure>
+<img src="Screenshots/Vignette.png" alt="Vignetting" />
+<figcaption aria-hidden="true">Vignetting</figcaption>
+</figure>
+<figure>
+<img src="Screenshots/Chromatic.png" alt="Chromatic Aberration" />
+<figcaption aria-hidden="true">Chromatic Aberration</figcaption>
+</figure>
+</body>
+</html>
